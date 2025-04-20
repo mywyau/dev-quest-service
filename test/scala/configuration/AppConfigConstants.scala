@@ -7,13 +7,13 @@ object AppConfigConstants {
   val appServerConfig =
     ServerConfig(
       host = "0.0.0.0",
-      port = 1011
+      port = 8080
     )
 
   val integrationSpecServerConfig =
     ServerConfig(
       host = "127.0.0.1",
-      port = 9999,
+      port = 9999
     )
 
   val integrationPostgresqlConfig =
@@ -42,18 +42,16 @@ object AppConfigConstants {
       postgresqlConfig = integrationPostgresqlConfig
     )
 
-  val localConfig = {
+  val localConfig =
     LocalConfig(
       serverConfig = appServerConfig,
       postgresqlConfig = containerPostgresqlConfig
     )
-  }
 
-  val featureSwitches = {
+  val featureSwitches =
     FeatureSwitches(
       useDockerHost = false
     )
-  }
 
   val appConfig =
     AppConfig(
@@ -61,6 +59,5 @@ object AppConfigConstants {
       localConfig = localConfig,
       integrationSpecConfig = integrationSpecConfig
     )
-
 
 }

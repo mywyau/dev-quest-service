@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   pistachio:
@@ -13,7 +13,7 @@ services:
       DB_USER: shared_user
       DB_PASSWORD: share
     ports:
-      - "1011:1011"
+      - "8080:8080"
     networks:
       - traefik-network
 
