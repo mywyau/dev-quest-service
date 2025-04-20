@@ -1,4 +1,4 @@
-name: Cashew Unit and Integration Tests
+name: dev-quest-service Unit and Integration Tests
 
 on:
   push:
