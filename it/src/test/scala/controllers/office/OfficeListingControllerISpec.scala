@@ -8,10 +8,10 @@ import controllers.fragments.OfficeSpecificationRepoFragments.*
 import doobie.implicits.*
 import io.circe.syntax.*
 import io.circe.Json
+import models.database.*
 import models.office_listing.OfficeListing
 import models.office_listing.OfficeListingCard
 import models.responses.DeletedResponse
-import models.database.*
 import org.http4s.*
 import org.http4s.circe.*
 import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
@@ -49,9 +49,9 @@ class OfficeListingControllerISpec(global: GlobalRead) extends IOSuite {
     } yield (transactor, client)
 
   test(
-    "POST - /pistachio/business/office/listing/initiate - should generate the office listing data for a business in the respective tables, returning Created response, " +
-      "\nGET - /pistachio/business/office/listing/find/all - should retrieve all of the office listings, including the newly created listing" +
-      "\nDELETE - /pistachio/business/offices/listing/delete/OFF002 - given a office_id, delete the office listing data for given office id, returning OK and Deleted response json"
+    "POST - /dev-quest-service/business/office/listing/initiate - should generate the office listing data for a business in the respective tables, returning Created response, " +
+      "\nGET - /dev-quest-service/business/office/listing/find/all - should retrieve all of the office listings, including the newly created listing" +
+      "\nDELETE - /dev-quest-service/business/offices/listing/delete/OFF002 - given a office_id, delete the office listing data for given office id, returning OK and Deleted response json"
   ) { (sharedResources, log) =>
 
     val transactor = sharedResources._1.xa
@@ -65,7 +65,7 @@ class OfficeListingControllerISpec(global: GlobalRead) extends IOSuite {
 
     // Step 1: Make the POST request to create the office listing
     val createRequest =
-      Request[IO](POST, uri"http://127.0.0.1:9999/pistachio/business/office/listing/initiate")
+      Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/business/office/listing/initiate")
         .withEntity(initiateOfficeListingRequest)
 
     client.run(createRequest).use { createResponse =>
@@ -80,7 +80,7 @@ class OfficeListingControllerISpec(global: GlobalRead) extends IOSuite {
 
         // Step 2: Make the GET request to verify all listings include the newly created one
         val findAllRequest =
-          Request[IO](GET, uri"http://127.0.0.1:9999/pistachio/business/office/listing/cards/find/all")
+          Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/business/office/listing/cards/find/all")
 
         client.run(findAllRequest).use { findAllResponse =>
           findAllResponse.as[List[OfficeListingCard]].map { allCards =>
@@ -92,7 +92,7 @@ class OfficeListingControllerISpec(global: GlobalRead) extends IOSuite {
         }
 
         val request =
-          Request[IO](DELETE, uri"http://127.0.0.1:9999/pistachio/business/office/listing/delete/officeId1")
+          Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/business/office/listing/delete/officeId1")
 
         val expectedBody = DeletedResponse(DeleteSuccess.toString, "Office listing deleted successfully")
 

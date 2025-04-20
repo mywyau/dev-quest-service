@@ -25,7 +25,7 @@ FROM eclipse-temurin:11-jre-focal
 WORKDIR /app
 
 # Copy the fat JAR from the builder stage
-COPY --from=builder /app/target/scala-3.3.4/pistachio-assembly-0.1.0-SNAPSHOT.jar /app/app.jar
+COPY --from=builder /app/target/scala-3.3.4/dev-quest-service-assembly-0.1.0-SNAPSHOT.jar /app/app.jar
 
 # Expose the application port
 EXPOSE 8080

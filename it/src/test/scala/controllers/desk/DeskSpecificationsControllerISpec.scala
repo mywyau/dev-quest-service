@@ -12,9 +12,9 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import models.database.CreateSuccess
 import models.database.UpdateSuccess
-import models.desk.deskSpecifications.UpdateDeskSpecificationsRequest
 import models.desk.deskSpecifications.DeskSpecificationsPartial
 import models.desk.deskSpecifications.PrivateDesk
+import models.desk.deskSpecifications.UpdateDeskSpecificationsRequest
 import models.responses.CreatedResponse
 import models.responses.DeletedResponse
 import models.responses.UpdatedResponse
@@ -46,14 +46,14 @@ class DeskSpecificationsControllerISpec(global: GlobalRead) extends IOSuite with
     } yield (transactor, client)
 
   test(
-    "GET - /pistachio/business/desk/specifications/details/find/deskId2 - should get the desk for a given desk id"
+    "GET - /dev-quest-service/business/desk/specifications/details/find/deskId2 - should get the desk for a given desk id"
   ) { (sharedResources, log) =>
 
     val transactor = sharedResources._1.xa
     val client = sharedResources._2.client
 
     val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/pistachio/business/desk/specifications/details/find/deskId2")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/business/desk/specifications/details/find/deskId2")
 
     val expectedDeskSpecifications =
       DeskSpecificationsPartial(
@@ -79,7 +79,7 @@ class DeskSpecificationsControllerISpec(global: GlobalRead) extends IOSuite with
   }
 
   test(
-    "PUT - /pistachio/business/desk/specifications/details/update/deskId1 - should update the desk for a given desk id"
+    "PUT - /dev-quest-service/business/desk/specifications/details/update/deskId1 - should update the desk for a given desk id"
   ) { (sharedResources, log) =>
 
     val transactor = sharedResources._1.xa
@@ -97,7 +97,7 @@ class DeskSpecificationsControllerISpec(global: GlobalRead) extends IOSuite with
       )
 
     val request =
-      Request[IO](PUT, uri"http://127.0.0.1:9999/pistachio/business/desk/specifications/details/update/deskId1")
+      Request[IO](PUT, uri"http://127.0.0.1:9999/dev-quest-service/business/desk/specifications/details/update/deskId1")
         .withEntity(updateRequest.asJson)
 
     client.run(request).use { response =>
@@ -111,23 +111,23 @@ class DeskSpecificationsControllerISpec(global: GlobalRead) extends IOSuite with
   }
 
   test(
-    "GET - /pistachio/business/desk/specifications/details/find/all/officeId1 - should find all the desk specifications for office01" +
-      "\nPOST - /pistachio/business/desk/specifications/create - should create a desk specifications" +
-      "\nDELETE - /pistachio/business/desk/specifications/details/delete/deskId3 - should delete a desk specifications for a given deskId"
+    "GET - /dev-quest-service/business/desk/specifications/details/find/all/officeId1 - should find all the desk specifications for office01" +
+      "\nPOST - /dev-quest-service/business/desk/specifications/create - should create a desk specifications" +
+      "\nDELETE - /dev-quest-service/business/desk/specifications/details/delete/deskId3 - should delete a desk specifications for a given deskId"
   ) { (sharedResources, log) =>
 
     val transactor = sharedResources._1.xa
     val client = sharedResources._2.client
 
     val findAllRequest =
-      Request[IO](GET, uri"http://127.0.0.1:9999/pistachio/business/desk/specifications/details/find/all/officeId1")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/business/desk/specifications/details/find/all/officeId1")
 
     val createRequest =
-      Request[IO](POST, uri"http://127.0.0.1:9999/pistachio/business/desk/specifications/details/create")
+      Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/business/desk/specifications/details/create")
         .withEntity(testDeskSpecificationsRequest.asJson)
 
     val deleteRequest =
-      Request[IO](DELETE, uri"http://127.0.0.1:9999/pistachio/business/desk/specifications/details/delete/deskId3")
+      Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/business/desk/specifications/details/delete/deskId3")
 
     val expectedDeskSpecifications = CreatedResponse(CreateSuccess.toString, "Business Desk created successfully")
 

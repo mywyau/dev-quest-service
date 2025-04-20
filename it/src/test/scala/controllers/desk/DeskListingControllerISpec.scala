@@ -12,14 +12,14 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import models.database.CreateSuccess
 import models.database.UpdateSuccess
-import models.desk.deskListing.InitiateDeskListingRequest
 import models.desk.deskListing.DeskListing
 import models.desk.deskListing.DeskListingCard
+import models.desk.deskListing.InitiateDeskListingRequest
 import models.desk.deskPricing.DeskPricingPartial
 import models.desk.deskPricing.RetrievedDeskPricing
-import models.desk.deskSpecifications.UpdateDeskSpecificationsRequest
 import models.desk.deskSpecifications.DeskSpecificationsPartial
 import models.desk.deskSpecifications.PrivateDesk
+import models.desk.deskSpecifications.UpdateDeskSpecificationsRequest
 import models.responses.CreatedResponse
 import models.responses.DeletedResponse
 import models.responses.UpdatedResponse
@@ -53,14 +53,14 @@ class DeskListingControllerISpec(global: GlobalRead) extends IOSuite with Contro
     } yield (transactor, client)
 
   test(
-    "GET - /pistachio/business/listing/details/find/deskId2 - should get the desk for a given desk id"
+    "GET - /dev-quest-service/business/listing/details/find/deskId2 - should get the desk for a given desk id"
   ) { (sharedResources, log) =>
 
     val transactor = sharedResources._1.xa
     val client = sharedResources._2.client
 
     val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/pistachio/business/desk/listing/details/find/deskId2")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/business/desk/listing/details/find/deskId2")
 
     val expectedDeskSpec =
       DeskSpecificationsPartial(
@@ -101,14 +101,14 @@ class DeskListingControllerISpec(global: GlobalRead) extends IOSuite with Contro
   }
 
   test(
-    "GET - /pistachio/business/listing/details/find/deskId5 - should get the desk for a given desk id when there are nulls and missing data"
+    "GET - /dev-quest-service/business/listing/details/find/deskId5 - should get the desk for a given desk id when there are nulls and missing data"
   ) { (sharedResources, log) =>
 
     val transactor = sharedResources._1.xa
     val client = sharedResources._2.client
 
     val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/pistachio/business/desk/listing/details/find/deskId5")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/business/desk/listing/details/find/deskId5")
 
     val expectedDeskSpec =
       DeskSpecificationsPartial(
@@ -149,7 +149,7 @@ class DeskListingControllerISpec(global: GlobalRead) extends IOSuite with Contro
   }
 
   test(
-    "POST - /pistachio/business/desk/listing/initiate - should create/initiate a base desk listing"
+    "POST - /dev-quest-service/business/desk/listing/initiate - should create/initiate a base desk listing"
   ) { (sharedResources, log) =>
 
     val transactor = sharedResources._1.xa
@@ -165,7 +165,7 @@ class DeskListingControllerISpec(global: GlobalRead) extends IOSuite with Contro
       )
 
     val request =
-      Request[IO](POST, uri"http://127.0.0.1:9999/pistachio/business/desk/listing/initiate")
+      Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/business/desk/listing/initiate")
         .withEntity(initiateRequest.asJson)
 
     client.run(request).use { response =>
@@ -179,9 +179,9 @@ class DeskListingControllerISpec(global: GlobalRead) extends IOSuite with Contro
   }
 
   test(
-    "GET - /pistachio/business/desk/listing/cards/find/all/officeId1 - should find all the desk listings for officeId1 == 2" +
-      "\nPOST - /pistachio/business/desk/listing/initiate - should create an initial desk listing card" +
-      "\nDELETE - /pistachio/business/desk/listing/details/delete/deskId3 - should delete desk with id == deskId3"
+    "GET - /dev-quest-service/business/desk/listing/cards/find/all/officeId1 - should find all the desk listings for officeId1 == 2" +
+      "\nPOST - /dev-quest-service/business/desk/listing/initiate - should create an initial desk listing card" +
+      "\nDELETE - /dev-quest-service/business/desk/listing/details/delete/deskId3 - should delete desk with id == deskId3"
   ) { (sharedResources, log) =>
 
     val transactor = sharedResources._1.xa
@@ -199,14 +199,14 @@ class DeskListingControllerISpec(global: GlobalRead) extends IOSuite with Contro
     val expectedDeskListing = CreatedResponse(CreateSuccess.toString, "Business Desk created successfully")
 
     val findAllCardsRequest =
-      Request[IO](GET, uri"http://127.0.0.1:9999/pistachio/business/desk/listing/cards/find/all/officeId1")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/business/desk/listing/cards/find/all/officeId1")
 
     val createRequest =
-      Request[IO](POST, uri"http://127.0.0.1:9999/pistachio/business/desk/listing/initiate")
+      Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/business/desk/listing/initiate")
         .withEntity(initiateRequest.asJson)
 
     val deleteRequest =
-      Request[IO](DELETE, uri"http://127.0.0.1:9999/pistachio/business/desk/listing/details/delete/deskId3")
+      Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/business/desk/listing/details/delete/deskId3")
 
     for {
       findAllResponseBefore <- client.run(findAllCardsRequest).use(_.as[List[DeskListingCard]])

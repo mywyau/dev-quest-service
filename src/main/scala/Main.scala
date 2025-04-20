@@ -64,7 +64,7 @@ object Main extends IOApp {
       businessListingRoutes <- Resource.pure(businessListingRoutes(transactor))
 
       combinedRoutes = Router(
-        "/pistachio" -> (
+        "/dev-quest-service" -> (
           deskListingRoutes <+>
             deskPricingRoutes <+>
             deskSpecificationsRoutes <+>

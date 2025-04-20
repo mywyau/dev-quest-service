@@ -1,4 +1,4 @@
-# pistachio
+# dev-quest-service
 
 This Backend service is responsible for business domain data e.g. businesses, offices and desks.
 
@@ -26,7 +26,7 @@ Please remember to include the package/path for the shared resources,
 the shared resources is needed to help WeaverTests locate the shared resources needed for the tests
 
 ```
-./itTestOnly RegistrationControllerISpec controllers.ControllerSharedResource 
+./itTestOnly RegistrationControllerISpec controllers.ControllerSharedResource
 ```
 
 ---
@@ -58,6 +58,7 @@ Please run the docker compose scripts
 ```
 
 ### To clear down docker container for app and orphans
+
 ```
 docker-compose down --volumes --remove-orphans
 ```
@@ -71,6 +72,7 @@ psql -h localhost -p 5432 -U shared_user -d shared_db
 ```
 
 #### App Database Password:
+
 ```
 share
 ```
@@ -82,31 +84,31 @@ psql -h localhost -p 5432 -U shared_user -d shared_test_db
 ```
 
 #### TEST Database Password:
+
 ```
 share
 ```
+
 ---
 
 ### Set base search path for schema
 
-••• Only needed if using multiple schemas in the db. At the moment we are using public so no need beforehand 
+••• Only needed if using multiple schemas in the db. At the moment we are using public so no need beforehand
 accidentally set a new schema in flyway conf
 
 ```
 ALTER ROLE shared_user SET search_path TO share_schema, public;
 ```
 
-
-### Httpie requests 
+### Httpie requests
 
 We can use httpie instead of curl to trigger our endpoints.
 
-
 ```
-http POST http://localhost:8080/pistachio/business/offices/address/create Content-Type:application/json businessId="BUS12345" officeId="OFF12345" buildingName="Example Building" floorNumber="12" street="123 Example Street" city="Example City" country="Example Country" county="Example County" postcode="12345" latitude:=12.345678 longitude:=-98.765432
+http POST http://localhost:8080/dev-quest-service/business/offices/address/create Content-Type:application/json businessId="BUS12345" officeId="OFF12345" buildingName="Example Building" floorNumber="12" street="123 Example Street" city="Example City" country="Example Country" county="Example County" postcode="12345" latitude:=12.345678 longitude:=-98.765432
 ```
 
-http PUT http://localhost:8080/pistachio/business/offices/address/OFF-3fc560b7-c039-4267-9de3-023a10077a5f \
+http PUT http://localhost:8080/dev-quest-service/business/offices/address/OFF-3fc560b7-c039-4267-9de3-023a10077a5f \
 buildingName="New Building" \
 floorNumber=3 \
 street="123 Main St" \
@@ -118,24 +120,22 @@ latitude=12.34 \
 longitude=56.78 \
 updatedAt="2025-01-01T12:00:00"
 
+http GET http://localhost:8080/dev-quest-service/business/businesses/listing/cards/find/all
 
-http GET http://localhost:8080/pistachio/business/businesses/listing/cards/find/all
+http GET http://localhost:8080/dev-quest-service/business/office/listing/cards/find/all/BUS-4d50bd78-fe03-4dcd-a9ab-b2dabe7e9bd3
 
-http GET http://localhost:8080/pistachio/business/office/listing/cards/find/all/BUS-4d50bd78-fe03-4dcd-a9ab-b2dabe7e9bd3
-
-http PUT http://localhost:8080/pistachio/business/offices/contact/details/update/OFF-9573ca68-737e-47c2-97f1-c639c7b0daca \
+http PUT http://localhost:8080/dev-quest-service/business/offices/contact/details/update/OFF-9573ca68-737e-47c2-97f1-c639c7b0daca \
 primaryContactFirstName="Mikey" \
 primaryContactLastName="Yau" \
 contactEmail="mikey@gmail.com" \
 contactNumber="07402205071" \
 updatedAt="2025-01-01T12:00:00"
 
-
-
 ### TODO: WIP
+
 ```
 
-http PUT http://localhost:8080/pistachio/business/offices/specifications/update/OFF-3fc560b7-c039-4267-9de3-023a10077a5f \
+http PUT http://localhost:8080/dev-quest-service/business/offices/specifications/update/OFF-3fc560b7-c039-4267-9de3-023a10077a5f \
 officeName="Downtown Workspace"\
 description="A modern co-working space"\
 officeType="PrivateOffice"\
@@ -148,7 +148,7 @@ rules="ARRAY['WiFi', 'Coffee', 'Meeting Rooms'],\
 updatedAt="2025-01-01T12:00:00"
 
 
-http PUT http://localhost:8080/pistachio/business/offices/specifications/update/OFF-9573ca68-737e-47c2-97f1-c639c7b0daca \
+http PUT http://localhost:8080/dev-quest-service/business/offices/specifications/update/OFF-9573ca68-737e-47c2-97f1-c639c7b0daca \
 Content-Type:application/json \
 officeName="Downtown Workspace" \
 description="A modern and spacious office" \

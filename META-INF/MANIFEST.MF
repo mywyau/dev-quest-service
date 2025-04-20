@@ -1,10 +1,10 @@
 Manifest-Version: 1.0
 Main-Class: Main
-Specification-Title: pistachio
+Specification-Title: dev-quest-service
 Specification-Version: 0.1.0-SNAPSHOT
-Specification-Vendor: pistachio
-Implementation-Title: pistachio
+Specification-Vendor: dev-quest-service
+Implementation-Title: dev-quest-service
 Implementation-Version: 0.1.0-SNAPSHOT
-Implementation-Vendor: pistachio
-Implementation-Vendor-Id: pistachio
+Implementation-Vendor: dev-quest-service
+Implementation-Vendor-Id: dev-quest-service
 

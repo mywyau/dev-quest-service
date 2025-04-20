@@ -1,24 +1,24 @@
 package controllers.office
 
 import cats.effect.*
-import controllers.ControllerISpecBase
 import controllers.constants.OfficeListingControllerConstants.*
 import controllers.fragments.OfficeAddressRepoFragments.*
 import controllers.fragments.OfficeContactDetailsRepoFragments.*
 import controllers.fragments.OfficeSpecificationRepoFragments.*
+import controllers.ControllerISpecBase
 import doobie.implicits.*
-import io.circe.Json
 import io.circe.syntax.*
+import io.circe.Json
 import models.office_listing.OfficeListing
 import models.office_listing.OfficeListingCard
 import models.responses.DeletedResponse
 import org.http4s.*
-import org.http4s.Method.*
 import org.http4s.circe.*
 import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
 import org.http4s.implicits.*
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.http4s.Method.*
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import shared.HttpClientResource
 import shared.TransactorResource
 import weaver.*
@@ -46,17 +46,17 @@ class DeleteAllOfficeListingControllerISpec(global: GlobalRead) extends IOSuite 
     } yield (transactor, client)
 
   test(
-    "DELETE - /pistachio/business/office/listing/delete/all/BUS123 - should delete all data related to office listings for the given business id, returning OK deleted response"
+    "DELETE - /dev-quest-service/business/office/listing/delete/all/BUS123 - should delete all data related to office listings for the given business id, returning OK deleted response"
   ) { (sharedResources, log) =>
     val transactor = sharedResources._1.xa
     val client = sharedResources._2.client
 
     // Define the requests
     val findAllRequest =
-      Request[IO](GET, uri"http://127.0.0.1:9999/pistachio/business/office/listing/cards/find/all/BUS123")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/business/office/listing/cards/find/all/BUS123")
 
     val deleteRequest =
-      Request[IO](DELETE, uri"http://127.0.0.1:9999/pistachio/business/office/listing/delete/all/BUS123")
+      Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/business/office/listing/delete/all/BUS123")
 
     for {
       // Step 1: Verify initial listings

@@ -1,28 +1,29 @@
 package controllers.business
 
 import cats.effect.*
-import controllers.ControllerISpecBase
 import controllers.constants.BusinessListingControllerConstants.*
 import controllers.fragments.business.BusinessAddressRepoFragments.*
 import controllers.fragments.business.BusinessContactDetailsRepoFragments.*
 import controllers.fragments.business.BusinessSpecificationsRepoFragments.*
+import controllers.ControllerISpecBase
 import doobie.implicits.*
 import doobie.util.transactor.Transactor
-import io.circe.Json
 import io.circe.syntax.*
+import io.circe.Json
+import java.time.LocalDateTime
 import models.business_listing.BusinessListingCard
 import models.business_listing.InitiateBusinessListingRequest
 import models.responses.CreatedResponse
 import org.http4s.*
-import org.http4s.Method.*
 import org.http4s.circe.*
 import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.implicits.*
 import org.http4s.server.Router
 import org.http4s.server.Server
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.http4s.Method.*
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import repositories.business.BusinessAddressRepository
 import repositories.business.BusinessContactDetailsRepository
 import repositories.business.BusinessSpecificationsRepository
@@ -32,8 +33,6 @@ import shared.TransactorResource
 import testData.BusinessTestConstants.*
 import testData.TestConstants.*
 import weaver.*
-
-import java.time.LocalDateTime
 
 class BusinessListingControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
@@ -54,7 +53,7 @@ class BusinessListingControllerISpec(global: GlobalRead) extends IOSuite with Co
     } yield (transactor, client)
 
   test(
-    "POST - /pistachio/business/businesses/listing/initiate - " +
+    "POST - /dev-quest-service/business/businesses/listing/initiate - " +
       "should generate the business listing data for a business in the respective tables, returning Created response"
   ) { (sharedResources, log) =>
 
@@ -70,7 +69,7 @@ class BusinessListingControllerISpec(global: GlobalRead) extends IOSuite with Co
       ).asJson
 
     val request =
-      Request[IO](POST, uri"http://127.0.0.1:9999/pistachio/business/businesses/listing/initiate")
+      Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/listing/initiate")
         .withEntity(requestBody)
 
     val expectedBody =

@@ -1,33 +1,32 @@
 package controllers.business
 
 import cats.effect.*
-import controllers.ControllerISpecBase
 import controllers.constants.BusinessAvailabilityControllerConstants.*
 import controllers.fragments.business.BusinessAvailabilityControllerFragments.*
+import controllers.ControllerISpecBase
 import doobie.implicits.*
 import doobie.util.transactor.Transactor
-import io.circe.Json
 import io.circe.syntax.*
+import io.circe.Json
+import java.time.LocalDateTime
+import java.time.LocalTime
 import models.*
-import models.Wednesday
 import models.business.availability.*
 import models.database.*
 import models.responses.CreatedResponse
 import models.responses.DeletedResponse
 import models.responses.UpdatedResponse
+import models.Wednesday
 import org.http4s.*
-import org.http4s.Method.*
 import org.http4s.circe.*
 import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
 import org.http4s.implicits.*
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.http4s.Method.*
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import shared.HttpClientResource
 import shared.TransactorResource
 import weaver.*
-
-import java.time.LocalDateTime
-import java.time.LocalTime
 
 class BusinessAvailabilityControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
@@ -45,7 +44,7 @@ class BusinessAvailabilityControllerISpec(global: GlobalRead) extends IOSuite wi
     } yield (transactor, client)
 
   test(
-    "GET - /pistachio/business/businesses/availability/all/businessId1 - " +
+    "GET - /dev-quest-service/business/businesses/availability/all/businessId1 - " +
       "given a business_id, find the business availability data for given id, returning OK and the availability json"
   ) { (transactorResource, log) =>
 
@@ -53,7 +52,7 @@ class BusinessAvailabilityControllerISpec(global: GlobalRead) extends IOSuite wi
     val client = transactorResource._2.client
 
     val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/pistachio/business/availability/all/businessId1")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/business/availability/all/businessId1")
 
     client.run(request).use { response =>
       response.as[List[RetrieveSingleBusinessAvailability]].map { body =>
@@ -66,7 +65,7 @@ class BusinessAvailabilityControllerISpec(global: GlobalRead) extends IOSuite wi
   }
 
   test(
-    "PUT - /pistachio/business/availability/opening/hours/update/businessId1 - " +
+    "PUT - /dev-quest-service/business/availability/opening/hours/update/businessId1 - " +
       "given a business_id, find the business availability data for given id, returning OK and the availability json"
   ) { (transactorResource, log) =>
 
@@ -83,7 +82,7 @@ class BusinessAvailabilityControllerISpec(global: GlobalRead) extends IOSuite wi
       )
 
     val request =
-      Request[IO](PUT, uri"http://127.0.0.1:9999/pistachio/business/availability/opening/hours/update/businessId1")
+      Request[IO](PUT, uri"http://127.0.0.1:9999/dev-quest-service/business/availability/opening/hours/update/businessId1")
         .withEntity(requestBody.asJson)
 
     client.run(request).use { response =>
@@ -97,7 +96,7 @@ class BusinessAvailabilityControllerISpec(global: GlobalRead) extends IOSuite wi
   }
 
   test(
-    "PUT - /pistachio/business/availability/days/update - " +
+    "PUT - /dev-quest-service/business/availability/days/update - " +
       "given a business_id, find the business availability data for given id, returning OK and the availability json"
   ) { (transactorResource, log) =>
 
@@ -112,7 +111,7 @@ class BusinessAvailabilityControllerISpec(global: GlobalRead) extends IOSuite wi
       )
 
     val request =
-      Request[IO](PUT, uri"http://127.0.0.1:9999/pistachio/business/availability/days/update")
+      Request[IO](PUT, uri"http://127.0.0.1:9999/dev-quest-service/business/availability/days/update")
         .withEntity(requestBody.asJson)
 
     client.run(request).use { response =>
@@ -126,7 +125,7 @@ class BusinessAvailabilityControllerISpec(global: GlobalRead) extends IOSuite wi
   }
 
   test(
-    "DELETE - /pistachio/business/availability/delete/all/businessId3 - " +
+    "DELETE - /dev-quest-service/business/availability/delete/all/businessId3 - " +
       "given a business_id, delete the business availability details data for given business id, returning OK and Deleted response json"
   ) { (transactorResource, log) =>
 
@@ -134,7 +133,7 @@ class BusinessAvailabilityControllerISpec(global: GlobalRead) extends IOSuite wi
     val client = transactorResource._2.client
 
     val request =
-      Request[IO](DELETE, uri"http://127.0.0.1:9999/pistachio/business/availability/delete/all/businessId3")
+      Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/business/availability/delete/all/businessId3")
 
     val expectedBody = DeletedResponse(DeleteSuccess.toString, "Business availability details deleted successfully")
 

@@ -1,13 +1,14 @@
 package controllers.business
 
 import cats.effect.*
-import controllers.ControllerISpecBase
 import controllers.constants.BusinessAddressControllerConstants.*
 import controllers.fragments.business.BusinessAddressRepoFragments.*
+import controllers.ControllerISpecBase
 import doobie.implicits.*
 import doobie.util.transactor.Transactor
-import io.circe.Json
 import io.circe.syntax.*
+import io.circe.Json
+import java.time.LocalDateTime
 import models.business.address.BusinessAddressPartial
 import models.business.address.CreateBusinessAddressRequest
 import models.business.address.UpdateBusinessAddressRequest
@@ -16,18 +17,15 @@ import models.responses.CreatedResponse
 import models.responses.DeletedResponse
 import models.responses.UpdatedResponse
 import org.http4s.*
-import org.http4s.Method.*
 import org.http4s.circe.*
 import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
 import org.http4s.implicits.*
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.http4s.Method.*
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import shared.HttpClientResource
 import shared.TransactorResource
 import weaver.*
-
-import java.time.LocalDateTime
-import models.business.address.BusinessAddressPartial
 
 class BusinessAddressControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
@@ -45,7 +43,7 @@ class BusinessAddressControllerISpec(global: GlobalRead) extends IOSuite with Co
     } yield (transactor, client)
 
   test(
-    "GET - /pistachio/business/businesses/address/details/businessId1 - " +
+    "GET - /dev-quest-service/business/businesses/address/details/businessId1 - " +
       "given a business_id, find the business address data for given id, returning OK and the address json"
   ) { (transactorResource, log) =>
 
@@ -53,7 +51,7 @@ class BusinessAddressControllerISpec(global: GlobalRead) extends IOSuite with Co
     val client = transactorResource._2.client
 
     val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/pistachio/business/businesses/address/details/businessId1")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/address/details/businessId1")
 
     val expectedBusinessAddress = testBusinessAddress("userId1", "businessId1")
 
@@ -68,7 +66,7 @@ class BusinessAddressControllerISpec(global: GlobalRead) extends IOSuite with Co
   }
 
   test(
-    "POST - /pistachio/business/businesses/address/details/create - " +
+    "POST - /dev-quest-service/business/businesses/address/details/create - " +
       "should generate the business address data for a business in database table, returning Created response"
   ) { (transactorResource, log) =>
 
@@ -78,7 +76,7 @@ class BusinessAddressControllerISpec(global: GlobalRead) extends IOSuite with Co
     val businessAddressRequest: Json = testBusinessAddressRequest("user_id_3", "business_id_3").asJson
 
     val request =
-      Request[IO](POST, uri"http://127.0.0.1:9999/pistachio/business/businesses/address/details/create")
+      Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/address/details/create")
         .withEntity(businessAddressRequest)
 
     val expectedBody = CreatedResponse(CreateSuccess.toString, "Business address details created successfully")
@@ -94,7 +92,7 @@ class BusinessAddressControllerISpec(global: GlobalRead) extends IOSuite with Co
   }
 
   test(
-    "PUT - /pistachio/business/businesses/address/details/update/business_id_4 - " +
+    "PUT - /dev-quest-service/business/businesses/address/details/update/business_id_4 - " +
       "should update the business address data for a business in database table, returning Updated response"
   ) { (transactorResource, log) =>
 
@@ -115,7 +113,7 @@ class BusinessAddressControllerISpec(global: GlobalRead) extends IOSuite with Co
       )
 
     val request =
-      Request[IO](PUT, uri"http://127.0.0.1:9999/pistachio/business/businesses/address/details/update/business_id_4")
+      Request[IO](PUT, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/address/details/update/business_id_4")
         .withEntity(updateRequest.asJson)
 
     val expectedBody = UpdatedResponse(UpdateSuccess.toString, "Business address updated successfully")
@@ -131,7 +129,7 @@ class BusinessAddressControllerISpec(global: GlobalRead) extends IOSuite with Co
   }
 
   test(
-    "DELETE - /pistachio/business/businesses/address/details/business_id_2 - " +
+    "DELETE - /dev-quest-service/business/businesses/address/details/business_id_2 - " +
       "given a business_id, delete the business address details data for given business id, returning OK and Deleted response json"
   ) { (transactorResource, log) =>
 
@@ -139,7 +137,7 @@ class BusinessAddressControllerISpec(global: GlobalRead) extends IOSuite with Co
     val client = transactorResource._2.client
 
     val request =
-      Request[IO](DELETE, uri"http://127.0.0.1:9999/pistachio/business/businesses/address/details/business_id_2")
+      Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/address/details/business_id_2")
 
     val expectedBody = DeletedResponse(DeleteSuccess.toString, "Business address details deleted successfully")
 

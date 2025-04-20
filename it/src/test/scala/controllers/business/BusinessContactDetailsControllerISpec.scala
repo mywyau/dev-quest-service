@@ -52,7 +52,7 @@ class BusinessContactDetailsControllerISpec(global: GlobalRead) extends IOSuite 
     } yield (transactor, client)
 
   test(
-    "GET - /pistachio/business/businesses/contact/details/businessId1 - " +
+    "GET - /dev-quest-service/business/businesses/contact/details/businessId1 - " +
       "given a business_id, find the business contactDetails data for given id, returning OK and the contact details json"
   ) { (sharedResources, log) =>
 
@@ -60,7 +60,7 @@ class BusinessContactDetailsControllerISpec(global: GlobalRead) extends IOSuite 
     val client = sharedResources._2.client
 
     val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/pistachio/business/businesses/contact/details/businessId1")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/contact/details/businessId1")
 
     val expectedBusinessContactDetails = testBusinessContactDetails("userId1", "businessId1")
 
@@ -75,7 +75,7 @@ class BusinessContactDetailsControllerISpec(global: GlobalRead) extends IOSuite 
   }
 
   test(
-    "GET - /pistachio/business/businesses/contact/details/id_does_not_exists - " +
+    "GET - /dev-quest-service/business/businesses/contact/details/id_does_not_exists - " +
       "given a business id for data which does not exist, return NotFound and "
   ) { (sharedResources, log) =>
 
@@ -83,7 +83,7 @@ class BusinessContactDetailsControllerISpec(global: GlobalRead) extends IOSuite 
     val client = sharedResources._2.client
 
     val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/pistachio/business/businesses/contact/details/id_does_not_exists")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/contact/details/id_does_not_exists")
 
     val expectedResponseBody = ErrorResponse("error", "error message")
 
@@ -98,7 +98,7 @@ class BusinessContactDetailsControllerISpec(global: GlobalRead) extends IOSuite 
   }
 
   test(
-    "GET - /pistachio/bad/url - " +
+    "GET - /dev-quest-service/bad/url - " +
       "given an error in the url, return NotFound and appropriate body"
   ) { (sharedResources, log) =>
 
@@ -106,7 +106,7 @@ class BusinessContactDetailsControllerISpec(global: GlobalRead) extends IOSuite 
     val client = sharedResources._2.client
 
     val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/pistachio/bad/url")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/bad/url")
 
     val expectedResponseBody = "Not found"
 
@@ -121,7 +121,7 @@ class BusinessContactDetailsControllerISpec(global: GlobalRead) extends IOSuite 
   }
 
   test(
-    "POST - /pistachio/business/businesses/contact/details/create - " +
+    "POST - /dev-quest-service/business/businesses/contact/details/create - " +
       "should generate the business contact data for a business in database table, returning Created response"
   ) { (transactorResource, log) =>
 
@@ -131,7 +131,7 @@ class BusinessContactDetailsControllerISpec(global: GlobalRead) extends IOSuite 
     val businessAddressRequest: Json = testCreateBusinessContactDetailsRequest("user_id_3", "business_id_3").asJson
 
     val request =
-      Request[IO](POST, uri"http://127.0.0.1:9999/pistachio/business/businesses/contact/details/create")
+      Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/contact/details/create")
         .withEntity(businessAddressRequest)
 
     val expectedBody = CreatedResponse(CreateSuccess.toString, "Business contact details created successfully")
@@ -147,7 +147,7 @@ class BusinessContactDetailsControllerISpec(global: GlobalRead) extends IOSuite 
   }
 
   test(
-    "DELETE - /pistachio/business/businesses/contact/details/business_id_2 - " +
+    "DELETE - /dev-quest-service/business/businesses/contact/details/business_id_2 - " +
       "given a business_id, delete the business contact details data for given business id, returning OK and Deleted response json"
   ) { (sharedResources, log) =>
 
@@ -155,7 +155,7 @@ class BusinessContactDetailsControllerISpec(global: GlobalRead) extends IOSuite 
     val client = sharedResources._2.client
 
     val request =
-      Request[IO](DELETE, uri"http://127.0.0.1:9999/pistachio/business/businesses/contact/details/business_id_2")
+      Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/contact/details/business_id_2")
 
     val expectedBody = DeletedResponse(DeleteSuccess.toString, "Business contact details deleted successfully")
 

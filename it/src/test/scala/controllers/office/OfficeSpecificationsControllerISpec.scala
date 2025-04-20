@@ -16,7 +16,6 @@ import io.circe.Json
 import java.time.LocalDateTime
 import models.database.CreateSuccess
 import models.database.DeleteSuccess
-
 import models.office.specifications.OfficeSpecifications
 import models.office.specifications.OfficeSpecificationsPartial
 import models.responses.CreatedResponse
@@ -54,7 +53,7 @@ class OfficeSpecificationsControllerISpec(global: GlobalRead) extends IOSuite {
     } yield (transactor, client)
 
   test(
-    "GET - /pistachio/business/offices/specifications/OFF001 - " +
+    "GET - /dev-quest-service/business/offices/specifications/OFF001 - " +
       "given a office_id, find the office specifications data for given id, returning OK and the specifications json"
   ) { (sharedResources, log) =>
 
@@ -62,7 +61,7 @@ class OfficeSpecificationsControllerISpec(global: GlobalRead) extends IOSuite {
     val client = sharedResources._2.client
 
     val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/pistachio/business/offices/specifications/OFF001")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/business/offices/specifications/OFF001")
 
     val expectedOfficeSpecifications = testOfficeSpecs1("BUS001", "OFF001")
 
@@ -77,7 +76,7 @@ class OfficeSpecificationsControllerISpec(global: GlobalRead) extends IOSuite {
   }
 
   test(
-    "POST - /pistachio/business/offices/specifications/create - " +
+    "POST - /dev-quest-service/business/offices/specifications/create - " +
       "should generate the office specifications data in postgresql, returning Created response"
   ) { (sharedResources, log) =>
 
@@ -87,7 +86,7 @@ class OfficeSpecificationsControllerISpec(global: GlobalRead) extends IOSuite {
     val businessListingRequest: Json = testCreateOfficeSpecificationsRequest("BUSINESS1337", "OFFICE1337").asJson
 
     val request =
-      Request[IO](POST, uri"http://127.0.0.1:9999/pistachio/business/offices/specifications/create")
+      Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/business/offices/specifications/create")
         .withEntity(businessListingRequest)
 
     val expectedBody = CreatedResponse(CreateSuccess.toString, "Office specifications created successfully")
@@ -103,7 +102,7 @@ class OfficeSpecificationsControllerISpec(global: GlobalRead) extends IOSuite {
   }
 
   test(
-    "DELETE - /pistachio/business/offices/specifications/OFF002 - " +
+    "DELETE - /dev-quest-service/business/offices/specifications/OFF002 - " +
       "given a office_id, delete the office specifications data for given office id, returning OK and Deleted response json"
   ) { (sharedResources, log) =>
 
@@ -111,7 +110,7 @@ class OfficeSpecificationsControllerISpec(global: GlobalRead) extends IOSuite {
     val client = sharedResources._2.client
 
     val request =
-      Request[IO](DELETE, uri"http://127.0.0.1:9999/pistachio/business/offices/specifications/OFF002")
+      Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/business/offices/specifications/OFF002")
 
     val expectedBody = DeletedResponse(DeleteSuccess.toString, "Office specifications deleted successfully")
 

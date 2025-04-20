@@ -146,7 +146,7 @@ object TestRoutes {
 
   def createTestRouter(transactor: Transactor[IO]): HttpRoutes[IO] =
     Router(
-      "/pistachio" -> (
+      "/dev-quest-service" -> (
         businessAddressRoutes(transactor) <+>
           businessContactDetailsRoutes(transactor) <+>
           businessSpecificationsRoutes(transactor) <+>

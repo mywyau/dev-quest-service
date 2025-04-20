@@ -14,9 +14,9 @@ import io.circe.syntax.*
 import io.circe.Json
 import java.time.LocalDateTime
 import java.time.LocalTime
-import models.business.specifications.UpdateBusinessSpecificationsRequest
 import models.business.specifications.BusinessSpecifications
 import models.business.specifications.BusinessSpecificationsPartial
+import models.business.specifications.UpdateBusinessSpecificationsRequest
 import models.database.*
 import models.responses.CreatedResponse
 import models.responses.DeletedResponse
@@ -55,7 +55,7 @@ class BusinessSpecificationsControllerISpec(global: GlobalRead) extends IOSuite 
     } yield (transactor, client)
 
   test(
-    "GET - /pistachio/business/businesses/specifications/businessId1 - " +
+    "GET - /dev-quest-service/business/businesses/specifications/businessId1 - " +
       "given a business_id, find the business specifications data for given id, returning OK and the specifications json"
   ) { (sharedResources, log) =>
 
@@ -63,7 +63,7 @@ class BusinessSpecificationsControllerISpec(global: GlobalRead) extends IOSuite 
     val client = sharedResources._2.client
 
     val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/pistachio/business/businesses/specifications/businessId1")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/specifications/businessId1")
 
     val expectedBusinessSpecifications = testBusinessSpecs
 
@@ -78,7 +78,7 @@ class BusinessSpecificationsControllerISpec(global: GlobalRead) extends IOSuite 
   }
 
   test(
-    "POST - /pistachio/business/businesses/specifications/create - " +
+    "POST - /dev-quest-service/business/businesses/specifications/create - " +
       "should generate the business specifications data for a business in database table, returning Created response"
   ) { (sharedResource, log) =>
 
@@ -88,7 +88,7 @@ class BusinessSpecificationsControllerISpec(global: GlobalRead) extends IOSuite 
     val businessAddressRequest: Json = testCreateBusinessSpecificationsRequest("user_id_3", "business_id_3").asJson
 
     val request =
-      Request[IO](POST, uri"http://127.0.0.1:9999/pistachio/business/businesses/specifications/create")
+      Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/specifications/create")
         .withEntity(businessAddressRequest)
 
     val expectedBody = CreatedResponse(CreateSuccess.toString, "Business specifications created successfully")
@@ -104,7 +104,7 @@ class BusinessSpecificationsControllerISpec(global: GlobalRead) extends IOSuite 
   }
 
   test(
-    "PUT - /pistachio/business/businesses/specifications/update/business_id_4 - " +
+    "PUT - /dev-quest-service/business/businesses/specifications/update/business_id_4 - " +
       "should update the business address data for a business in database table, returning Updated response"
   ) { (transactorResource, log) =>
 
@@ -119,7 +119,7 @@ class BusinessSpecificationsControllerISpec(global: GlobalRead) extends IOSuite 
       )
 
     val request =
-      Request[IO](PUT, uri"http://127.0.0.1:9999/pistachio/business/businesses/specifications/update/business_id_4")
+      Request[IO](PUT, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/specifications/update/business_id_4")
         .withEntity(updateRequest.asJson)
 
     val expectedBody = UpdatedResponse(UpdateSuccess.toString, "Business specifications updated successfully")
@@ -135,7 +135,7 @@ class BusinessSpecificationsControllerISpec(global: GlobalRead) extends IOSuite 
   }
 
   test(
-    "DELETE - /pistachio/business/businesses/specifications/business_id_2 - " +
+    "DELETE - /dev-quest-service/business/businesses/specifications/business_id_2 - " +
       "given a business_id, delete the business specifications data for given business id, returning OK and Deleted response json"
   ) { (sharedResources, log) =>
 
@@ -143,7 +143,7 @@ class BusinessSpecificationsControllerISpec(global: GlobalRead) extends IOSuite 
     val client = sharedResources._2.client
 
     val request =
-      Request[IO](DELETE, uri"http://127.0.0.1:9999/pistachio/business/businesses/specifications/business_id_2")
+      Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/specifications/business_id_2")
 
     val expectedBody = DeletedResponse(DeleteSuccess.toString, "Business specifications deleted successfully")
 

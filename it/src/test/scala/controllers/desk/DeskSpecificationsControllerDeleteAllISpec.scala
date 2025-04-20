@@ -3,37 +3,35 @@ package controllers.desk
 import cats.effect.*
 import com.comcast.ip4s.ipv4
 import com.comcast.ip4s.port
-import controllers.ControllerISpecBase
 import controllers.constants.DeskSpecificationsControllerConstants.testDeskSpecificationsRequest
 import controllers.desk.DeskSpecificationsController
 import controllers.fragments.desk.DeskSpecificationsControllerFragments.*
+import controllers.ControllerISpecBase
 import doobie.implicits.*
 import doobie.util.transactor.Transactor
 import io.circe.syntax.*
-
+import java.time.LocalDateTime
+import java.time.LocalTime
 import models.desk.deskSpecifications.DeskSpecificationsPartial
 import models.desk.deskSpecifications.PrivateDesk
 import models.responses.CreatedResponse
 import models.responses.DeletedResponse
 import models.responses.ErrorResponse
 import org.http4s.*
-import org.http4s.Method.*
-import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
 import org.http4s.circe.jsonEncoder
+import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.implicits.*
 import org.http4s.server.Router
 import org.http4s.server.Server
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.http4s.Method.*
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import repositories.desk.DeskSpecificationsRepositoryImpl
 import services.desk.DeskSpecificationsServiceImpl
 import shared.HttpClientResource
 import shared.TransactorResource
 import weaver.*
-
-import java.time.LocalDateTime
-import java.time.LocalTime
 
 class DeskSpecificationsControllerDeleteAllISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
@@ -59,17 +57,17 @@ class DeskSpecificationsControllerDeleteAllISpec(global: GlobalRead) extends IOS
     } yield (transactor, client)
 
   test(
-    "DELETE - /pistachio/business/desk/specifications/details/delete/all/office01 - should delete all desk specifications for a given officeId"
+    "DELETE - /dev-quest-service/business/desk/specifications/details/delete/all/office01 - should delete all desk specifications for a given officeId"
   ) { (sharedResources, log) =>
 
     val transactor = sharedResources._1.xa
     val client = sharedResources._2.client
 
     val findAllRequest =
-      Request[IO](GET, uri"http://127.0.0.1:9999/pistachio/business/desk/specifications/details/find/all/office01")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/business/desk/specifications/details/find/all/office01")
 
     val deleteRequest =
-      Request[IO](DELETE, uri"http://127.0.0.1:9999/pistachio/business/desk/specifications/details/delete/all/office01")
+      Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/business/desk/specifications/details/delete/all/office01")
 
     for {
       findAllResponseBefore <- client.run(findAllRequest).use(_.as[List[DeskSpecificationsPartial]])

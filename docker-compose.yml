@@ -1,11 +1,11 @@
 version: "3.8"
 
 services:
-  pistachio:
+  dev-quest-service:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: pistachio-app
+    container_name: dev-quest-service-app
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
