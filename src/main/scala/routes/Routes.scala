@@ -1,8 +1,9 @@
 package routes
 
-import cats.effect.*
 import cats.NonEmptyParallel
+import cats.effect.*
 import controllers.*
+import controllers.BaseController
 import controllers.business.BusinessAddressController
 import controllers.business.BusinessContactDetailsController
 import controllers.business.BusinessListingController
@@ -10,6 +11,7 @@ import controllers.business.BusinessListingControllerImpl
 import controllers.business.BusinessSpecificationsController
 import controllers.desk.DeskListingControllerImpl
 import controllers.desk.DeskPricingControllerImpl
+import controllers.desk.DeskSpecificationsControllerImpl
 import controllers.office.OfficeAddressController
 import controllers.office.OfficeContactDetailsController
 import controllers.office.OfficeListingController
@@ -24,6 +26,7 @@ import repositories.business.BusinessListingRepository
 import repositories.business.BusinessSpecificationsRepository
 import repositories.desk.DeskListingRepository
 import repositories.desk.DeskPricingRepository
+import repositories.desk.DeskSpecificationsRepository
 import repositories.office.OfficeAddressRepository
 import repositories.office.OfficeContactDetailsRepository
 import repositories.office.OfficeListingRepository
@@ -35,15 +38,20 @@ import services.business.BusinessListingService
 import services.business.BusinessSpecificationsService
 import services.desk.DeskListingService
 import services.desk.DeskPricingService
+import services.desk.DeskSpecificationsService
 import services.office.OfficeAddressService
 import services.office.OfficeContactDetailsService
 import services.office.OfficeListingService
 import services.office.OfficeSpecificationsService
-import repositories.desk.DeskSpecificationsRepository
-import services.desk.DeskSpecificationsService
-import controllers.desk.DeskSpecificationsControllerImpl
 
 object Routes {
+
+  def baseRoutes[F[_] : Concurrent : Logger](): HttpRoutes[F] = {
+
+    val baseController = BaseController()
+
+    baseController.routes
+  }
 
   def deskListingRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](transactor: HikariTransactor[F]): HttpRoutes[F] = {
 
