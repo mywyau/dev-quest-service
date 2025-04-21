@@ -51,7 +51,7 @@ object Main extends IOApp {
     transactor: HikariTransactor[F]
   ): Resource[F, HttpRoutes[F]] =
     for {
-      baseRoutes <- Resource.pure(baseRoutes(transactor))
+      baseRoutes <- Resource.pure(baseRoutes())
       deskListingRoutes <- Resource.pure(deskListingRoutes(transactor))
       deskPricingRoutes <- Resource.pure(deskPricingRoutes(transactor))
       deskSpecificationsRoutes <- Resource.pure(deskSpecificationsRoutes(transactor))
@@ -65,8 +65,8 @@ object Main extends IOApp {
       businessListingRoutes <- Resource.pure(businessListingRoutes(transactor))
 
       combinedRoutes = Router(
+        "/" -> (baseRoutes),
         "/dev-quest-service" -> (
-          baseRoutes <+>
           deskListingRoutes <+>
             deskPricingRoutes <+>
             deskSpecificationsRoutes <+>

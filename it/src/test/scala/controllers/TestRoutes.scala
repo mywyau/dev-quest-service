@@ -28,6 +28,13 @@ object TestRoutes {
 
   implicit val testLogger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
 
+  def baseRoutes(): HttpRoutes[IO] = {
+
+    val baseController = BaseController[IO]()
+
+    baseController.routes
+  }
+
   def businessAddressRoutes(transactor: Transactor[IO]): HttpRoutes[IO] = {
 
     val businessAddressRepository = BusinessAddressRepository(transactor)
@@ -146,6 +153,7 @@ object TestRoutes {
 
   def createTestRouter(transactor: Transactor[IO]): HttpRoutes[IO] =
     Router(
+      "/" -> (baseRoutes()),
       "/dev-quest-service" -> (
         businessAddressRoutes(transactor) <+>
           businessContactDetailsRoutes(transactor) <+>

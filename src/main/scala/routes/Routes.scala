@@ -1,14 +1,14 @@
 package routes
 
-import cats.effect.*
 import cats.NonEmptyParallel
+import cats.effect.*
 import controllers.*
+import controllers.BaseController
 import controllers.business.BusinessAddressController
 import controllers.business.BusinessContactDetailsController
 import controllers.business.BusinessListingController
 import controllers.business.BusinessListingControllerImpl
 import controllers.business.BusinessSpecificationsController
-import controllers.BaseController
 import controllers.desk.DeskListingControllerImpl
 import controllers.desk.DeskPricingControllerImpl
 import controllers.desk.DeskSpecificationsControllerImpl
@@ -46,9 +46,9 @@ import services.office.OfficeSpecificationsService
 
 object Routes {
 
-  def baseRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](transactor: HikariTransactor[F]): HttpRoutes[F] = {
+  def baseRoutes[F[_] : Concurrent : Logger](): HttpRoutes[F] = {
 
-    val baseController = BaseController[F]()
+    val baseController = BaseController()
 
     baseController.routes
   }
