@@ -1,7 +1,7 @@
 name: Deploy to Production
 
 on:
-  workflow_dispatch:  # 👈 Manual trigger via GitHub UI
+  workflow_dispatch:
     inputs:
       image_tag:
         description: 'Image tag to deploy'
@@ -11,7 +11,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production  # 👈 attaches to the GitHub environment
+    environment: production
 
     steps:
       - name: Checkout
@@ -24,14 +24,46 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-2
 
-      - name: Deploy to ECS
+      - name: Get current task definition
+        id: get-task-def
+        run: |
+          TASK_DEF_ARN=$(aws ecs describe-services \
+            --cluster dev-quest-cluster \
+            --services dev-quest-service \
+            --query "services[0].taskDefinition" \
+            --output text)
+          echo "task_def_arn=$TASK_DEF_ARN" >> $GITHUB_OUTPUT
+
+      - name: Download task definition JSON
+        id: download-task-def
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ steps.get-task-def.outputs.task_def_arn }} \
+            --query "taskDefinition" \
+            --output json > task-def.json
+
+      - name: Update image tag in task definition
+        id: update-task-def
+        run: |
+          IMAGE_URI="${{ secrets.ECR_REGISTRY }}/dev-quest-service:${{ github.event.inputs.image_tag }}"
+          jq '.containerDefinitions[0].image = env.IMAGE_URI' task-def.json > new-task-def.json
+
+      - name: Register new task definition
+        id: register-task-def
+        run: |
+          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://new-task-def.json \
+            --query "taskDefinition.taskDefinitionArn" \
+            --output text)
+          echo "new_task_def_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
+
+      - name: Update ECS service with new task definition
         run: |
           aws ecs update-service \
             --cluster dev-quest-cluster \
-            --service dev-quest-fargate-service \
-            --force-new-deployment \
-            --region eu-west-2 \
-            --output json
+            --service dev-quest-service \
+            --task-definition ${{ steps.register-task-def.outputs.new_task_def_arn }} \
+            --force-new-deployment
 
       - name: Notify success
-        run: echo "✅ Production deployed with image tag ${{ github.event.inputs.image_tag }}"
+        run: echo "✅ Deployed image tag ${{ github.event.inputs.image_tag }} to production."
