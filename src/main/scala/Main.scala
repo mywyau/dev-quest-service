@@ -1,12 +1,19 @@
 import cats.effect.*
 import cats.implicits.*
 import cats.NonEmptyParallel
+import com.auth0.jwt.algorithms.Algorithm
 import com.comcast.ip4s.*
 import configuration.models.AppConfig
 import configuration.ConfigReader
 import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts
+import middleware.JwksKeyProvider
+import middleware.JwtAuth
 import middleware.Middleware.throttleMiddleware
+import middleware.StaticJwksKeyProvider
+import org.http4s.client.middleware.Logger as ClientLogger
+import org.http4s.client.Client
+import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.implicits.*
 import org.http4s.server.middleware.CORS
@@ -22,7 +29,6 @@ object Main extends IOApp {
   implicit def logger[F[_] : Sync]: Logger[F] = Slf4jLogger.getLogger[F]
 
   def transactorResource[F[_] : Async](appConfig: AppConfig): Resource[F, HikariTransactor[F]] = {
-
     val postgresqHost =
       if (appConfig.featureSwitches.useDockerHost) {
         appConfig.localConfig.postgresqlConfig.dockerHost
@@ -48,47 +54,25 @@ object Main extends IOApp {
   }
 
   def createHttpRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async](
-    transactor: HikariTransactor[F]
+    transactor: HikariTransactor[F],
+    client: Client[F],
+    algorithm: Algorithm
   ): Resource[F, HttpRoutes[F]] =
     for {
       baseRoutes <- Resource.pure(baseRoutes())
-      deskListingRoutes <- Resource.pure(deskListingRoutes(transactor))
-      deskPricingRoutes <- Resource.pure(deskPricingRoutes(transactor))
-      deskSpecificationsRoutes <- Resource.pure(deskSpecificationsRoutes(transactor))
-      officeAddressRoutes <- Resource.pure(officeAddressRoutes(transactor))
-      officeContactDetailsRoutes <- Resource.pure(officeContactDetailsRoutes(transactor))
-      officeSpecificationsRoutes <- Resource.pure(officeSpecificationsRoutes(transactor))
-      officeListingRoutes <- Resource.pure(officeListingRoutes(transactor))
-      businessAddressRoutes <- Resource.pure(businessAddressRoutes(transactor))
-      businessContactDetailsRoutes <- Resource.pure(businessContactDetailsRoutes(transactor))
-      businessSpecificationsRoutes <- Resource.pure(businessSpecificationsRoutes(transactor))
-      businessListingRoutes <- Resource.pure(businessListingRoutes(transactor))
+      authedRoutes <- Resource.pure(JwtAuth.routesWithAuth[F](transactor, client, algorithm))
 
       combinedRoutes = Router(
-        "/" -> (baseRoutes),
-        "/dev-quest-service" -> (
-          deskListingRoutes <+>
-            deskPricingRoutes <+>
-            deskSpecificationsRoutes <+>
-            officeAddressRoutes <+>
-            officeContactDetailsRoutes <+>
-            officeSpecificationsRoutes <+>
-            officeListingRoutes <+>
-            businessAddressRoutes <+>
-            businessContactDetailsRoutes <+>
-            businessSpecificationsRoutes <+>
-            businessListingRoutes
-        )
+        "/" -> baseRoutes,
+        "/dev-quest-service" -> authedRoutes
       )
 
-      // Wrap combined routes with CORS middleware
       corsRoutes = CORS.policy.withAllowOriginAll
         .withAllowCredentials(false)
         .withAllowHeadersAll
         .withMaxAge(1.day)
         .apply(combinedRoutes)
 
-      // Apply throttle middleware
       throttledRoutes <- Resource.eval(throttleMiddleware(corsRoutes))
     } yield throttledRoutes
 
@@ -106,32 +90,39 @@ object Main extends IOApp {
       .void
 
   override def run(args: List[String]): IO[ExitCode] = {
-
     val configReader = ConfigReader[IO]
 
-    for {
-      appConfig: AppConfig <- configReader.loadAppConfig.handleErrorWith { e =>
+    val serverResource: Resource[IO, Unit] = for {
+      client <- EmberClientBuilder.default[IO].build
+      keys <- Resource.eval(JwksKeyProvider.loadJwks[IO]("https://YOUR_TENANT.auth0.com/.well-known/jwks.json", client))
+      keyProvider = new StaticJwksKeyProvider(keys)
+      algorithm = Algorithm.RSA256(keyProvider)
+
+      appConfig <- Resource.eval(configReader.loadAppConfig.handleErrorWith { e =>
         IO.raiseError(new RuntimeException(s"Failed to load app configuration: ${e.getMessage}", e))
-      }
-      _ <- Logger[IO].info(s"Loaded configuration: $appConfig")
-      host <- IO.fromOption(Host.fromString(appConfig.localConfig.serverConfig.host))(new RuntimeException("Invalid host in configuration"))
-      port <- IO.fromOption(Port.fromInt(appConfig.localConfig.serverConfig.port))(new RuntimeException("Invalid port in configuration"))
-      exitCode: ExitCode <-
-        transactorResource[IO](appConfig)
-          .flatMap { transactor =>
+      })
 
-            val httpRoutesResource: Resource[IO, HttpRoutes[IO]] = createHttpRoutes[IO](transactor)
+      _ <- Resource.eval(Logger[IO].info(s"Loaded configuration: $appConfig"))
 
-            httpRoutesResource.flatMap { httpRoutes =>
-              createServer(
-                host,
-                port,
-                httpRoutes
-              )
-            }
-          }
-          .use(_ => IO.never)
-          .as(ExitCode.Success)
-    } yield exitCode
+      host <- Resource.eval(
+        IO.fromOption(Host.fromString(appConfig.localConfig.serverConfig.host))(
+          new RuntimeException("Invalid host in configuration")
+        )
+      )
+
+      port <- Resource.eval(
+        IO.fromOption(Port.fromInt(appConfig.localConfig.serverConfig.port))(
+          new RuntimeException("Invalid port in configuration")
+        )
+      )
+
+      transactor <- transactorResource[IO](appConfig)
+      httpRoutes <- createHttpRoutes[IO](transactor, client, algorithm)
+      _ <- createServer[IO](host, port, httpRoutes)
+    } yield ()
+
+    // Actual execution (run forever)
+    serverResource.use(_ => IO.never).as(ExitCode.Success)
   }
+
 }
