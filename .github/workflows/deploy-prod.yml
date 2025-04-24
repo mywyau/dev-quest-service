@@ -1,0 +1,37 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:  # 👈 Manual trigger via GitHub UI
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy'
+        required: true
+        default: 'latest'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production  # 👈 attaches to the GitHub environment
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service \
+            --cluster dev-quest-cluster \
+            --service dev-quest-fargate-service \
+            --force-new-deployment \
+            --region eu-west-2 \
+            --output json
+
+      - name: Notify success
+        run: echo "✅ Production deployed with image tag ${{ github.event.inputs.image_tag }}"

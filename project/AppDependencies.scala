@@ -18,13 +18,16 @@ object AppDependencies {
   // Compile dependencies
   val compile: Seq[ModuleID] = Seq(
     "org.typelevel" %% "log4cats-slf4j" % "2.6.0",
-    "ch.qos.logback" % "logback-classic" % "1.5.6" exclude("org.slf4j", "slf4j-jdk14"),
+    "ch.qos.logback" % "logback-classic" % "1.5.6" exclude ("org.slf4j", "slf4j-jdk14"),
     "org.typelevel" %% "cats-core" % catsCoreVersion,
     "org.typelevel" %% "cats-effect" % catsEffectVersion,
     "org.http4s" %% "http4s-dsl" % http4sVersion,
     "org.http4s" %% "http4s-ember-server" % http4sVersion,
     "org.http4s" %% "http4s-circe" % http4sVersion,
     "org.http4s" %% "http4s-jawn" % http4sVersion,
+
+    "com.auth0" % "java-jwt" % "4.4.0",
+    
     "org.tpolecat" %% "doobie-core" % doobieVersion,
     "org.tpolecat" %% "doobie-hikari" % doobieVersion,
     "org.tpolecat" %% "doobie-postgres" % doobieVersion,
