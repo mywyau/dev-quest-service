@@ -28,27 +28,24 @@ object Main extends IOApp {
 
   implicit def logger[F[_] : Sync]: Logger[F] = Slf4jLogger.getLogger[F]
 
-  def transactorResource[F[_] : Async](appConfig: AppConfig): Resource[F, HikariTransactor[F]] = {
-    val postgresqHost =
-      if (appConfig.featureSwitches.useDockerHost) {
-        appConfig.localConfig.postgresqlConfig.dockerHost
-      } else {
-        appConfig.localConfig.postgresqlConfig.host
-      }
+  def transactorResource[F[_]: Async](appConfig: AppConfig): Resource[F, HikariTransactor[F]] = {
+    val dbHost = sys.env.getOrElse("DB_HOST", appConfig.localConfig.postgresqlConfig.host)
+    val dbUser = sys.env.getOrElse("DB_USER", appConfig.localConfig.postgresqlConfig.username)
+    val dbPassword = sys.env.getOrElse("DB_PASSWORD", appConfig.localConfig.postgresqlConfig.password)
+    val dbName = sys.env.getOrElse("DB_NAME", appConfig.localConfig.postgresqlConfig.dbName)
+    val dbPort = sys.env.getOrElse("DB_PORT", appConfig.localConfig.postgresqlConfig.port.toString)
 
-    val dbUrl =
-      s"jdbc:postgresql://$postgresqHost:${appConfig.localConfig.postgresqlConfig.port}/${appConfig.localConfig.postgresqlConfig.dbName}"
-
+    val dbUrl = s"jdbc:postgresql://$dbHost:$dbPort/$dbName"
     val driverClassName = "org.postgresql.Driver"
 
     for {
       ce <- ExecutionContexts.fixedThreadPool(32)
       xa <- HikariTransactor.newHikariTransactor[F](
-        driverClassName = driverClassName,
-        url = dbUrl,
-        user = appConfig.localConfig.postgresqlConfig.username,
-        pass = appConfig.localConfig.postgresqlConfig.password,
-        connectEC = ce
+        driverClassName,
+        dbUrl,
+        dbUser,
+        dbPassword,
+        ce
       )
     } yield xa
   }

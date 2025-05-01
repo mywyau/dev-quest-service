@@ -1,4 +1,4 @@
-package repositories.business
+package repositories.Quests
 
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
@@ -10,67 +10,72 @@ import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import java.sql.Timestamp
 import java.time.LocalDateTime
-import models.business.contact_details.CreateBusinessContactDetailsRequest
-import models.business.contact_details.UpdateBusinessContactDetailsRequest
-import models.business.contact_details.BusinessContactDetails
-import models.business.contact_details.BusinessContactDetailsPartial
+import models.Quests.QuestsPartial
+import models.Quests.CreateQuestsRequest
+import models.Quests.UpdateQuestsRequest
 import models.database.*
 
-trait BusinessContactDetailsRepositoryAlgebra[F[_]] {
+trait QuestsRepositoryAlgebra[F[_]] {
 
-  def findByBusinessId(businessId: String): F[Option[BusinessContactDetailsPartial]]
+  def findByquest_id(quest_id: String): F[Option[QuestsPartial]]
 
-  def create(request: CreateBusinessContactDetailsRequest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def create(request: CreateQuestsRequest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def update(businessId: String, request: UpdateBusinessContactDetailsRequest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def update(quest_id: String, request: UpdateQuestsRequest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def delete(businessId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def delete(quest_id: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def deleteAllByUserId(userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
-class BusinessContactDetailsRepositoryImpl[F[_] : Concurrent : Monad](transactor: Transactor[F]) extends BusinessContactDetailsRepositoryAlgebra[F] {
+class QuestsRepositoryImpl[F[_] : Concurrent : Monad](transactor: Transactor[F]) extends QuestsRepositoryAlgebra[F] {
 
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
 
-  override def findByBusinessId(businessId: String): F[Option[BusinessContactDetailsPartial]] = {
-    val findQuery: F[Option[BusinessContactDetailsPartial]] =
+  override def findByQuestId(questId: String): F[Option[QuestsPartial]] = {
+    val findQuery: F[Option[QuestsPartial]] =
       sql"""
          SELECT 
-             user_id,
-             business_id,
-             primary_contact_first_name,
-             primary_contact_last_name,
-             contact_email,
-             contact_number,
-             website_url
-         FROM business_contact_details
-         WHERE business_id = $businessId
-       """.query[BusinessContactDetailsPartial].option.transact(transactor)
+            user_id
+            title
+            description
+            status
+         FROM quests
+         WHERE quest_id = $questId
+       """.query[QuestsPartial].option.transact(transactor)
 
     findQuery
   }
 
-  override def create(createBusinessContactDetailsRequest: CreateBusinessContactDetailsRequest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def create(request: CreateQuestsRequest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
-      INSERT INTO business_contact_details (
+      INSERT INTO quests (
         user_id,
-        business_id,
-        primary_contact_first_name,
-        primary_contact_last_name,
-        contact_email,
-        contact_number,
-        website_url
-      ) VALUES (
-        ${createBusinessContactDetailsRequest.userId},
-        ${createBusinessContactDetailsRequest.businessId},
-        ${createBusinessContactDetailsRequest.primaryContactFirstName},
-        ${createBusinessContactDetailsRequest.primaryContactLastName},
-        ${createBusinessContactDetailsRequest.contactEmail},
-        ${createBusinessContactDetailsRequest.contactNumber},
-        ${createBusinessContactDetailsRequest.websiteUrl}
+        quest_id,
+        building_name,
+        floor_number,
+        street,
+        city,
+        country,
+        county,
+        postcode,
+        latitude,
+        longitude
       )
+      VALUES (
+        ${request.userId},
+        ${request.quest_id},
+        ${request.buildingName},
+        ${request.floorNumber},
+        ${request.street},
+        ${request.city},
+        ${request.country},
+        ${request.county},
+        ${request.postcode},
+        ${request.latitude},
+        ${request.longitude}
+        )
     """.update.run
       .transact(transactor)
       .attempt
@@ -87,17 +92,21 @@ class BusinessContactDetailsRepositoryImpl[F[_] : Concurrent : Monad](transactor
           UnexpectedResultError.invalidNel
       }
 
-  override def update(businessId: String, request: UpdateBusinessContactDetailsRequest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def update(quest_id: String, request: UpdateQuestsRequest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
-      UPDATE business_contact_details
+      UPDATE quests
       SET
-        primary_contact_first_name = ${request.primaryContactFirstName},
-        primary_contact_last_name = ${request.primaryContactLastName},
-        contact_email = ${request.contactEmail},
-        contact_number = ${request.contactNumber},
-        website_url = ${request.websiteUrl},
-        updated_at = ${LocalDateTime.now()}
-      WHERE business_id = $businessId
+          building_name = ${request.buildingName},
+          floor_number = ${request.floorNumber},
+          street = ${request.street},
+          city = ${request.city},
+          country = ${request.country},
+          county = ${request.county},
+          postcode = ${request.postcode},
+          latitude = ${request.latitude},
+          longitude = ${request.longitude},
+          updated_at = ${LocalDateTime.now()}
+      WHERE quest_id = ${quest_id}
     """.update.run
       .transact(transactor)
       .attempt
@@ -120,11 +129,11 @@ class BusinessContactDetailsRepositoryImpl[F[_] : Concurrent : Monad](transactor
           UnexpectedResultError.invalidNel
       }
 
-  override def delete(businessId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+  override def delete(quest_id: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
     val deleteQuery: Update0 =
       sql"""
-        DELETE FROM business_contact_details
-        WHERE business_id = $businessId
+        DELETE FROM quests
+        WHERE quest_id = $quest_id
       """.update
 
     deleteQuery.run.transact(transactor).attempt.map {
@@ -148,7 +157,7 @@ class BusinessContactDetailsRepositoryImpl[F[_] : Concurrent : Monad](transactor
   override def deleteAllByUserId(userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
     val deleteQuery: Update0 =
       sql"""
-         DELETE FROM business_contact_details
+         DELETE FROM quests
          WHERE user_id = $userId
        """.update
 
@@ -169,10 +178,9 @@ class BusinessContactDetailsRepositoryImpl[F[_] : Concurrent : Monad](transactor
         UnexpectedResultError.invalidNel
     }
   }
-
 }
 
-object BusinessContactDetailsRepository {
-  def apply[F[_] : Concurrent : Monad](transactor: Transactor[F]): BusinessContactDetailsRepositoryAlgebra[F] =
-    new BusinessContactDetailsRepositoryImpl[F](transactor)
+object QuestsRepository {
+  def apply[F[_] : Concurrent : Monad](transactor: Transactor[F]): QuestsRepositoryImpl[F] =
+    new QuestsRepositoryImpl[F](transactor)
 }

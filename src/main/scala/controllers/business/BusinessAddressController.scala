@@ -1,83 +1,83 @@
-package controllers.business
+package controllers.Quest
 
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
 import cats.effect.Concurrent
 import cats.implicits.*
 import io.circe.syntax.EncoderOps
-import models.business.address.CreateBusinessAddressRequest
-import models.business.address.UpdateBusinessAddressRequest
 import models.responses.CreatedResponse
 import models.responses.DeletedResponse
 import models.responses.ErrorResponse
 import models.responses.UpdatedResponse
+// import models.quests.CreateQuestRequest
+// import models.quests.UpdateQuestRequest
 import org.http4s.*
 import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
 import org.typelevel.log4cats.Logger
-import services.business.BusinessAddressServiceAlgebra
+import services.quest.QuestServiceAlgebra
 
-trait BusinessAddressControllerAlgebra[F[_]] {
+trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
 }
 
-class BusinessAddressControllerImpl[F[_] : Concurrent : Logger](businessAddressService: BusinessAddressServiceAlgebra[F]) extends Http4sDsl[F] with BusinessAddressControllerAlgebra[F] {
+class QuestControllerImpl[F[_] : Concurrent : Logger](questService: QuestServiceAlgebra[F]) extends Http4sDsl[F] with QuestControllerAlgebra[F] {
 
-  implicit val createDecoder: EntityDecoder[F, CreateBusinessAddressRequest] = jsonOf[F, CreateBusinessAddressRequest]
-  implicit val updateDecoder: EntityDecoder[F, UpdateBusinessAddressRequest] = jsonOf[F, UpdateBusinessAddressRequest]
+  implicit val createDecoder: EntityDecoder[F, CreateQuestRequest] = jsonOf[F, CreateQuestRequest]
+  implicit val updateDecoder: EntityDecoder[F, UpdateQuestRequest] = jsonOf[F, UpdateQuestRequest]
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
-    case GET -> Root / "business" / "businesses" / "address" / "details" / businessId =>
-      Logger[F].info(s"[BusinessAddressControllerImpl] GET - Business address details for userId: $businessId") *>
-        businessAddressService.getByBusinessId(businessId).flatMap {
-          case Some(address) =>
-            Logger[F].info(s"[BusinessAddressControllerImpl] GET - Successfully retrieved business address") *>
-              Ok(address.asJson)
+    case GET -> Root / "quest" / questId =>
+      Logger[F].info(s"[QuestControllerImpl] GET - Quest details for userId: $questId") *>
+        questService.getByquestId(questId).flatMap {
+          case Some(quest) =>
+            Logger[F].info(s"[QuestControllerImpl] GET - Successfully retrieved quest") *>
+              Ok(quest.asJson)
           case _ =>
             val errorResponse = ErrorResponse("error", "error codes")
             BadRequest(errorResponse.asJson)
         }
 
-    case req @ POST -> Root / "business" / "businesses" / "address" / "details" / "create" =>
-      Logger[F].info(s"[BusinessAddressControllerImpl] POST - Creating business address") *>
-        req.decode[CreateBusinessAddressRequest] { request =>
-          businessAddressService.createAddress(request).flatMap {
+    case req @ POST -> Root / "quest" / "create" =>
+      Logger[F].info(s"[QuestControllerImpl] POST - Creating quest") *>
+        req.decode[CreateQuestRequest] { request =>
+          questService.createquest(request).flatMap {
             case Valid(response) =>
-              Logger[F].info(s"[BusinessAddressControllerImpl] POST - Successfully created a business address") *>
-                Created(CreatedResponse(response.toString, "Business address details created successfully").asJson)
+              Logger[F].info(s"[QuestControllerImpl] POST - Successfully created a quest") *>
+                Created(CreatedResponse(response.toString, "quest details created successfully").asJson)
             case Invalid(_) =>
               InternalServerError(ErrorResponse(code = "Code", message = "An error occurred").asJson)
           }
         }
 
-    case req @ PUT -> Root / "business" / "businesses" / "address" / "details" / "update" / businessId =>
-      Logger[F].info(s"[BusinessAddressControllerImpl] PUT - Updating business address with ID: $businessId") *>
-        req.decode[UpdateBusinessAddressRequest] { request =>
-          businessAddressService.update(businessId, request).flatMap {
+    case req @ PUT -> Root / "quest" / "update" / questId =>
+      Logger[F].info(s"[QuestControllerImpl] PUT - Updating quest with ID: $questId") *>
+        req.decode[UpdateQuestRequest] { request =>
+          questService.update(questId, request).flatMap {
             case Valid(response) =>
-              Logger[F].info(s"[BusinessAddressControllerImpl] PUT - Successfully updated business address for ID: $businessId") *>
-                Ok(UpdatedResponse(response.toString, "Business address updated successfully").asJson)
+              Logger[F].info(s"[QuestControllerImpl] PUT - Successfully updated quest for ID: $questId") *>
+                Ok(UpdatedResponse(response.toString, "quest updated successfully").asJson)
             case Invalid(errors) =>
-              Logger[F].warn(s"[BusinessAddressControllerImpl] PUT - Validation failed for business address update: ${errors.toList}") *>
+              Logger[F].warn(s"[QuestControllerImpl] PUT - Validation failed for quest update: ${errors.toList}") *>
                 BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
           }
         }
 
-    case DELETE -> Root / "business" / "businesses" / "address" / "details" / businessId =>
-      Logger[F].info(s"[BusinessAddressControllerImpl] DELETE - Attempting to delete business address") *>
-        businessAddressService.delete(businessId).flatMap {
+    case DELETE -> Root / "quest" / questId =>
+      Logger[F].info(s"[QuestControllerImpl] DELETE - Attempting to delete quest") *>
+        questService.delete(questId).flatMap {
           case Valid(response) =>
-            Logger[F].info(s"[BusinessAddressControllerImpl] DELETE - Successfully deleted business address for $businessId") *>
-              Ok(DeletedResponse(response.toString, "Business address details deleted successfully").asJson)
+            Logger[F].info(s"[QuestControllerImpl] DELETE - Successfully deleted quest for $questId") *>
+              Ok(DeletedResponse(response.toString, "quest details deleted successfully").asJson)
           case Invalid(error) =>
-            val errorResponse = ErrorResponse("placeholder error", "some deleted business address message")
+            val errorResponse = ErrorResponse("placeholder error", "some deleted quest message")
             BadRequest(errorResponse.asJson)
         }
   }
 }
 
-object BusinessAddressController {
-  def apply[F[_] : Concurrent](businessAddressService: BusinessAddressServiceAlgebra[F])(implicit logger: Logger[F]): BusinessAddressControllerAlgebra[F] =
-    new BusinessAddressControllerImpl[F](businessAddressService)
+object QuestController {
+  def apply[F[_] : Concurrent](QuestService: QuestServiceAlgebra[F])(implicit logger: Logger[F]): QuestControllerAlgebra[F] =
+    new QuestControllerImpl[F](QuestService)
 }
