@@ -4,16 +4,17 @@ import io.circe.generic.semiauto.deriveDecoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.Decoder
 import io.circe.Encoder
+import java.time.LocalDateTime
 import models.QuestStatus
 
-case class UpdateQuestsPartial(
+case class QuestPartial(
   userId: String,
   title: String,
   description: Option[String],
   status: Option[QuestStatus]
 )
 
-object UpdateQuestsPartial {
-  implicit val encoder: Encoder[UpdateQuestsPartial] = deriveEncoder[UpdateQuestsPartial]
-  implicit val decoder: Decoder[UpdateQuestsPartial] = deriveDecoder[UpdateQuestsPartial]
+object QuestPartial {
+  implicit val encoder: Encoder[QuestPartial] = deriveEncoder[QuestPartial]
+  implicit val decoder: Decoder[QuestPartial] = deriveDecoder[QuestPartial]
 }

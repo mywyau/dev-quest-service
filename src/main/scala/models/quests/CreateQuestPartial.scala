@@ -7,14 +7,14 @@ import io.circe.Encoder
 import java.time.LocalDateTime
 import models.QuestStatus
 
-case class CreateQuestsPartial(
+case class CreateQuestPartial(
   userId: String,
   title: String,
   description: Option[String],
   status: Option[QuestStatus]
 )
 
-object CreateQuestsPartial {
-  implicit val createQuestsPartialEncoder: Encoder[CreateQuestsPartial] = deriveEncoder[CreateQuestsPartial]
-  implicit val createQuestsPartialDecoder: Decoder[CreateQuestsPartial] = deriveDecoder[CreateQuestsPartial]
+object CreateQuestPartial {
+  implicit val encoder: Encoder[CreateQuestPartial] = deriveEncoder[CreateQuestPartial]
+  implicit val decoder: Decoder[CreateQuestPartial] = deriveDecoder[CreateQuestPartial]
 }

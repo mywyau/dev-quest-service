@@ -1,4 +1,4 @@
-package repositories.Quests
+package repositories
 
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
@@ -10,31 +10,34 @@ import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import java.sql.Timestamp
 import java.time.LocalDateTime
-import models.Quests.QuestsPartial
-import models.Quests.CreateQuestsRequest
-import models.Quests.UpdateQuestsRequest
 import models.database.*
+import models.quests.CreateQuestPartial
+import models.quests.QuestPartial
+import models.quests.UpdateQuestPartial
+import models.QuestStatus
 
-trait QuestsRepositoryAlgebra[F[_]] {
+trait QuestRepositoryAlgebra[F[_]] {
 
-  def findByquest_id(quest_id: String): F[Option[QuestsPartial]]
+  def findByQuestId(quest_id: String): F[Option[QuestPartial]]
 
-  def create(request: CreateQuestsRequest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def create(request: CreateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def update(quest_id: String, request: UpdateQuestsRequest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def update(quest_id: String, request: UpdateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def delete(quest_id: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def deleteAllByUserId(userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
-class QuestsRepositoryImpl[F[_] : Concurrent : Monad](transactor: Transactor[F]) extends QuestsRepositoryAlgebra[F] {
+class QuestRepositoryImpl[F[_] : Concurrent : Monad](transactor: Transactor[F]) extends QuestRepositoryAlgebra[F] {
+
+  implicit val questMeta: Meta[QuestStatus] = Meta[String].timap(QuestStatus.fromString)(_.toString)
 
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
 
-  override def findByQuestId(questId: String): F[Option[QuestsPartial]] = {
-    val findQuery: F[Option[QuestsPartial]] =
+  override def findByQuestId(questId: String): F[Option[QuestPartial]] = {
+    val findQuery: F[Option[QuestPartial]] =
       sql"""
          SELECT 
             user_id
@@ -43,38 +46,24 @@ class QuestsRepositoryImpl[F[_] : Concurrent : Monad](transactor: Transactor[F])
             status
          FROM quests
          WHERE quest_id = $questId
-       """.query[QuestsPartial].option.transact(transactor)
+       """.query[QuestPartial].option.transact(transactor)
 
     findQuery
   }
 
-  override def create(request: CreateQuestsRequest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def create(request: CreateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       INSERT INTO quests (
-        user_id,
-        quest_id,
-        building_name,
-        floor_number,
-        street,
-        city,
-        country,
-        county,
-        postcode,
-        latitude,
-        longitude
+         user_id
+         title
+         description
+         status
       )
       VALUES (
         ${request.userId},
-        ${request.quest_id},
-        ${request.buildingName},
-        ${request.floorNumber},
-        ${request.street},
-        ${request.city},
-        ${request.country},
-        ${request.county},
-        ${request.postcode},
-        ${request.latitude},
-        ${request.longitude}
+        ${request.title},
+        ${request.description},
+        ${request.status}
         )
     """.update.run
       .transact(transactor)
@@ -92,19 +81,14 @@ class QuestsRepositoryImpl[F[_] : Concurrent : Monad](transactor: Transactor[F])
           UnexpectedResultError.invalidNel
       }
 
-  override def update(quest_id: String, request: UpdateQuestsRequest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def update(quest_id: String, request: UpdateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       UPDATE quests
       SET
-          building_name = ${request.buildingName},
-          floor_number = ${request.floorNumber},
-          street = ${request.street},
-          city = ${request.city},
-          country = ${request.country},
-          county = ${request.county},
-          postcode = ${request.postcode},
-          latitude = ${request.latitude},
-          longitude = ${request.longitude},
+          user_id = ${request.userId},
+          title = ${request.title},
+          description = ${request.description},
+          status = ${request.status},
           updated_at = ${LocalDateTime.now()}
       WHERE quest_id = ${quest_id}
     """.update.run
@@ -180,7 +164,7 @@ class QuestsRepositoryImpl[F[_] : Concurrent : Monad](transactor: Transactor[F])
   }
 }
 
-object QuestsRepository {
-  def apply[F[_] : Concurrent : Monad](transactor: Transactor[F]): QuestsRepositoryImpl[F] =
-    new QuestsRepositoryImpl[F](transactor)
+object QuestRepository {
+  def apply[F[_] : Concurrent : Monad](transactor: Transactor[F]): QuestRepositoryAlgebra[F] =
+    new QuestRepositoryImpl[F](transactor)
 }

@@ -1,21 +1,21 @@
-package controllers.Quest
+package controllers
 
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
 import cats.effect.Concurrent
 import cats.implicits.*
 import io.circe.syntax.EncoderOps
+import models.quests.CreateQuestPartial
+import models.quests.UpdateQuestPartial
 import models.responses.CreatedResponse
 import models.responses.DeletedResponse
 import models.responses.ErrorResponse
 import models.responses.UpdatedResponse
-// import models.quests.CreateQuestRequest
-// import models.quests.UpdateQuestRequest
 import org.http4s.*
 import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
 import org.typelevel.log4cats.Logger
-import services.quest.QuestServiceAlgebra
+import services.QuestServiceAlgebra
 
 trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -23,14 +23,14 @@ trait QuestControllerAlgebra[F[_]] {
 
 class QuestControllerImpl[F[_] : Concurrent : Logger](questService: QuestServiceAlgebra[F]) extends Http4sDsl[F] with QuestControllerAlgebra[F] {
 
-  implicit val createDecoder: EntityDecoder[F, CreateQuestRequest] = jsonOf[F, CreateQuestRequest]
-  implicit val updateDecoder: EntityDecoder[F, UpdateQuestRequest] = jsonOf[F, UpdateQuestRequest]
+  implicit val createDecoder: EntityDecoder[F, CreateQuestPartial] = jsonOf[F, CreateQuestPartial]
+  implicit val updateDecoder: EntityDecoder[F, UpdateQuestPartial] = jsonOf[F, UpdateQuestPartial]
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
     case GET -> Root / "quest" / questId =>
       Logger[F].info(s"[QuestControllerImpl] GET - Quest details for userId: $questId") *>
-        questService.getByquestId(questId).flatMap {
+        questService.getByQuestId(questId).flatMap {
           case Some(quest) =>
             Logger[F].info(s"[QuestControllerImpl] GET - Successfully retrieved quest") *>
               Ok(quest.asJson)
@@ -41,8 +41,8 @@ class QuestControllerImpl[F[_] : Concurrent : Logger](questService: QuestService
 
     case req @ POST -> Root / "quest" / "create" =>
       Logger[F].info(s"[QuestControllerImpl] POST - Creating quest") *>
-        req.decode[CreateQuestRequest] { request =>
-          questService.createquest(request).flatMap {
+        req.decode[CreateQuestPartial] { request =>
+          questService.create(request).flatMap {
             case Valid(response) =>
               Logger[F].info(s"[QuestControllerImpl] POST - Successfully created a quest") *>
                 Created(CreatedResponse(response.toString, "quest details created successfully").asJson)
@@ -53,7 +53,7 @@ class QuestControllerImpl[F[_] : Concurrent : Logger](questService: QuestService
 
     case req @ PUT -> Root / "quest" / "update" / questId =>
       Logger[F].info(s"[QuestControllerImpl] PUT - Updating quest with ID: $questId") *>
-        req.decode[UpdateQuestRequest] { request =>
+        req.decode[UpdateQuestPartial] { request =>
           questService.update(questId, request).flatMap {
             case Valid(response) =>
               Logger[F].info(s"[QuestControllerImpl] PUT - Successfully updated quest for ID: $questId") *>
@@ -77,7 +77,7 @@ class QuestControllerImpl[F[_] : Concurrent : Logger](questService: QuestService
   }
 }
 
-object QuestController {
+object QuestsController {
   def apply[F[_] : Concurrent](QuestService: QuestServiceAlgebra[F])(implicit logger: Logger[F]): QuestControllerAlgebra[F] =
     new QuestControllerImpl[F](QuestService)
 }
