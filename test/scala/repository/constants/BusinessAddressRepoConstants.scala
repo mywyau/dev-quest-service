@@ -4,46 +4,31 @@ import cats.data.Validated.Valid
 import cats.effect.kernel.Ref
 import cats.effect.IO
 import java.time.LocalDateTime
-import models.business.address.CreateBusinessAddressRequest
-import models.business.address.BusinessAddressPartial
-import mocks.MockBusinessAddressRepository
-import models.business.address.CreateBusinessAddressRequest
-import models.business.address.BusinessAddressPartial
+import mocks.MockQuestRepository
+import models.quests.CreateQuestPartial
+import models.quests.QuestPartial
+import models.InProgress
+import repositories.QuestRepositoryAlgebra
 
-object BusinessAddressRepoConstants {
+object QuestRepoConstants {
 
-  def createMockRepo(initialUsers: List[BusinessAddressPartial]): IO[MockBusinessAddressRepository] =
-    Ref.of[IO, List[BusinessAddressPartial]](initialUsers).map(MockBusinessAddressRepository.apply)
+  def createMockRepo(initialUsers: List[QuestPartial]): IO[MockQuestRepository] =
+    Ref.of[IO, List[QuestPartial]](initialUsers).map(users => MockQuestRepository(_))
 
-  def testCreateBusinessAddressRequest(userId: String, businessId: String): CreateBusinessAddressRequest =
-    CreateBusinessAddressRequest(
+  def testCreateQuestPartial(userId: String, businessId: String): CreateQuestPartial =
+    CreateQuestPartial(
       userId = userId,
-      businessId = businessId,
-      businessName = Some("mikeyCorp"),
-      buildingName = Some("building 1"),
-      floorNumber = Some("floor 1"),
-      street = Some("1 Canton Street"),
-      city = Some("fake city 1"),
-      country = Some("UK"),
-      county = Some("County 1"),
-      postcode = Some("CF3 3NJ"),
-      latitude = Some(100.1),
-      longitude = Some(-100.1)
+      title = "",
+      description = Some(""),
+      status = Some(InProgress)
     )
 
-  def testAddress(userId: String, businessId: String): BusinessAddressPartial =
-    BusinessAddressPartial(
+  def testAddress(userId: String, businessId: String): QuestPartial =
+    QuestPartial(
       userId = userId,
-      businessId = businessId,
-      buildingName = Some("building 1"),
-      floorNumber = Some("floor 1"),
-      street = Some("1 Canton Street"),
-      city = Some("fake city 1"),
-      country = Some("UK"),
-      county = Some("County 1"),
-      postcode = Some("CF3 3NJ"),
-      latitude = Some(100.1),
-      longitude = Some(-100.1)
+      title = "",
+      description = Some(""),
+      status = Some(InProgress)
     )
 
 }

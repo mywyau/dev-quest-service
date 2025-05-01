@@ -1,7 +1,5 @@
 package testData
 
-import models.office.address_details.OfficeAddressPartial
-
 import java.time.LocalDateTime
 import java.time.LocalTime
 
@@ -51,8 +49,6 @@ object TestConstants {
 
   val createdAt01Jan2025 = LocalDateTime.of(2025, 1, 1, 0, 0, 0)
   val updatedAt01Jan2025 = LocalDateTime.of(2025, 1, 1, 0, 0, 0)
-
-  val noExistingAddresses = Map[String, OfficeAddressPartial]()
 
   val primaryContactFirstName1 = "Michael"
   val primaryContactLastName1 = "Yau"

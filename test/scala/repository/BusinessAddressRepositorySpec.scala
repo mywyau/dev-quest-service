@@ -1,23 +1,19 @@
 package repository
 
 import cats.data.Validated.Valid
-import cats.effect.IO
 import cats.effect.kernel.Ref
-import mocks.MockBusinessAddressRepository
-import models.business.address.CreateBusinessAddressRequest
-import models.database.CreateSuccess
-import models.database.DeleteSuccess
-import repository.constants.BusinessAddressRepoConstants.*
+import cats.effect.IO
+import mocks.MockQuestRepository
+import models.database.*
 import services.RepositorySpecBase
 import testData.TestConstants.*
 import weaver.SimpleIOSuite
-import models.business.address.CreateBusinessAddressRequest
 
 object BusinessAddressRepositorySpec extends SimpleIOSuite with RepositorySpecBase {
 
   test(".findByBusinessId() - should return an address if businessId1 exists") {
 
-    val existingAddressForUser = testAddress(userId1, businessId1)
+    val existingAddressForUser = testQuest(userId1, businessId1)
 
     for {
       mockRepo <- createMockRepo(List(existingAddressForUser))
