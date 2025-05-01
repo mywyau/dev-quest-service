@@ -1,4 +1,4 @@
-package controllers.business.business_address
+package controllers
 
 import cats.effect.IO
 import controllers.ControllerSpecBase

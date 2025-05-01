@@ -1,30 +1,38 @@
-package models.desk
+package models
 
 import cats.effect.IO
 import io.circe.*
 import io.circe.parser.*
 import io.circe.syntax.EncoderOps
-import models.desk.deskListing.InitiateDeskListingRequest
 import models.ModelsBaseSpec
-import testData.DeskTestConstants.sampleInitiateDeskListingRequest
+import testData.BusinessTestConstants.testUpdateBusinessSpecificationsRequest
 import weaver.SimpleIOSuite
 
-object InitiateDeskListingRequestSpec extends SimpleIOSuite with ModelsBaseSpec {
+object UpdateBusinessSpecificationsRequestSpec extends SimpleIOSuite with ModelsBaseSpec {
 
-  test("InitiateDeskListingRequest model encodes correctly to JSON") {
+  test("UpdateBusinessSpecificationsRequest model encodes correctly to JSON") {
 
-    val jsonResult = sampleInitiateDeskListingRequest.asJson
+    val jsonResult = testUpdateBusinessSpecificationsRequest.asJson
 
     val expectedJson =
       """
         |{
-        |  "businessId" : "businessId1",
-        |  "officeId" : "officeId1",
-        |  "deskId" : "deskId1",
-        |  "deskName" : "Luxury supreme desk",
-        |  "description" : "Some description"
+        |  "businessName": "businessName1",
+        |  "description": "some business description",
+        |  "openingHours": [
+        |    {
+        |      "day" : "Monday",
+        |      "openingTime" : "09:00:00",
+        |      "closingTime" : "17:00:00"
+        |    },
+        |    {
+        |      "day" : "Tuesday",
+        |      "openingTime" : "09:00:00",
+        |      "closingTime" : "17:00:00"
+        |    }
+        |  ]
         |}
-      """.stripMargin
+        |""".stripMargin
 
     val expectedResult: Json = parse(expectedJson).getOrElse(Json.Null)
 
@@ -44,4 +52,5 @@ object InitiateDeskListingRequestSpec extends SimpleIOSuite with ModelsBaseSpec 
       }
     } yield expect(differences.isEmpty)
   }
+
 }

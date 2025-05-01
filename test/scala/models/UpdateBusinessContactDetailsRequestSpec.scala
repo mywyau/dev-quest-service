@@ -1,28 +1,28 @@
-package models.office
+package models
 
 import cats.effect.IO
 import io.circe.*
 import io.circe.parser.*
 import io.circe.syntax.EncoderOps
+import models.business.contact_details.UpdateBusinessContactDetailsRequest
 import models.ModelsBaseSpec
-import testData.OfficeTestConstants.createOfficeContactDetailsRequest
+import testData.BusinessTestConstants.testUpdateBusinessContactDetailsRequest
 import weaver.SimpleIOSuite
 
-object CreateOfficeContactDetailsRequestSpec extends SimpleIOSuite with ModelsBaseSpec {
+object UpdateBusinessContactDetailsRequestSpec extends SimpleIOSuite with ModelsBaseSpec {
 
-  test("CreateOfficeContactDetailsRequest model encodes correctly to JSON") {
+  test("UpdateBusinessContactDetailsRequest model encodes correctly to JSON") {
 
-    val jsonResult = createOfficeContactDetailsRequest.asJson
+    val jsonResult = testUpdateBusinessContactDetailsRequest.asJson
 
     val expectedJson =
       """
         |{
-        |   "businessId": "businessId1",
-        |   "officeId": "officeId1",
-        |   "primaryContactFirstName": "Michael",
-        |   "primaryContactLastName": "Yau",
-        |   "contactEmail": "mike@gmail.com",
-        |   "contactNumber": "07402205071"
+        |  "primaryContactFirstName": "Michael",
+        |  "primaryContactLastName": "Yau",
+        |  "contactEmail": "mike@gmail.com",
+        |  "contactNumber": "07402205071",
+        |  "websiteUrl": "mikey.com"
         |}
         |""".stripMargin
 

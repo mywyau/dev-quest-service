@@ -1,36 +1,36 @@
-package models.business
+package models
 
 import cats.effect.IO
 import io.circe.*
 import io.circe.parser.*
 import io.circe.syntax.EncoderOps
+import java.time.LocalDateTime
+import models.business.address.CreateBusinessAddressRequest
 import models.ModelsBaseSpec
-import testData.BusinessTestConstants.testUpdateBusinessSpecificationsRequest
+import testData.BusinessTestConstants.testCreateBusinessAddressRequest
 import weaver.SimpleIOSuite
 
-object UpdateBusinessSpecificationsRequestSpec extends SimpleIOSuite with ModelsBaseSpec {
+object CreateBusinessAddressRequestSpec extends SimpleIOSuite with ModelsBaseSpec {
 
-  test("UpdateBusinessSpecificationsRequest model encodes correctly to JSON") {
+  test("CreateBusinessAddressRequest model encodes correctly to JSON") {
 
-    val jsonResult = testUpdateBusinessSpecificationsRequest.asJson
+    val jsonResult = testCreateBusinessAddressRequest.asJson
 
     val expectedJson =
       """
         |{
+        |  "userId": "userId1",
+        |  "businessId": "businessId1",
         |  "businessName": "businessName1",
-        |  "description": "some business description",
-        |  "openingHours": [
-        |    {
-        |      "day" : "Monday",
-        |      "openingTime" : "09:00:00",
-        |      "closingTime" : "17:00:00"
-        |    },
-        |    {
-        |      "day" : "Tuesday",
-        |      "openingTime" : "09:00:00",
-        |      "closingTime" : "17:00:00"
-        |    }
-        |  ]
+        |  "buildingName": "butter building",
+        |  "floorNumber": "floor 1",
+        |  "street": "Main street 123",
+        |  "city": "New York",
+        |  "country": "USA",
+        |  "county": "County 123",
+        |  "postcode": "123456",
+        |  "latitude": 100.1,
+        |  "longitude": -100.1
         |}
         |""".stripMargin
 

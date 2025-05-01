@@ -1,4 +1,4 @@
-package controllers.business.business_address
+package controllers
 
 import java.time.LocalDateTime
 import models.business.address.BusinessAddressPartial
