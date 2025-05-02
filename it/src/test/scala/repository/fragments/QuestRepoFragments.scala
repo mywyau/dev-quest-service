@@ -12,17 +12,11 @@ object QuestRepoFragments {
     sql"""
       CREATE TABLE IF NOT EXISTS quests (
         id BIGSERIAL PRIMARY KEY,
-        user_id VARCHAR(255) NOT NULL,
-        business_id VARCHAR(255) NOT NULL UNIQUE,
-        building_name VARCHAR(255),
-        floor_number VARCHAR(255),
-        street VARCHAR(255),
-        city VARCHAR(255),
-        country VARCHAR(255),
-        county VARCHAR(255),
-        postcode VARCHAR(255),
-        latitude DECIMAL(9,6),
-        longitude DECIMAL(9,6),
+        user_id UUID NOT NULL REFERENCES users(id),
+        quest_id UUID NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL,
+        status VARCHAR(50) NOT NULL DEFAULT 'Completed',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -32,24 +26,17 @@ object QuestRepoFragments {
     sql"""
         INSERT INTO quests (
           user_id,
-          business_id,
-          building_name,
-          floor_number,
-          street,
-          city,
-          country,
-          county,
-          postcode,
-          latitude,
-          longitude,
+          quest_id,
+          title,
+          description,
+          status,
           created_at,
           updated_at
         ) VALUES
-          ('USER001', 'BUS001', 'Innovation Tower', '5', '123 Tech Street', 'San Francisco', 'USA', 'California', '94105', 37.774929, -122.419416, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
-          ('USER002', 'BUS002', 'Global Tower', '12', '456 Global Ave', 'New York', 'USA', 'New York', '123456', 40.712776, -74.005974, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
-          ('USER003', 'BUS003', 'Eco Center', '3', '789 Greenway Blvd', 'Austin', 'USA', 'Texas', '73301', 30.267153, -97.743057, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
-          ('USER004', 'BUS004', 'Market Plaza', '1', '101 Main Street', 'Chicago', 'USA', 'Illinois', '60601', 41.878113, -87.629799, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
-          ('USER005', 'BUS005', 'Startup Hub', '2', '202 Startup Lane', 'Seattle', 'USA', 'Washington', '98101', 47.606209, -122.332069, '2025-01-01 00:00:00', '2025-01-01 00:00:00');
+          ('USER001', 'QUEST001', 'Implement User Authentication', 'Set up Auth0 integration and secure routes using JWT tokens.', 'InProgress', '2025-01-01 00:00:00', '2025-01-02 12:00:00'),
+          ('USER002', 'QUEST002', 'Add Dark Mode Support', 'Implement theme toggling and persist user preference with localStorage.', 'Completed', '2025-01-01 00:00:00', '2025-01-03 09:30:00'),
+          ('USER003', 'QUEST003', 'Refactor API Layer', 'Migrate from custom HTTP clients to use http4s and apply middleware.', 'Open', '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
+          ('USER004', 'QUEST004', 'Improve Test Coverage', 'Add unit and integration tests for payment service using ScalaTest and Mockito.', 'InProgress', '2025-01-01 00:00:00', '2025-01-04 16:45:00'),
+          ('USER005', 'QUEST005', 'Optimize Frontend Performance', 'Analyze bundle size and apply code splitting in Nuxt app.', 'Completed', '2025-01-01 00:00:00', '2025-01-05 11:20:00');
       """
-
 }
