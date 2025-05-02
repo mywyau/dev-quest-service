@@ -12,10 +12,10 @@ import repositories.QuestRepositoryAlgebra
 
 object QuestRepoConstants {
 
-  def createMockRepo(initialUsers: List[QuestPartial]): IO[MockQuestRepository] =
-    Ref.of[IO, List[QuestPartial]](initialUsers).map(users => MockQuestRepository(_))
+  // def createMockRepo(initialUsers: List[QuestPartial]): IO[MockQuestRepository] =
+  //   Ref.of[IO, List[QuestPartial]](initialUsers).map(users => MockQuestRepository(users.))
 
-  def testCreateQuestPartial(userId: String, businessId: String): CreateQuestPartial =
+  def testCreateQuestPartial(userId: String): CreateQuestPartial =
     CreateQuestPartial(
       userId = userId,
       title = "",
@@ -23,7 +23,7 @@ object QuestRepoConstants {
       status = Some(InProgress)
     )
 
-  def testAddress(userId: String, businessId: String): QuestPartial =
+  def testQuestPartial(userId: String): QuestPartial =
     QuestPartial(
       userId = userId,
       title = "",

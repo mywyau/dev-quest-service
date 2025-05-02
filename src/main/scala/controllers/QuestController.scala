@@ -77,7 +77,7 @@ class QuestControllerImpl[F[_] : Concurrent : Logger](questService: QuestService
   }
 }
 
-object QuestsController {
+object QuestController {
   def apply[F[_] : Concurrent](QuestService: QuestServiceAlgebra[F])(implicit logger: Logger[F]): QuestControllerAlgebra[F] =
     new QuestControllerImpl[F](QuestService)
 }

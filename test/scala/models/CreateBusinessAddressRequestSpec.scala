@@ -5,32 +5,31 @@ import io.circe.*
 import io.circe.parser.*
 import io.circe.syntax.EncoderOps
 import java.time.LocalDateTime
-import models.business.address.CreateBusinessAddressRequest
+import models.quests.CreateQuestPartial
 import models.ModelsBaseSpec
-import testData.BusinessTestConstants.testCreateBusinessAddressRequest
 import weaver.SimpleIOSuite
 
-object CreateBusinessAddressRequestSpec extends SimpleIOSuite with ModelsBaseSpec {
+object CreateQuestPartialSpec extends SimpleIOSuite with ModelsBaseSpec {
 
-  test("CreateBusinessAddressRequest model encodes correctly to JSON") {
+  val testCreatedRequest =
+    CreateQuestPartial(
+      userId = "userId1",
+      title = "Some quest title",
+      description = Some("Some description"),
+      status = Some(Completed)
+    )
 
-    val jsonResult = testCreateBusinessAddressRequest.asJson
+  test("CreateQuestPartial model encodes correctly to JSON") {
+
+    val jsonResult = testCreatedRequest.asJson
 
     val expectedJson =
       """
         |{
         |  "userId": "userId1",
-        |  "businessId": "businessId1",
-        |  "businessName": "businessName1",
-        |  "buildingName": "butter building",
-        |  "floorNumber": "floor 1",
-        |  "street": "Main street 123",
-        |  "city": "New York",
-        |  "country": "USA",
-        |  "county": "County 123",
-        |  "postcode": "123456",
-        |  "latitude": 100.1,
-        |  "longitude": -100.1
+        |  "title": "Some quest title",
+        |  "description": "Some description",
+        |  "status": "Completed"
         |}
         |""".stripMargin
 

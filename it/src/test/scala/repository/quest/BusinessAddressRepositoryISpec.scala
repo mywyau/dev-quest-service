@@ -1,4 +1,4 @@
-package repository.business
+package repository.quest
 
 import cats.data.Validated.Valid
 import cats.effect.IO
@@ -7,34 +7,28 @@ import cats.implicits.*
 import doobie.*
 import doobie.implicits.*
 import java.time.LocalDateTime
-import models.business.address.CreateBusinessAddressRequest
-import models.business.address.BusinessAddressPartial
-import models.database.DeleteSuccess
-import models.desk.deskSpecifications.PrivateDesk
-import repositories.business.BusinessAddressRepositoryImpl
-import repository.fragments.business.BusinessAddressRepoFragments.*
+import models.database.*
+import repository.fragments.quest.QuestRepoFragments.*
 import shared.TransactorResource
-import testData.BusinessTestConstants.*
+import testData.QuestTestConstants.*
 import testData.TestConstants.*
 import weaver.GlobalRead
 import weaver.IOSuite
 import weaver.ResourceTag
-import models.business.address.CreateBusinessAddressRequest
-import models.business.address.BusinessAddressPartial
 
-class BusinessAddressRepositoryISpec(global: GlobalRead) extends IOSuite {
+class QuestRepositoryISpec(global: GlobalRead) extends IOSuite {
 
-  type Res = BusinessAddressRepositoryImpl[IO]
+  type Res = QuestRepositoryImpl[IO]
 
   private def initializeSchema(transactor: TransactorResource): Resource[IO, Unit] =
     Resource.eval(
-      createBusinessAddressTable.update.run.transact(transactor.xa).void *>
-        resetBusinessAddressTable.update.run.transact(transactor.xa).void *>
-        insertBusinessAddressData.update.run.transact(transactor.xa).void
+      createQuestTable.update.run.transact(transactor.xa).void *>
+        resetQuestTable.update.run.transact(transactor.xa).void *>
+        insertQuestData.update.run.transact(transactor.xa).void
     )
 
-  def testBusinessAddressRequest(userId: String, businessId: String): CreateBusinessAddressRequest =
-    CreateBusinessAddressRequest(
+  def testQuestRequest(userId: String, businessId: String): CreateQuestRequest =
+    CreateQuestRequest(
       userId = userId,
       businessId = businessId,
       businessName = Some("mikey_corp"),
@@ -49,20 +43,20 @@ class BusinessAddressRepositoryISpec(global: GlobalRead) extends IOSuite {
       longitude = Some(-100.1)
     )
 
-  def sharedResource: Resource[IO, BusinessAddressRepositoryImpl[IO]] = {
+  def sharedResource: Resource[IO, QuestRepositoryImpl[IO]] = {
     val setup = for {
       transactor <- global.getOrFailR[TransactorResource]()
-      businessAddressRepo = new BusinessAddressRepositoryImpl[IO](transactor.xa)
+      questRepo = new QuestRepositoryImpl[IO](transactor.xa)
       createSchemaIfNotPresent <- initializeSchema(transactor)
-    } yield businessAddressRepo
+    } yield questRepo
 
     setup
   }
 
-  test(".findByBusinessId() - should find and return the business address if business_id exists for a previously created business address") { businessAddressRepo =>
+  test(".findByQuestId() - should find and return the business address if business_id exists for a previously created business address") { questRepo =>
 
     val expectedResult =
-      BusinessAddressPartial(
+      QuestPartial(
         userId = "USER001",
         businessId = "BUS001",
         buildingName = Some("Innovation Tower"),
@@ -77,17 +71,17 @@ class BusinessAddressRepositoryISpec(global: GlobalRead) extends IOSuite {
       )
 
     for {
-      businessAddressOpt <- businessAddressRepo.findByBusinessId("BUS001")
-    } yield expect(businessAddressOpt == Some(expectedResult))
+      questOpt <- questRepo.findByQuestId("BUS001")
+    } yield expect(questOpt == Some(expectedResult))
   }
 
-  test(".deleteBusinessAddress() - should delete the business address if business_id exists for a previously existing business address") { businessAddressRepo =>
+  test(".deleteQuest() - should delete the business address if business_id exists for a previously existing business address") { questRepo =>
 
     val userId = "USER002"
     val businessId = "BUS002"
 
     val expectedResult =
-      BusinessAddressPartial(
+      QuestPartial(
         userId = userId,
         businessId = businessId,
         buildingName = Some("Global Tower"),
@@ -102,9 +96,9 @@ class BusinessAddressRepositoryISpec(global: GlobalRead) extends IOSuite {
       )
 
     for {
-      firstFindResult <- businessAddressRepo.findByBusinessId(businessId)
-      deleteResult <- businessAddressRepo.delete(businessId)
-      afterDeletionFindResult <- businessAddressRepo.findByBusinessId(businessId)
+      firstFindResult <- questRepo.findByQuestId(businessId)
+      deleteResult <- questRepo.delete(businessId)
+      afterDeletionFindResult <- questRepo.findByQuestId(businessId)
     } yield expect.all(
       firstFindResult == Some(expectedResult),
       deleteResult == Valid(DeleteSuccess),

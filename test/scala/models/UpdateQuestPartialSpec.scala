@@ -4,29 +4,31 @@ import cats.effect.IO
 import io.circe.*
 import io.circe.parser.*
 import io.circe.syntax.EncoderOps
-import models.business.address.UpdateBusinessAddressRequest
+import models.quests.UpdateQuestPartial
 import models.ModelsBaseSpec
-import testData.BusinessTestConstants.testUpdateBusinessAddressRequest
 import weaver.SimpleIOSuite
 
-object UpdateBusinessAddressRequestSpec extends SimpleIOSuite with ModelsBaseSpec {
+object UpdateQuestPartialSpec extends SimpleIOSuite with ModelsBaseSpec {
 
-  test("UpdateBusinessAddressRequest model encodes correctly to JSON") {
+  val testUpdatedRequest =
+    UpdateQuestPartial(
+      userId = "userId1",
+      title = "Some quest title",
+      description = Some("Some description"),
+      status = Some(Completed)
+    )
 
-    val jsonResult = testUpdateBusinessAddressRequest.asJson
+  test("UpdateQuestPartial model encodes correctly to JSON") {
+
+    val jsonResult = testUpdatedRequest.asJson
 
     val expectedJson =
       """
         |{
-        |  "buildingName": "butter building",
-        |  "floorNumber": "floor 1",
-        |  "street": "Main street 123",
-        |  "city": "New York",
-        |  "country": "USA",
-        |  "county": "County 123",
-        |  "postcode": "123456",
-        |  "latitude": 100.1,
-        |  "longitude": -100.1
+        |  "userId": "userId1",
+        |  "title": "Some quest title",
+        |  "description": "Some description",
+        |  "status": "Completed"
         |}
         |""".stripMargin
 

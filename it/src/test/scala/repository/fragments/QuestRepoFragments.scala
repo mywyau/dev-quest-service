@@ -1,17 +1,16 @@
-package repository.fragments.business
+package repository.fragments
 
 import doobie.implicits.*
 import doobie.util.fragment
 
-object BusinessAddressRepoFragments {
+object QuestRepoFragments {
 
-  val resetBusinessAddressTable: fragment.Fragment = {
-    sql"TRUNCATE TABLE business_address RESTART IDENTITY"
-  }
+  val resetQuestTable: fragment.Fragment =
+    sql"TRUNCATE TABLE quests RESTART IDENTITY"
 
-  val createBusinessAddressTable: fragment.Fragment = {
+  val createQuestTable: fragment.Fragment =
     sql"""
-      CREATE TABLE IF NOT EXISTS business_address (
+      CREATE TABLE IF NOT EXISTS quests (
         id BIGSERIAL PRIMARY KEY,
         user_id VARCHAR(255) NOT NULL,
         business_id VARCHAR(255) NOT NULL UNIQUE,
@@ -28,12 +27,10 @@ object BusinessAddressRepoFragments {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     """
-  }
 
-
-  val insertBusinessAddressData: fragment.Fragment = {
+  val insertQuestData: fragment.Fragment =
     sql"""
-        INSERT INTO business_address (
+        INSERT INTO quests (
           user_id,
           business_id,
           building_name,
@@ -54,6 +51,5 @@ object BusinessAddressRepoFragments {
           ('USER004', 'BUS004', 'Market Plaza', '1', '101 Main Street', 'Chicago', 'USA', 'Illinois', '60601', 41.878113, -87.629799, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
           ('USER005', 'BUS005', 'Startup Hub', '2', '202 Startup Lane', 'Seattle', 'USA', 'Washington', '98101', 47.606209, -122.332069, '2025-01-01 00:00:00', '2025-01-01 00:00:00');
       """
-  }
 
 }

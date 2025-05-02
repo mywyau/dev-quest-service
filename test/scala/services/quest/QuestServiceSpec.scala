@@ -15,7 +15,7 @@ object QuestServiceSpec extends SimpleIOSuite {
 
   test(".getByQuestId() - when there is an existing quest details given a businessId should return the correct address details - Right(address)") {
 
-    val existingQuestForUser = testQuest(userId1, businessId1)
+    val existingQuestForUser = testQuest(userId1)
 
     val mockQuestRepository = new MockQuestRepository(Map(businessId1 -> existingQuestForUser))
     val service = new QuestServiceImpl[IO](mockQuestRepository)
@@ -37,13 +37,13 @@ object QuestServiceSpec extends SimpleIOSuite {
 
   test(".create() - when given a Quest successfully create the address") {
 
-    val testQuestRequest = testQuestRequest(userId1, businessId1)
+    val testPartial = testQuestRequest(userId1)
 
     val mockQuestRepository = new MockQuestRepository(Map())
     val service = QuestService(mockQuestRepository)
 
     for {
-      result <- service.create(testQuestRequest)
+      result <- service.create(testPartial)
     } yield expect(result == Valid(CreateSuccess))
   }
 }

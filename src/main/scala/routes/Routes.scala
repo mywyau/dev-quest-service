@@ -24,7 +24,7 @@ object Routes {
     val questRepository = QuestRepository(transactor)
 
     val questService = QuestService(questRepository)
-    val questController = QuestsController(questService)
+    val questController = QuestController(questService)
 
     questController.routes
   }
