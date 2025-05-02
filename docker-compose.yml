@@ -9,14 +9,14 @@ services:
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: shared_db
-      DB_USER: shared_user
-      DB_PASSWORD: share
+      DB_NAME: dev_quest
+      DB_USER: dev_quest_user
+      DB_PASSWORD: turnip
     ports:
       - "8080:8080"
     networks:
-      - traefik-network
+      - dev-irl-network
 
 networks:
-  traefik-network:
+  dev-irl-network:
     external: true
