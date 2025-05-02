@@ -55,7 +55,7 @@ jobs:
           POSTGRES_PASSWORD: turnip
           POSTGRES_DB: dev_quest_test_db
         ports:
-          - 5432:5432
+          - 5431:5432
         options: >-
           --health-cmd "pg_isready -U dev_quest_test_user -d dev_quest_test_db"
           --health-interval 10s
