@@ -1,30 +1,33 @@
 package repositories
 
+import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
-import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
-import java.sql.Timestamp
-import java.time.LocalDateTime
+import models.QuestStatus
 import models.database.*
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
-import models.QuestStatus
+
+import java.sql.Timestamp
+import java.time.LocalDateTime
 
 trait QuestRepositoryAlgebra[F[_]] {
 
-  def findByQuestId(quest_id: String): F[Option[QuestPartial]]
+  def findByUserId(userId: String): F[Option[QuestPartial]]
+
+  def findByQuestId(questId: String): F[Option[QuestPartial]]
 
   def create(request: CreateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def update(quest_id: String, request: UpdateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def update(questId: String, request: UpdateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def delete(quest_id: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def deleteAllByUserId(userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
@@ -35,6 +38,22 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad](transactor: Transactor[F]) 
 
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
+
+  override def findByUserId(userId: String): F[Option[QuestPartial]] = {
+    val findQuery: F[Option[QuestPartial]] =
+      sql"""
+         SELECT 
+            user_id,
+            quest_id,
+            title,
+            description,
+            status
+         FROM quests
+         WHERE user_id = $userId
+       """.query[QuestPartial].option.transact(transactor)
+
+    findQuery
+  }
 
   override def findByQuestId(questId: String): F[Option[QuestPartial]] = {
     val findQuery: F[Option[QuestPartial]] =

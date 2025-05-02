@@ -8,12 +8,14 @@ import cats.implicits.*
 import cats.Monad
 import cats.NonEmptyParallel
 import models.database.*
-import models.quests.QuestPartial
 import models.quests.CreateQuestPartial
+import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
 import repositories.QuestRepositoryAlgebra
 
 trait QuestServiceAlgebra[F[_]] {
+
+  def getByUserId(userId: String): F[Option[QuestPartial]]
 
   def getByQuestId(questId: String): F[Option[QuestPartial]]
 
@@ -27,6 +29,9 @@ trait QuestServiceAlgebra[F[_]] {
 class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad](
   questRepo: QuestRepositoryAlgebra[F]
 ) extends QuestServiceAlgebra[F] {
+
+  override def getByUserId(userId: String): F[Option[QuestPartial]] =
+    questRepo.findByUserId(userId)
 
   override def getByQuestId(questId: String): F[Option[QuestPartial]] =
     questRepo.findByQuestId(questId)
