@@ -9,13 +9,15 @@ import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
+import models.quests.UpdateQuestPartial
 import repositories.QuestRepositoryAlgebra
 import weaver.SimpleIOSuite
-import models.quests.UpdateQuestPartial
 
 case class MockQuestRepository(
   existingQuest: Map[String, QuestPartial] = Map.empty
 ) extends QuestRepositoryAlgebra[IO] {
+
+  override def findByUserId(userId: String): IO[Option[QuestPartial]] = ???
 
   def showAllUsers: IO[Map[String, QuestPartial]] = IO.pure(existingQuest)
 
