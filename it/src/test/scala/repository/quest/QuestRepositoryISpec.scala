@@ -11,6 +11,7 @@ import models.database.*
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.Completed
+import models.InProgress
 import repositories.QuestRepositoryImpl
 import repository.fragments.QuestRepoFragments.*
 import shared.TransactorResource
@@ -20,7 +21,6 @@ import weaver.IOSuite
 import weaver.ResourceTag
 
 class QuestRepositoryISpec(global: GlobalRead) extends IOSuite {
-
   type Res = QuestRepositoryImpl[IO]
 
   private def initializeSchema(transactor: TransactorResource): Resource[IO, Unit] =
@@ -33,9 +33,10 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite {
   def testQuestRequest(userId: String, businessId: String): CreateQuestPartial =
     CreateQuestPartial(
       userId = userId,
-      title = "",
-      description = Some(""),
-      status = Some(Completed)
+      questId = "QUEST001",
+      title = "Implement User Authentication",
+      description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+      status = Some(InProgress)
     )
 
   def sharedResource: Resource[IO, QuestRepositoryImpl[IO]] = {
@@ -53,13 +54,14 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite {
     val expectedResult =
       QuestPartial(
         userId = "USER001",
-        title = "",
-        description = Some(""),
-        status = Some(Completed)
+        questId = "QUEST001",
+        title = "Implement User Authentication",
+        description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+        status = Some(InProgress)
       )
 
     for {
-      questOpt <- questRepo.findByQuestId("BUS001")
+      questOpt <- questRepo.findByQuestId("QUEST001")
     } yield expect(questOpt == Some(expectedResult))
   }
 

@@ -40,9 +40,10 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad](transactor: Transactor[F]) 
     val findQuery: F[Option[QuestPartial]] =
       sql"""
          SELECT 
-            user_id
-            title
-            description
+            user_id,
+            quest_id,
+            title,
+            description,
             status
          FROM quests
          WHERE quest_id = $questId
@@ -54,13 +55,15 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad](transactor: Transactor[F]) 
   override def create(request: CreateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       INSERT INTO quests (
-         user_id
-         title
-         description
+         user_id,
+         quest_id,
+         title,
+         description,
          status
       )
       VALUES (
         ${request.userId},
+        ${request.questId},
         ${request.title},
         ${request.description},
         ${request.status}
@@ -86,6 +89,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad](transactor: Transactor[F]) 
       UPDATE quests
       SET
           user_id = ${request.userId},
+          quest_id = ${request.questId},
           title = ${request.title},
           description = ${request.description},
           status = ${request.status},

@@ -9,6 +9,7 @@ import models.QuestStatus
 
 case class QuestPartial(
   userId: String,
+  questId: String,
   title: String,
   description: Option[String],
   status: Option[QuestStatus]

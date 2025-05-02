@@ -1,13 +1,14 @@
 package models.quests
 
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.generic.semiauto.deriveEncoder
 import io.circe.Decoder
 import io.circe.Encoder
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
 import models.QuestStatus
 
 case class UpdateQuestPartial(
   userId: String,
+  questId: String,
   title: String,
   description: Option[String],
   status: Option[QuestStatus]

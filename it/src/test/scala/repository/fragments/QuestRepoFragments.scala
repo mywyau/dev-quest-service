@@ -12,8 +12,8 @@ object QuestRepoFragments {
     sql"""
       CREATE TABLE IF NOT EXISTS quests (
         id BIGSERIAL PRIMARY KEY,
-        user_id UUID NOT NULL REFERENCES users(id),
-        quest_id UUID NOT NULL,
+        user_id VARCHAR(255) NOT NULL,
+        quest_id VARCHAR(255) NOT NULL,
         title VARCHAR(255) NOT NULL,
         description TEXT NOT NULL,
         status VARCHAR(50) NOT NULL DEFAULT 'Completed',
