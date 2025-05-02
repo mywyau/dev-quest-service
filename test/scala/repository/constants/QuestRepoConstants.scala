@@ -15,17 +15,19 @@ object QuestRepoConstants {
   // def createMockRepo(initialUsers: List[QuestPartial]): IO[MockQuestRepository] =
   //   Ref.of[IO, List[QuestPartial]](initialUsers).map(users => MockQuestRepository(users.))
 
-  def testCreateQuestPartial(userId: String): CreateQuestPartial =
+  def testCreateQuestPartial(userId: String, questId: String): CreateQuestPartial =
     CreateQuestPartial(
       userId = userId,
+      questId = questId,
       title = "",
       description = Some(""),
       status = Some(InProgress)
     )
 
-  def testQuestPartial(userId: String): QuestPartial =
+  def testQuestPartial(userId: String, questId: String): QuestPartial =
     QuestPartial(
       userId = userId,
+      questId = questId,
       title = "",
       description = Some(""),
       status = Some(InProgress)

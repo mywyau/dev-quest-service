@@ -14,6 +14,7 @@ object CreateQuestPartialSpec extends SimpleIOSuite with ModelsBaseSpec {
   val testCreatedRequest =
     CreateQuestPartial(
       userId = "userId1",
+      questId = "questId1",
       title = "Some quest title",
       description = Some("Some description"),
       status = Some(Completed)
@@ -27,6 +28,7 @@ object CreateQuestPartialSpec extends SimpleIOSuite with ModelsBaseSpec {
       """
         |{
         |  "userId": "userId1",
+        |  "questId": "questId1",
         |  "title": "Some quest title",
         |  "description": "Some description",
         |  "status": "Completed"

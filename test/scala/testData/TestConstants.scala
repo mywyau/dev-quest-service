@@ -11,6 +11,12 @@ object TestConstants {
   val userId4 = "userId4"
   val userId5 = "userId5"
 
+  val questId1 = "questId1"
+  val questId2 = "questId2"
+  val questId3 = "questId3"
+  val questId4 = "questId4"
+  val questId5 = "questId5"
+
   val businessId1 = "businessId1"
   val businessId2 = "businessId2"
   val businessId3 = "businessId3"

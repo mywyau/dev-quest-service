@@ -2,20 +2,21 @@ package services.quest
 
 import cats.data.Validated.Valid
 import cats.effect.IO
-import java.time.LocalDateTime
+import mocks.MockQuestRepository
 import models.database.CreateSuccess
 import services.QuestService
 import services.QuestServiceImpl
+import services.constants.QuestServiceConstants.*
 import testData.TestConstants.*
 import weaver.SimpleIOSuite
-import mocks.MockQuestRepository
-import services.constants.QuestServiceConstants.*
+
+import java.time.LocalDateTime
 
 object QuestServiceSpec extends SimpleIOSuite {
 
   test(".getByQuestId() - when there is an existing quest details given a businessId should return the correct address details - Right(address)") {
 
-    val existingQuestForUser = testQuest(userId1)
+    val existingQuestForUser = testQuest(userId1, questId1)
 
     val mockQuestRepository = new MockQuestRepository(Map(businessId1 -> existingQuestForUser))
     val service = new QuestServiceImpl[IO](mockQuestRepository)
@@ -37,7 +38,7 @@ object QuestServiceSpec extends SimpleIOSuite {
 
   test(".create() - when given a Quest successfully create the address") {
 
-    val testPartial = testQuestRequest(userId1)
+    val testPartial = testQuestRequest(userId1, questId = questId1)
 
     val mockQuestRepository = new MockQuestRepository(Map())
     val service = QuestService(mockQuestRepository)
