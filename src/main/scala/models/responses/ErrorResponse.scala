@@ -8,6 +8,6 @@ import io.circe.Encoder
 case class ErrorResponse(code: String, message: String)
 
 object ErrorResponse {
-  implicit val errorEncoder: Encoder[ErrorResponse] = deriveEncoder[ErrorResponse]
-  implicit val errorDecoder: Decoder[ErrorResponse] = deriveDecoder[ErrorResponse]
+  implicit val encoder: Encoder[ErrorResponse] = deriveEncoder[ErrorResponse]
+  implicit val decoder: Decoder[ErrorResponse] = deriveDecoder[ErrorResponse]
 }

@@ -51,13 +51,13 @@ jobs:
       postgres:
         image: postgres:14
         env:
-          POSTGRES_USER: shared_user
-          POSTGRES_PASSWORD: share
-          POSTGRES_DB: shared_test_db
+          POSTGRES_USER: dev_quest_test_user
+          POSTGRES_PASSWORD: turnip
+          POSTGRES_DB: dev_quest_test_db
         ports:
-          - 5432:5432
+          - 5431:5432
         options: >-
-          --health-cmd "pg_isready -U shared_user -d shared_test_db"
+          --health-cmd "pg_isready -U dev_quest_test_user -d dev_quest_test_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -94,10 +94,10 @@ jobs:
 
       - name: Wait for PostgreSQL
         env:
-          PGPASSWORD: share
+          PGPASSWORD: turnip
         run: |
           for i in {1..30}; do
-            if pg_isready -h localhost -p 5432 -U shared_user; then
+            if pg_isready -h localhost -p 5431 -U dev_quest_test_user; then
               echo "Postgres is ready";
               break;
             fi
@@ -107,10 +107,10 @@ jobs:
 
       - name: Reset Database
         env:
-          PGPASSWORD: share
+          PGPASSWORD: turnip
         run: |
-          psql -h localhost -U shared_user -d postgres -c "DROP DATABASE IF EXISTS shared_test_db;"
-          psql -h localhost -U shared_user -d postgres -c "CREATE DATABASE shared_test_db;"
+          psql -h localhost -p 5431 -U dev_quest_test_user -d postgres -c "DROP DATABASE IF EXISTS dev_quest_test_db;"
+          psql -h localhost -p 5431 -U dev_quest_test_user -d postgres -c "CREATE DATABASE dev_quest_test_db;"
         
       - name: Run Integration Tests
         run: sbt it/test

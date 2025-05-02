@@ -1,27 +1,28 @@
+import cats.NonEmptyParallel
 import cats.effect.*
 import cats.implicits.*
-import cats.NonEmptyParallel
 import com.auth0.jwt.algorithms.Algorithm
 import com.comcast.ip4s.*
-import configuration.models.AppConfig
 import configuration.ConfigReader
+import configuration.models.AppConfig
 import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts
 import middleware.JwksKeyProvider
 import middleware.JwtAuth
 import middleware.Middleware.throttleMiddleware
 import middleware.StaticJwksKeyProvider
-import org.http4s.client.middleware.Logger as ClientLogger
+import org.http4s.HttpRoutes
 import org.http4s.client.Client
+import org.http4s.client.middleware.Logger as ClientLogger
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.implicits.*
-import org.http4s.server.middleware.CORS
 import org.http4s.server.Router
-import org.http4s.HttpRoutes
-import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.http4s.server.middleware.CORS
 import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import routes.Routes.*
+
 import scala.concurrent.duration.DurationInt
 
 object Main extends IOApp {
@@ -29,26 +30,23 @@ object Main extends IOApp {
   implicit def logger[F[_] : Sync]: Logger[F] = Slf4jLogger.getLogger[F]
 
   def transactorResource[F[_] : Async](appConfig: AppConfig): Resource[F, HikariTransactor[F]] = {
-    val postgresqHost =
-      if (appConfig.featureSwitches.useDockerHost) {
-        appConfig.localConfig.postgresqlConfig.dockerHost
-      } else {
-        appConfig.localConfig.postgresqlConfig.host
-      }
+    val dbHost = sys.env.getOrElse("DB_HOST", appConfig.localConfig.postgresqlConfig.host)
+    val dbUser = sys.env.getOrElse("DB_USER", appConfig.localConfig.postgresqlConfig.username)
+    val dbPassword = sys.env.getOrElse("DB_PASSWORD", appConfig.localConfig.postgresqlConfig.password)
+    val dbName = sys.env.getOrElse("DB_NAME", appConfig.localConfig.postgresqlConfig.dbName)
+    val dbPort = sys.env.getOrElse("DB_PORT", appConfig.localConfig.postgresqlConfig.port.toString)
 
-    val dbUrl =
-      s"jdbc:postgresql://$postgresqHost:${appConfig.localConfig.postgresqlConfig.port}/${appConfig.localConfig.postgresqlConfig.dbName}"
-
+    val dbUrl = s"jdbc:postgresql://$dbHost:$dbPort/$dbName"
     val driverClassName = "org.postgresql.Driver"
 
     for {
       ce <- ExecutionContexts.fixedThreadPool(32)
       xa <- HikariTransactor.newHikariTransactor[F](
-        driverClassName = driverClassName,
-        url = dbUrl,
-        user = appConfig.localConfig.postgresqlConfig.username,
-        pass = appConfig.localConfig.postgresqlConfig.password,
-        connectEC = ce
+        driverClassName,
+        dbUrl,
+        dbUser,
+        dbPassword,
+        ce
       )
     } yield xa
   }
@@ -60,6 +58,7 @@ object Main extends IOApp {
   ): Resource[F, HttpRoutes[F]] =
     for {
       baseRoutes <- Resource.pure(baseRoutes())
+      questsRoutes <- Resource.pure(questsRoutes(transactor))
       authedRoutes <- Resource.pure(JwtAuth.routesWithAuth[F](transactor, client, algorithm))
 
       combinedRoutes = Router(

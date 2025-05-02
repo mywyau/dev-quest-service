@@ -8,6 +8,6 @@ import io.circe.Encoder
 case class DeletedResponse(code: String, message: String)
 
 object DeletedResponse {
-  implicit val deletedEncoder: Encoder[DeletedResponse] = deriveEncoder[DeletedResponse]
-  implicit val deletedDecoder: Decoder[DeletedResponse] = deriveDecoder[DeletedResponse]
+  implicit val encoder: Encoder[DeletedResponse] = deriveEncoder[DeletedResponse]
+  implicit val decoder: Decoder[DeletedResponse] = deriveDecoder[DeletedResponse]
 }
