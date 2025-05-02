@@ -28,7 +28,7 @@ object Main extends IOApp {
 
   implicit def logger[F[_] : Sync]: Logger[F] = Slf4jLogger.getLogger[F]
 
-  def transactorResource[F[_] : Async](appConfig: AppConfig): Resource[F, HikariTransactor[F]] = {
+  def transactorResource[F[_]: Async](appConfig: AppConfig): Resource[F, HikariTransactor[F]] = {
     val dbHost = sys.env.getOrElse("DB_HOST", appConfig.localConfig.postgresqlConfig.host)
     val dbUser = sys.env.getOrElse("DB_USER", appConfig.localConfig.postgresqlConfig.username)
     val dbPassword = sys.env.getOrElse("DB_PASSWORD", appConfig.localConfig.postgresqlConfig.password)
@@ -57,7 +57,7 @@ object Main extends IOApp {
   ): Resource[F, HttpRoutes[F]] =
     for {
       baseRoutes <- Resource.pure(baseRoutes())
-      questsRoutes <- Resource.pure(questsRoutes)
+      questsRoutes <- Resource.pure(questsRoutes(transactor))
       authedRoutes <- Resource.pure(JwtAuth.routesWithAuth[F](transactor, client, algorithm))
 
       combinedRoutes = Router(
