@@ -109,8 +109,8 @@ jobs:
         env:
           PGPASSWORD: turnip
         run: |
-          psql -h localhost -U dev_quest_test_user -d postgres -c "DROP DATABASE IF EXISTS dev_quest_test_db;"
-          psql -h localhost -U dev_quest_test_user -d postgres -c "CREATE DATABASE dev_quest_test_db;"
+          psql -h localhost -p 5431 -U dev_quest_test_user -d postgres -c "DROP DATABASE IF EXISTS dev_quest_test_db;"
+          psql -h localhost -p 5431 -U dev_quest_test_user -d postgres -c "CREATE DATABASE dev_quest_test_db;"
         
       - name: Run Integration Tests
         run: sbt it/test
