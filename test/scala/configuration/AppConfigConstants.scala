@@ -18,22 +18,22 @@ object AppConfigConstants {
 
   val integrationPostgresqlConfig =
     PostgresqlConfig(
-      dbName = "shared_test_db",
-      dockerHost = "N/A",
+      dbName = "dev_quest_test_db",
+      dockerHost = "dev-quest-db-it",
       host = "localhost",
-      port = 5432,
-      username = "shared_user",
-      password = "share"
+      port = 5431,
+      username = "dev_quest_test_user",
+      password = "turnip"
     )
 
   val containerPostgresqlConfig =
     PostgresqlConfig(
-      dbName = "shared_db",
-      dockerHost = "shared-postgres-container",
+      dbName = "dev_quest",
+      dockerHost = "dev-quest-container",
       host = "localhost",
       port = 5432,
-      username = "shared_user",
-      password = "share"
+      username = "dev_quest_user",
+      password = "turnip"
     )
 
   val integrationSpecConfig =
