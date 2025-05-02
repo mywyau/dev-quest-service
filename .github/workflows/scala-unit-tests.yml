@@ -97,7 +97,7 @@ jobs:
           PGPASSWORD: turnip
         run: |
           for i in {1..30}; do
-            if pg_isready -h localhost -p 5432 -U dev_quest_test_user; then
+            if pg_isready -h localhost -p 5431 -U dev_quest_test_user; then
               echo "Postgres is ready";
               break;
             fi
