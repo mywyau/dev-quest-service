@@ -30,16 +30,19 @@ import sbtassembly.AssemblyPlugin.autoImport.*
 
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", "services", "org.slf4j.spi.SLF4JServiceProvider") =>
-    MergeStrategy.first // Ensure SLF4J can find its service provider
+    MergeStrategy.first
 
   case PathList("META-INF", "io.netty.versions.properties") =>
     MergeStrategy.first
 
-  case PathList("module-info.class") =>
+  case PathList("META-INF", "versions", xs @ _*) if xs.nonEmpty && xs.last == "module-info.class" =>
     MergeStrategy.discard
 
-  case PathList("META-INF", xs @ _*) if xs.contains("MANIFEST.MF") =>
-    MergeStrategy.discard // Discard additional META-INF files except for services
+  case "reference.conf" | "application.conf" =>
+    MergeStrategy.concat
+
+  case PathList("META-INF", xs @ _*) =>
+    MergeStrategy.discard
 
   case x =>
     val oldStrategy = (assembly / assemblyMergeStrategy).value
