@@ -92,7 +92,7 @@ object Main extends IOApp {
 
     val serverResource: Resource[IO, Unit] = for {
       client <- EmberClientBuilder.default[IO].build
-      keys <- Resource.eval(JwksKeyProvider.loadJwks[IO]("https://YOUR_TENANT.auth0.com/.well-known/jwks.json", client))
+      keys <- Resource.eval(JwksKeyProvider.loadJwks[IO]("https://dev-3cz1mwtxetvjzpjg.uk.auth0.com/.well-known/jwks.json", client))
       keyProvider = new StaticJwksKeyProvider(keys)
       algorithm = Algorithm.RSA256(keyProvider)
 
