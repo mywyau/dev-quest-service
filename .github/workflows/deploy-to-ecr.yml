@@ -1,0 +1,56 @@
+name: Push Docker Image to ECR
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy"
+        required: true
+        default: "latest"
+
+  push:
+    branches:
+      - main
+
+jobs:
+  push-to-ecr:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Install SBT
+        run: |
+          curl -Ls https://github.com/sbt/sbt/releases/download/v1.9.9/sbt-1.9.9.tgz | tar xz
+          sudo mv sbt /usr/local/sbt
+          echo "/usr/local/sbt/bin" >> $GITHUB_PATH
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+
+      - name: Build Docker image
+        run: sbt docker:stage
+
+      - name: Tag and push Docker image
+        run: |
+          IMAGE_TAG=${{ github.event.inputs.image_tag || github.sha }}
+          IMAGE_URI=${{ secrets.ECR_REGISTRY }}/dev-quest-service:$IMAGE_TAG
+          docker build -t $IMAGE_URI target/docker/stage/
+          docker push $IMAGE_URI
+          echo "✅ Docker image pushed to $IMAGE_URI"
