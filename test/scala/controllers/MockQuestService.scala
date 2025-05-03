@@ -11,6 +11,9 @@ import services.QuestServiceAlgebra
 
 class MockQuestService(userQuestData: Map[String, QuestPartial]) extends QuestServiceAlgebra[IO] {
 
+
+  override def getByUserId(userId: String): IO[Option[QuestPartial]] = ???
+
   override def getByQuestId(businessId: String): IO[Option[QuestPartial]] =
     userQuestData.get(businessId) match {
       case Some(address) => IO.pure(Some(address))

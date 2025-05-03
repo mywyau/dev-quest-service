@@ -28,8 +28,19 @@ class QuestControllerImpl[F[_] : Concurrent : Logger](questService: QuestService
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
+    case GET -> Root / "quest" / "user" / userId =>
+      Logger[F].info(s"[QuestControllerImpl] GET - Quest details for userId: $userId") *>
+        questService.getByUserId(userId).flatMap {
+          case Some(quest) =>
+            Logger[F].info(s"[QuestControllerImpl] GET - Successfully retrieved quest for a given user") *>
+              Ok(quest.asJson)
+          case _ =>
+            val errorResponse = ErrorResponse("error", "error codes")
+            BadRequest(errorResponse.asJson)
+        }
+
     case GET -> Root / "quest" / questId =>
-      Logger[F].info(s"[QuestControllerImpl] GET - Quest details for userId: $questId") *>
+      Logger[F].info(s"[QuestControllerImpl] GET - Quest details for questId: $questId") *>
         questService.getByQuestId(questId).flatMap {
           case Some(quest) =>
             Logger[F].info(s"[QuestControllerImpl] GET - Successfully retrieved quest") *>

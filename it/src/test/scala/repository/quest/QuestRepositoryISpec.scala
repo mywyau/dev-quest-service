@@ -49,7 +49,23 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite {
     setup
   }
 
-  test(".findByQuestId() - should find and return the quest if user_id exists for a previously created quest") { questRepo =>
+  test(".findByUserId() - should find and return the quest if user_id exists for a previously created quest") { questRepo =>
+
+    val expectedResult =
+      QuestPartial(
+        userId = "USER001",
+        questId = "QUEST001",
+        title = "Implement User Authentication",
+        description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+        status = Some(InProgress)
+      )
+
+    for {
+      questOpt <- questRepo.findByUserId("USER001")
+    } yield expect(questOpt == Some(expectedResult))
+  }
+
+  test(".findByQuestId() - should find and return the quest if quest_id exists for a previously created quest") { questRepo =>
 
     val expectedResult =
       QuestPartial(

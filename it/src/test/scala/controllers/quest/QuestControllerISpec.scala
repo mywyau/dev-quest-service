@@ -1,66 +1,110 @@
-// package controllers.quest
+package controllers.quest
 
-// import cats.effect.*
-// import controllers.constants.BusinessAddressControllerConstants.*
-// import controllers.fragments.business.BusinessAddressRepoFragments.*
-// import controllers.ControllerISpecBase
-// import doobie.implicits.*
-// import doobie.util.transactor.Transactor
-// import io.circe.syntax.*
-// import io.circe.Json
-// import java.time.LocalDateTime
-// import models.database.*
-// import models.responses.CreatedResponse
-// import models.responses.DeletedResponse
-// import models.responses.UpdatedResponse
-// import org.http4s.*
-// import org.http4s.circe.*
-// import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
-// import org.http4s.implicits.*
-// import org.http4s.Method.*
-// import org.typelevel.log4cats.slf4j.Slf4jLogger
-// import org.typelevel.log4cats.SelfAwareStructuredLogger
-// import shared.HttpClientResource
-// import shared.TransactorResource
-// import weaver.*
+import cats.effect.*
+import controller.fragments.QuestControllerFragments.*
+import controllers.ControllerISpecBase
+import controllers.constants.QuestControllerConstants.*
+import doobie.implicits.*
+import doobie.util.transactor.Transactor
+import io.circe.Json
+import io.circe.syntax.*
+import models.InProgress
+import models.database.*
+import models.quests.QuestPartial
+import models.responses.CreatedResponse
+import models.responses.DeletedResponse
+import models.responses.UpdatedResponse
+import org.http4s.*
+import org.http4s.Method.*
+import org.http4s.circe.*
+import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
+import org.http4s.implicits.*
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
+import shared.HttpClientResource
+import shared.TransactorResource
+import weaver.*
 
-// class BusinessAddressControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
+import java.time.LocalDateTime
 
-//   type Res = (TransactorResource, HttpClientResource)
+class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
-//   def sharedResource: Resource[IO, Res] =
-//     for {
-//       transactor <- global.getOrFailR[TransactorResource]()
-//       _ <- Resource.eval(
-//         createBusinessAddressTable.update.run.transact(transactor.xa).void *>
-//           resetBusinessAddressTable.update.run.transact(transactor.xa).void *>
-//           insertBusinessAddressTable.update.run.transact(transactor.xa).void
-//       )
-//       client <- global.getOrFailR[HttpClientResource]()
-//     } yield (transactor, client)
+  type Res = (TransactorResource, HttpClientResource)
 
-//   test(
-//     "GET - /dev-quest-service/business/businesses/address/details/businessId1 - " +
-//       "given a business_id, find the business address data for given id, returning OK and the address json"
-//   ) { (transactorResource, log) =>
+  def sharedResource: Resource[IO, Res] =
+    for {
+      transactor <- global.getOrFailR[TransactorResource]()
+      _ <- Resource.eval(
+        createQuestTable.update.run.transact(transactor.xa).void *>
+          resetQuestTable.update.run.transact(transactor.xa).void *>
+          insertQuestData.update.run.transact(transactor.xa).void
+      )
+      client <- global.getOrFailR[HttpClientResource]()
+    } yield (transactor, client)
 
-//     val transactor = transactorResource._1.xa
-//     val client = transactorResource._2.client
+  test(
+    "GET - /dev-quest-service/quest/user/USER001 - " +
+      "given a user_id, find the quest data for given user id, returning OK and the correct quest json body"
+  ) { (transactorResource, log) =>
 
-//     val request =
-//       Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/address/details/businessId1")
+    val transactor = transactorResource._1.xa
+    val client = transactorResource._2.client
 
-//     val expectedBusinessAddress = testBusinessAddress("userId1", "businessId1")
+    def testQuest(userId: String, questId: String): QuestPartial =
+      QuestPartial(
+        userId = userId,
+        questId = questId,
+        title = "Implement User Authentication",
+        description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+        status = Some(InProgress)
+      )
 
-//     client.run(request).use { response =>
-//       response.as[BusinessAddressPartial].map { body =>
-//         expect.all(
-//           response.status == Status.Ok,
-//           body == expectedBusinessAddress
-//         )
-//       }
-//     }
-//   }
+    val request =
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/quest/user/USER001")
+
+    val expectedQuest = testQuest("USER001", "QUEST001")
+
+    client.run(request).use { response =>
+      response.as[QuestPartial].map { body =>
+        expect.all(
+          response.status == Status.Ok,
+          body == expectedQuest
+        )
+      }
+    }
+  }
+
+  test(
+    "GET - /dev-quest-service/quest/QUEST001 - " +
+      "given a quest_id, find the quest data for given quest id, returning OK and the correct quest json body"
+  ) { (transactorResource, log) =>
+
+    val transactor = transactorResource._1.xa
+    val client = transactorResource._2.client
+
+    def testQuest(userId: String, questId: String): QuestPartial =
+      QuestPartial(
+        userId = userId,
+        questId = questId,
+        title = "Implement User Authentication",
+        description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+        status = Some(InProgress)
+      )
+
+    val request =
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/quest/QUEST001")
+
+    val expectedQuest = testQuest("USER001", "QUEST001")
+
+    client.run(request).use { response =>
+      response.as[QuestPartial].map { body =>
+        expect.all(
+          response.status == Status.Ok,
+          body == expectedQuest
+        )
+      }
+    }
+  }
 
 //   test(
 //     "POST - /dev-quest-service/business/businesses/address/details/create - " +
@@ -70,7 +114,7 @@
 //     val transactor = transactorResource._1.xa
 //     val client = transactorResource._2.client
 
-//     val businessAddressRequest: Json = testBusinessAddressRequest("user_id_3", "business_id_3").asJson
+//     val businessAddressRequest: Json = testQuestRequest("user_id_3", "business_id_3").asJson
 
 //     val request =
 //       Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/address/details/create")
@@ -96,8 +140,8 @@
 //     val transactor = transactorResource._1.xa
 //     val client = transactorResource._2.client
 
-//     val updateRequest: UpdateBusinessAddressRequest =
-//       UpdateBusinessAddressRequest(
+//     val updateRequest: UpdateQuestRequest =
+//       UpdateQuestRequest(
 //         buildingName = Some("Mikey Building"),
 //         floorNumber = Some("Mikey Floor"),
 //         street = "Mikey Street",
@@ -147,4 +191,4 @@
 //       }
 //     }
 //   }
-// }
+}
