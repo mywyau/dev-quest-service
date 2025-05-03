@@ -4,9 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: 'Image tag to deploy'
+        description: "Image tag to deploy"
         required: true
-        default: 'latest'
+        default: "latest"
+
+  push:
+    branches:
+      - main
 
 jobs:
   deploy:
