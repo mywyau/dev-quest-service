@@ -50,7 +50,9 @@ jobs:
       - name: Tag and push Docker image
         run: |
           IMAGE_TAG=${{ github.event.inputs.image_tag || github.sha }}
-          IMAGE_URI=${{ secrets.ECR_REGISTRY }}/dev-quest-service:$IMAGE_TAG
+          IMAGE_REPO=890742562318.dkr.ecr.eu-west-2.amazonaws.com/dev-quest-service
+          IMAGE_URI=$IMAGE_REPO:$IMAGE_TAG
           docker build -t $IMAGE_URI target/docker/stage/
           docker push $IMAGE_URI
-          echo "✅ Docker image pushed to $IMAGE_URI"
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
