@@ -21,12 +21,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up SBT
+        uses: coursier/setup-action@v1
+        with:
+          jvm: temurin:21
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-2
+
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+
+      - name: Build Docker image
+        run: sbt docker:stage
+
+      - name: Tag and push Docker image
+        run: |
+          IMAGE_TAG=${{ github.event.inputs.image_tag || github.sha }}
+          IMAGE_URI=${{ secrets.ECR_REGISTRY }}/dev-quest-service:$IMAGE_TAG
+          docker build -t $IMAGE_URI target/docker/stage/
+          docker push $IMAGE_URI
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
 
       - name: Get current task definition
         id: get-task-def
@@ -49,8 +75,7 @@ jobs:
       - name: Update image tag in task definition
         id: update-task-def
         run: |
-          IMAGE_URI="${{ secrets.ECR_REGISTRY }}/dev-quest-service:${{ github.event.inputs.image_tag }}"
-          jq '.containerDefinitions[0].image = env.IMAGE_URI' task-def.json > new-task-def.json
+          jq --arg IMAGE_URI "$IMAGE_URI" '.containerDefinitions[0].image = $IMAGE_URI' task-def.json > new-task-def.json
 
       - name: Register new task definition
         id: register-task-def
@@ -70,4 +95,4 @@ jobs:
             --force-new-deployment
 
       - name: Notify success
-        run: echo "✅ Deployed image tag ${{ github.event.inputs.image_tag }} to production."
+        run: echo "✅ Deployed image $IMAGE_URI to production."
