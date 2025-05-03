@@ -3,13 +3,26 @@ ThisBuild / scalaVersion := "3.3.4"
 ThisBuild / parallelExecution := true
 
 lazy val root = (project in file("."))
+  // .settings(
+  //   name := "dev-quest-service",
+  //   libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
+  //   Compile / run / fork := true,
+  //   scalaSource := baseDirectory.value / "src" / "main" / "scala",
+  //   Compile / unmanagedSourceDirectories += baseDirectory.value / "src" / "main" / "scala",
+  //   Test / scalaSource := baseDirectory.value / "test" / "scala"
+  // )
   .settings(
     name := "dev-quest-service",
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
     Compile / run / fork := true,
     scalaSource := baseDirectory.value / "src" / "main" / "scala",
     Compile / unmanagedSourceDirectories += baseDirectory.value / "src" / "main" / "scala",
-    Test / scalaSource := baseDirectory.value / "test" / "scala"
+    Test / scalaSource := baseDirectory.value / "src" / "test" / "scala",
+
+    // sbt-native-packager Docker settings
+    dockerBaseImage := "eclipse-temurin:21-jre"
+    dockerExposedPorts := Seq(8080),
+    Compile / mainClass := Some("Main") // <-- Replace with your actual main class, e.g. "com.example.Main"
   )
 
 lazy val it = (project in file("it"))
@@ -24,32 +37,34 @@ lazy val it = (project in file("it"))
   )
 
 enablePlugins(ScalafmtPlugin)
+enablePlugins(JavaAppPackaging, DockerPlugin)
 
-// Merge strategy for sbt assembly for containerising the app
-import sbtassembly.AssemblyPlugin.autoImport.*
 
-assembly / assemblyMergeStrategy := {
-  case PathList("META-INF", "services", "org.slf4j.spi.SLF4JServiceProvider") =>
-    MergeStrategy.first
+// // Merge strategy for sbt assembly for containerising the app
+// import sbtassembly.AssemblyPlugin.autoImport.*
 
-  case PathList("META-INF", "io.netty.versions.properties") =>
-    MergeStrategy.first
+// assembly / assemblyMergeStrategy := {
+//   case PathList("META-INF", "services", "org.slf4j.spi.SLF4JServiceProvider") =>
+//     MergeStrategy.first
 
-  case PathList("META-INF", "versions", xs @ _*) if xs.nonEmpty && xs.last == "module-info.class" =>
-    MergeStrategy.discard
+//   case PathList("META-INF", "io.netty.versions.properties") =>
+//     MergeStrategy.first
 
-  case "reference.conf" | "application.conf" =>
-    MergeStrategy.concat
+//   case PathList("META-INF", "versions", xs @ _*) if xs.nonEmpty && xs.last == "module-info.class" =>
+//     MergeStrategy.discard
 
-  case PathList("META-INF", xs @ _*) =>
-    MergeStrategy.discard
+//   case "reference.conf" | "application.conf" =>
+//     MergeStrategy.concat
 
-  case x =>
-    val oldStrategy = (assembly / assemblyMergeStrategy).value
-    oldStrategy(x)
-}
+//   case PathList("META-INF", xs @ _*) =>
+//     MergeStrategy.discard
 
-assembly / assemblyExcludedJars := {
-  val cp = (assembly / fullClasspath).value
-  cp.filter(_.data.getName.contains("-tests.jar"))
-}
+//   case x =>
+//     val oldStrategy = (assembly / assemblyMergeStrategy).value
+//     oldStrategy(x)
+// }
+
+// assembly / assemblyExcludedJars := {
+//   val cp = (assembly / fullClasspath).value
+//   cp.filter(_.data.getName.contains("-tests.jar"))
+// }
