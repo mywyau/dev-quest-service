@@ -163,3 +163,8 @@ updatedAt="2025-01-01T12:00:00"
 
 
 ```
+
+
+sbt docker:publishLocal
+
+docker run -p 8080:8080 dev-quest-service:0.1.0-SNAPSHOT

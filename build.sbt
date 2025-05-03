@@ -20,7 +20,7 @@ lazy val root = (project in file("."))
     Test / scalaSource := baseDirectory.value / "src" / "test" / "scala",
 
     // sbt-native-packager Docker settings
-    dockerBaseImage := "eclipse-temurin:21-jre"
+    dockerBaseImage := "eclipse-temurin:21-jre",
     dockerExposedPorts := Seq(8080),
     Compile / mainClass := Some("Main") // <-- Replace with your actual main class, e.g. "com.example.Main"
   )
