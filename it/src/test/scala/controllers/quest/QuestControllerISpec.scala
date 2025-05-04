@@ -10,6 +10,7 @@ import io.circe.Json
 import io.circe.syntax.*
 import models.InProgress
 import models.database.*
+import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.responses.CreatedResponse
 import models.responses.DeletedResponse
@@ -106,31 +107,39 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
     }
   }
 
-//   test(
-//     "POST - /dev-quest-service/business/businesses/address/details/create - " +
-//       "should generate the business address data for a business in database table, returning Created response"
-//   ) { (transactorResource, log) =>
+  test(
+    "POST - /dev-quest-service/quest/create - should generate the quest data in db table, returning Created response"
+  ) { (transactorResource, log) =>
 
-//     val transactor = transactorResource._1.xa
-//     val client = transactorResource._2.client
+    val transactor = transactorResource._1.xa
+    val client = transactorResource._2.client
 
-//     val businessAddressRequest: Json = testQuestRequest("user_id_3", "business_id_3").asJson
+    def testCreateQuest(userId: String, questId: String): CreateQuestPartial =
+      CreateQuestPartial(
+        userId = userId,
+        questId = questId,
+        title = "Implement User Authentication",
+        description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+        status = Some(InProgress)
+      )
 
-//     val request =
-//       Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/business/businesses/address/details/create")
-//         .withEntity(businessAddressRequest)
+    val businessAddressRequest: Json = testCreateQuest("user_id_3", "quest_id_3").asJson
 
-//     val expectedBody = CreatedResponse(CreateSuccess.toString, "Business address details created successfully")
+    val request =
+      Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/quest/create")
+        .withEntity(businessAddressRequest)
 
-//     client.run(request).use { response =>
-//       response.as[CreatedResponse].map { body =>
-//         expect.all(
-//           response.status == Status.Created,
-//           body == expectedBody
-//         )
-//       }
-//     }
-//   }
+    val expectedBody = CreatedResponse(CreateSuccess.toString, "quest details created successfully")
+
+    client.run(request).use { response =>
+      response.as[CreatedResponse].map { body =>
+        expect.all(
+          response.status == Status.Created,
+          body == expectedBody
+        )
+      }
+    }
+  }
 
 //   test(
 //     "PUT - /dev-quest-service/business/businesses/address/details/update/business_id_4 - " +
