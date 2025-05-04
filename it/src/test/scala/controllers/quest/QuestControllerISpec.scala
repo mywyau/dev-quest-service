@@ -2,30 +2,31 @@ package controllers.quest
 
 import cats.effect.*
 import controller.fragments.QuestControllerFragments.*
-import controllers.constants.QuestControllerConstants.*
 import controllers.ControllerISpecBase
+import controllers.constants.QuestControllerConstants.*
 import doobie.implicits.*
 import doobie.util.transactor.Transactor
-import io.circe.syntax.*
 import io.circe.Json
-import java.time.LocalDateTime
+import io.circe.syntax.*
+import models.InProgress
 import models.database.*
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.responses.CreatedResponse
 import models.responses.DeletedResponse
 import models.responses.UpdatedResponse
-import models.InProgress
 import org.http4s.*
+import org.http4s.Method.*
 import org.http4s.circe.*
 import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
 import org.http4s.implicits.*
-import org.http4s.Method.*
-import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import shared.HttpClientResource
 import shared.TransactorResource
 import weaver.*
+
+import java.time.LocalDateTime
 
 class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
@@ -107,8 +108,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
   }
 
   test(
-    "POST - /dev-quest-service/quest/create - " +
-      "should generate the business address data for a business in database table, returning Created response"
+    "POST - /dev-quest-service/quest/create - should generate the quest data in db table, returning Created response"
   ) { (transactorResource, log) =>
 
     val transactor = transactorResource._1.xa
