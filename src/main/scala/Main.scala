@@ -58,11 +58,12 @@ object Main extends IOApp {
   ): Resource[F, HttpRoutes[F]] =
     for {
       baseRoutes <- Resource.pure(baseRoutes())
+      authRoutes <- Resource.pure(authRoutes(appConfig))
       questsRoutes <- Resource.pure(questsRoutes(transactor, appConfig))
       authedRoutes <- Resource.pure(JwtAuth.routesWithAuth[F](transactor, client, algorithm))
 
       combinedRoutes = Router(
-        "/" -> baseRoutes,
+        "/" -> (baseRoutes <+> authRoutes),
         "/dev-quest-service" -> authedRoutes
       )
 

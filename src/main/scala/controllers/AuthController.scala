@@ -9,7 +9,6 @@ import org.http4s.*
 import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
 import org.typelevel.log4cats.Logger
-
 import scala.concurrent.duration.*
 
 trait AuthControllerAlgebra[F[_]] {
@@ -41,9 +40,9 @@ class AuthControllerImpl[F[_] : Async : Logger](
           Ok(UpdatedResponse(userId, "Session updated").asJson)
       }
 
-    // case DELETE -> Root / "auth" / "session" / userId =>
-    //   redisCache.deleteSession(userId) *>
-    //     Ok(DeletedResponse(userId, "Session deleted").asJson)
+    case DELETE -> Root / "auth" / "session" / userId =>
+      redisCache.deleteSession(userId) *>
+        Ok(DeletedResponse(userId, "Session deleted").asJson)
   }
 }
 

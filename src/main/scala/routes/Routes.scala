@@ -1,8 +1,8 @@
 package routes
 
 import cache.RedisCache
-import cats.NonEmptyParallel
 import cats.effect.*
+import cats.NonEmptyParallel
 import configuration.models.AppConfig
 import controllers.*
 import doobie.hikari.HikariTransactor
@@ -19,6 +19,16 @@ object Routes {
     val baseController = BaseController()
 
     baseController.routes
+  }
+
+  def authRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](
+    appConfig: AppConfig
+  ): HttpRoutes[F] = {
+
+    val redisCache = new RedisCache(appConfig)
+    val authController = AuthController(redisCache)
+
+    authController.routes
   }
 
   def questsRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](

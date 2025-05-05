@@ -41,7 +41,6 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
     case req @ GET -> Root / "quest" / "user" / userIdFromRoute =>
       req.headers.get[headers.Authorization].map(_.value.stripPrefix("Bearer ")) match {
         case Some(token) =>
-          // redisCache.redisResource.use { client =>
             redisCache.validateSession(token).flatMap {
               case Some(userIdFromSession) if userIdFromSession == userIdFromRoute =>
                 Logger[F].info(s"[QuestControllerImpl] GET - Quest details for userId: $userIdFromSession") *>
@@ -56,7 +55,6 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
               case None =>
                 Forbidden("Invalid or expired session")
             }
-          // }
         case None =>
           Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
       }
