@@ -80,7 +80,7 @@ class QuestControllerImpl[F[_] : Concurrent : Logger](questService: QuestService
         questService.delete(questId).flatMap {
           case Valid(response) =>
             Logger[F].info(s"[QuestControllerImpl] DELETE - Successfully deleted quest for $questId") *>
-              Ok(DeletedResponse(response.toString, "quest details deleted successfully").asJson)
+              Ok(DeletedResponse(response.toString, "quest deleted successfully").asJson)
           case Invalid(error) =>
             val errorResponse = ErrorResponse("placeholder error", "some deleted quest message")
             BadRequest(errorResponse.asJson)
