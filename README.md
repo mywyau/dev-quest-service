@@ -80,13 +80,13 @@ share
 ### To connect to TEST postgresql Database
 
 ```
-psql -h localhost -p 5432 -U shared_user -d shared_test_db
+psql -h localhost -p 5431 -U dev_quest_test_user -d dev_quest_test_db
 ```
 
 #### TEST Database Password:
 
 ```
-share
+turnip
 ```
 
 ---
@@ -135,32 +135,6 @@ updatedAt="2025-01-01T12:00:00"
 
 ```
 
-http PUT http://localhost:8080/dev-quest-service/business/offices/specifications/update/OFF-3fc560b7-c039-4267-9de3-023a10077a5f \
-officeName="Downtown Workspace"\
-description="A modern co-working space"\
-officeType="PrivateOffice"\
-numberOfFloors=3\
-totalDesks=3 \
-capacity=100 \
-amenities=50,\
-availability="100,\
-rules="ARRAY['WiFi', 'Coffee', 'Meeting Rooms'],\
-updatedAt="2025-01-01T12:00:00"
-
-
-http PUT http://localhost:8080/dev-quest-service/business/offices/specifications/update/OFF-9573ca68-737e-47c2-97f1-c639c7b0daca \
-Content-Type:application/json \
-officeName="Downtown Workspace" \
-description="A modern and spacious office" \
-officeType="PrivateOffice" \
-numberOfFloors:=3 \
-totalDesks:=120 \
-capacity:=150 \
-amenities:='["WiFi", "Conference Rooms", "Parking"]' \
-availability:='{"days": ["Monday", "Wednesday"], "openingTime": "09:00:00", "closingTime": "17:00:00"}' \
-rules="No smoking inside the building" \
-updatedAt="2025-01-01T12:00:00"
-
 
 ```
 
@@ -168,3 +142,5 @@ updatedAt="2025-01-01T12:00:00"
 sbt docker:publishLocal
 
 docker run -p 8080:8080 dev-quest-service:0.1.0-SNAPSHOT
+
+❯ psql -h localhost -p 5431 -U dev_quest_test_user -d dev_quest_test_db

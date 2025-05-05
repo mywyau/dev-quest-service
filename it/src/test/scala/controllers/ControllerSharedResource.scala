@@ -1,7 +1,8 @@
 package controllers
 
 import cats.effect.*
-import com.comcast.ip4s.{Host, Port}
+import com.comcast.ip4s.Host
+import com.comcast.ip4s.Port
 import configuration.BaseAppConfig
 import configuration.models.*
 import controllers.TestRoutes.*
@@ -16,8 +17,10 @@ import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.implicits.*
 import org.http4s.server.Server
 import repository.DatabaseResource.postgresqlConfigResource
-import shared.{HttpClientResource, TransactorResource}
-import weaver.{GlobalResource, GlobalWrite}
+import shared.HttpClientResource
+import shared.TransactorResource
+import weaver.GlobalResource
+import weaver.GlobalWrite
 
 import scala.concurrent.ExecutionContext
 
@@ -39,18 +42,20 @@ object ControllerSharedResource extends GlobalResource with BaseAppConfig {
     EmberClientBuilder.default[IO].build
 
   def serverResource(
-                      host: Host,
-                      port: Port,
-                      router: HttpRoutes[IO]
-                    ): Resource[IO, Server] =
-    EmberServerBuilder
-      .default[IO]
-      .withHost(host)
-      .withPort(port)
-      .withHttpApp(router.orNotFound)
-      .build
+    host: Host,
+    port: Port,
+    router: Resource[IO, HttpRoutes[IO]]
+  ): Resource[IO, Server] =
+    router.flatMap { router =>
+      EmberServerBuilder
+        .default[IO]
+        .withHost(host)
+        .withPort(port)
+        .withHttpApp(router.orNotFound)
+        .build
+    }
 
-  def sharedResources(global: GlobalWrite): Resource[IO, Unit] = {
+  def sharedResources(global: GlobalWrite): Resource[IO, Unit] =
     for {
       appConfig <- configResource
       host <- hostResource(appConfig)
@@ -59,9 +64,8 @@ object ControllerSharedResource extends GlobalResource with BaseAppConfig {
       ce <- executionContextResource
       xa <- transactorResource(postgresqlConfig, ce)
       client <- clientResource
-      _ <- serverResource(host, port, createTestRouter(xa))
+      _ <- serverResource(host, port, createTestRouter(xa, appConfig))
       _ <- global.putR(TransactorResource(xa))
       _ <- global.putR(HttpClientResource(client))
     } yield ()
-  }
 }

@@ -53,11 +53,12 @@ object Main extends IOApp {
   def createHttpRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async](
     transactor: HikariTransactor[F],
     client: Client[F],
-    algorithm: Algorithm
+    algorithm: Algorithm,
+    appConfig: AppConfig
   ): Resource[F, HttpRoutes[F]] =
     for {
       baseRoutes <- Resource.pure(baseRoutes())
-      questsRoutes <- Resource.pure(questsRoutes(transactor))
+      questsRoutes <- Resource.pure(questsRoutes(transactor, appConfig))
       authedRoutes <- Resource.pure(JwtAuth.routesWithAuth[F](transactor, client, algorithm))
 
       combinedRoutes = Router(
@@ -115,7 +116,7 @@ object Main extends IOApp {
       )
 
       transactor <- transactorResource[IO](appConfig)
-      httpRoutes <- createHttpRoutes[IO](transactor, client, algorithm)
+      httpRoutes <- createHttpRoutes[IO](transactor, client, algorithm, appConfig)
       _ <- createServer[IO](host, port, httpRoutes)
     } yield ()
 

@@ -2,14 +2,13 @@ package controllers.quest
 
 import cats.effect.*
 import controller.fragments.QuestControllerFragments.*
-import controllers.ControllerISpecBase
 import controllers.constants.QuestControllerConstants.*
+import controllers.ControllerISpecBase
 import doobie.implicits.*
 import doobie.util.transactor.Transactor
-import io.circe.Json
 import io.circe.syntax.*
-import models.Completed
-import models.InProgress
+import io.circe.Json
+import java.time.LocalDateTime
 import models.database.*
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
@@ -17,18 +16,19 @@ import models.quests.UpdateQuestPartial
 import models.responses.CreatedResponse
 import models.responses.DeletedResponse
 import models.responses.UpdatedResponse
+import models.Completed
+import models.InProgress
 import org.http4s.*
-import org.http4s.Method.*
 import org.http4s.circe.*
 import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
 import org.http4s.implicits.*
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.http4s.Method.*
+import org.typelevel.ci.CIStringSyntax
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import shared.HttpClientResource
 import shared.TransactorResource
 import weaver.*
-
-import java.time.LocalDateTime
 
 class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
@@ -61,8 +61,11 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         status = Some(InProgress)
       )
 
+    val sessionToken = "test-session-token"
+
     val request =
       Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/quest/user/USER001")
+        .putHeaders(Header.Raw(ci"Authorization", s"Bearer $sessionToken"))
 
     val expectedQuest = testQuest("USER001", "QUEST001")
 
