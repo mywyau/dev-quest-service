@@ -10,9 +10,9 @@ trait RedisCacheAlgebra[F[_]] {
 
   def storeSession(userId: String, token: String): F[Unit]
 
-  def validateSession(token: String): F[Option[String]]
+  def getSession(userId: String): F[Option[String]]
 
-  def deleteSession(token: String): F[Long]
+  def deleteSession(userId: String): F[Long]
 }
 
 class RedisCache[F[_] : Async](appConfig: AppConfig) extends RedisCacheAlgebra[F] {
@@ -24,9 +24,9 @@ class RedisCache[F[_] : Async](appConfig: AppConfig) extends RedisCacheAlgebra[F
   override def storeSession(userId: String, token: String): F[Unit] =
     withRedis(_.setEx(s"auth:session:$userId", token, 1.day))
 
-  override def validateSession(token: String): F[Option[String]] =
-    withRedis(_.get(s"auth:session:$token"))
+  override def getSession(userId: String): F[Option[String]] =
+    withRedis(_.get(s"auth:session:$userId"))
 
-  override def deleteSession(token: String): F[Long] =
-    withRedis(_.del(s"auth:session:$token"))
+  override def deleteSession(userId: String): F[Long] =
+    withRedis(_.del(s"auth:session:$userId"))
 }

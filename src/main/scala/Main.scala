@@ -28,7 +28,7 @@ object Main extends IOApp {
 
   implicit def logger[F[_] : Sync]: Logger[F] = Slf4jLogger.getLogger[F]
 
-  def transactorResource[F[_]: Async](appConfig: AppConfig): Resource[F, HikariTransactor[F]] = {
+  def transactorResource[F[_] : Async](appConfig: AppConfig): Resource[F, HikariTransactor[F]] = {
     val dbHost = sys.env.getOrElse("DB_HOST", appConfig.localConfig.postgresqlConfig.host)
     val dbUser = sys.env.getOrElse("DB_USER", appConfig.localConfig.postgresqlConfig.username)
     val dbPassword = sys.env.getOrElse("DB_PASSWORD", appConfig.localConfig.postgresqlConfig.password)
@@ -53,18 +53,18 @@ object Main extends IOApp {
   def createHttpRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async](
     transactor: HikariTransactor[F],
     client: Client[F],
-    algorithm: Algorithm,
+    // algorithm: Algorithm,
     appConfig: AppConfig
   ): Resource[F, HttpRoutes[F]] =
     for {
       baseRoutes <- Resource.pure(baseRoutes())
       authRoutes <- Resource.pure(authRoutes(appConfig))
       questsRoutes <- Resource.pure(questsRoutes(transactor, appConfig))
-      authedRoutes <- Resource.pure(JwtAuth.routesWithAuth[F](transactor, client, algorithm))
+      // authedRoutes <- Resource.pure(JwtAuth.routesWithAuth[F](transactor, client, algorithm))
 
       combinedRoutes = Router(
         "/" -> (baseRoutes <+> authRoutes),
-        "/dev-quest-service" -> authedRoutes
+        "/dev-quest-service" -> questsRoutes
       )
 
       corsRoutes = CORS.policy.withAllowOriginAll
@@ -94,9 +94,9 @@ object Main extends IOApp {
 
     val serverResource: Resource[IO, Unit] = for {
       client <- EmberClientBuilder.default[IO].build
-      keys <- Resource.eval(JwksKeyProvider.loadJwks[IO]("https://dev-3cz1mwtxetvjzpjg.uk.auth0.com/.well-known/jwks.json", client))
-      keyProvider = new StaticJwksKeyProvider(keys)
-      algorithm = Algorithm.RSA256(keyProvider)
+      // keys <- Resource.eval(JwksKeyProvider.loadJwks[IO]("https://dev-3cz1mwtxetvjzpjg.uk.auth0.com/.well-known/jwks.json", client))
+      // keyProvider = new StaticJwksKeyProvider(keys)
+      // algorithm = Algorithm.RSA256(keyProvider)
 
       appConfig <- Resource.eval(configReader.loadAppConfig.handleErrorWith { e =>
         IO.raiseError(new RuntimeException(s"Failed to load app configuration: ${e.getMessage}", e))
@@ -117,7 +117,12 @@ object Main extends IOApp {
       )
 
       transactor <- transactorResource[IO](appConfig)
-      httpRoutes <- createHttpRoutes[IO](transactor, client, algorithm, appConfig)
+      httpRoutes <- createHttpRoutes[IO](
+        transactor,
+        client,
+        // algorithm,
+        appConfig
+      )
       _ <- createServer[IO](host, port, httpRoutes)
     } yield ()
 

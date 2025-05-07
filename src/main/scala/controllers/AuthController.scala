@@ -29,7 +29,7 @@ class AuthControllerImpl[F[_] : Async : Logger](
 
     case GET -> Root / "auth" / "session" / userId =>
       Logger[F].info(s"[AuthControllerImpl] GET - Validating session for userId: $userId") *>
-        redisCache.validateSession(userId).flatMap {
+        redisCache.getSession(userId).flatMap {
           case Some(token) =>
             Logger[F].info(s"[AuthControllerImpl] Session found for $userId: $token") *>
               Ok(s"Session token: $token")
