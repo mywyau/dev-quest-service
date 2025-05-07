@@ -17,43 +17,6 @@ import scala.concurrent.duration.*
 
 object TestRoutes {
 
-  // class StubRedisCommands(ref: Ref[IO, Map[String, String]]) extends RedisCommands[IO, String, String] {
-  //   override def get(key: String): IO[Option[String]] =
-  //     ref.get.map(_.get(key))
-
-  //   override def setEx(key: String, value: String, expiration: FiniteDuration): IO[Unit] =
-  //     ref.update(_.updated(key, value))
-
-  //   override def set(key: String, value: String): IO[Unit] = setEx(key, value, 1.hour)
-
-  //   override def ping: IO[String] = IO.pure("PONG")
-
-  //   // You must override these:
-  //   // override def del(key: String): IO[Long] = IO.pure(1L)
-  //   // override def isOpen: IO[Boolean] = IO.pure(true)
-  //   // override def close: IO[Unit] = IO.unit
-
-  //   // Stub out unused functionality
-  //   override def auth(password: CharSequence): IO[Boolean] = IO.raiseError(new NotImplementedError())
-  //   override def auth(username: String, password: CharSequence): IO[Boolean] = IO.raiseError(new NotImplementedError())
-  //   override def disableAutoFlush: IO[Unit] = IO.unit
-  //   override def enableAutoFlush: IO[Unit] = IO.unit
-  //   override def flushCommands: IO[Unit] = IO.unit
-  // }
-
-  // class MockRedisCache(ref: Ref[IO, Map[String, String]]) extends RedisCacheAlgebra[IO] {
-
-  //   override def redisResource: Resource[IO, RedisCommands[IO, String, String]] =
-  //     Resource.pure(new StubRedisCommands(ref))
-  //     // Resource.pure(new StubRedisCommands)
-
-  //   override def storeSession(redis: RedisCommands[IO, String, String], token: String, userId: String): IO[Unit] =
-  //     redis.setEx(s"auth:session:$token", userId, 1.hour)
-
-  //   override def validateSession(redis: RedisCommands[IO, String, String], token: String): IO[Option[String]] =
-  //     redis.get(s"auth:session:$token")
-  // }
-
   class MockRedisCache(ref: Ref[IO, Map[String, String]]) extends RedisCacheAlgebra[IO] {
 
     override def deleteSession(token: String): IO[Long] = ???

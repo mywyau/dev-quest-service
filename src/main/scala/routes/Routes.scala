@@ -21,7 +21,7 @@ object Routes {
     baseController.routes
   }
 
-  def authRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](
+  def authRoutes[F[_] : Async : Logger](
     appConfig: AppConfig
   ): HttpRoutes[F] = {
 

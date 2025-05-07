@@ -3,12 +3,17 @@ package controllers
 import cache.RedisCacheAlgebra
 import cats.effect.kernel.Async
 import cats.implicits.*
+import io.circe.syntax.*
 import io.circe.syntax.EncoderOps
 import models.responses.*
 import org.http4s.*
+import org.http4s.MediaType
 import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
+import org.http4s.dsl.io.*
+import org.http4s.headers.`Content-Type`
 import org.typelevel.log4cats.Logger
+
 import scala.concurrent.duration.*
 
 trait AuthControllerAlgebra[F[_]] {
@@ -23,30 +28,45 @@ class AuthControllerImpl[F[_] : Async : Logger](
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
     case GET -> Root / "auth" / "session" / userId =>
-      redisCache.validateSession(userId).flatMap {
-        case Some(token) => Ok(s"Session token: $token")
-        case None => NotFound(ErrorResponse("NOT_FOUND", s"No session for userId $userId").asJson)
-      }
+      Logger[F].info(s"[AuthControllerImpl] GET - Validating session for userId: $userId") *>
+        redisCache.validateSession(userId).flatMap {
+          case Some(token) =>
+            Logger[F].info(s"[AuthControllerImpl] Session found for $userId: $token") *>
+              Ok(s"Session token: $token")
+          case None =>
+            Logger[F].warn(s"[AuthControllerImpl] No session found for $userId") *>
+              NotFound(ErrorResponse("NOT_FOUND", s"No session for userId $userId").asJson)
+        }
 
     case req @ POST -> Root / "auth" / "session" / userId =>
-      req.as[String].flatMap { sessionToken =>
-        redisCache.storeSession(sessionToken, userId) *>
-          Created(CreatedResponse(userId, "Session stored").asJson)
-      }
+      Logger[F].info(s"POST - Creating session for userId: $userId") *>
+        Async[F].delay(req.cookies.find(_.name == "auth_session")).flatMap {
+          case Some(cookie) =>
+            redisCache.storeSession(userId, cookie.content) *>
+              Created(CreatedResponse(userId, "Session stored from cookie").asJson)
+                .map(_.withContentType(`Content-Type`(MediaType.application.json)))
+
+          case None =>
+            Logger[F].warn(s"No auth_session cookie for $userId") *>
+              BadRequest(ErrorResponse("NO_COOKIE", "auth_session cookie not found").asJson)
+                .map(_.withContentType(`Content-Type`(MediaType.application.json)))
+        }
 
     case req @ PUT -> Root / "auth" / "session" / userId =>
       req.as[String].flatMap { newToken =>
-        redisCache.storeSession(newToken, userId) *>
+        Logger[F].info(s"[AuthControllerImpl] PUT - Updating session for $userId with token") *>
+          redisCache.storeSession(newToken, userId) *>
           Ok(UpdatedResponse(userId, "Session updated").asJson)
       }
 
     case DELETE -> Root / "auth" / "session" / userId =>
-      redisCache.deleteSession(userId) *>
+      Logger[F].info(s"[AuthControllerImpl] DELETE - Deleting session for $userId") *>
+        redisCache.deleteSession(userId) *>
         Ok(DeletedResponse(userId, "Session deleted").asJson)
   }
 }
 
 object AuthController {
-  def apply[F[_] : Async](redisCache: RedisCacheAlgebra[F])(implicit logger: Logger[F]): AuthControllerAlgebra[F] =
+  def apply[F[_] : Async : Logger](redisCache: RedisCacheAlgebra[F]): AuthControllerAlgebra[F] =
     new AuthControllerImpl[F](redisCache)
 }
