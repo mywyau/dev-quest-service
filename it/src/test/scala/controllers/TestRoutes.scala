@@ -24,7 +24,7 @@ object TestRoutes {
     def storeSession(token: String, userId: String): IO[Unit] =
       ref.update(_.updated(s"auth:session:$token", userId))
 
-    def validateSession(token: String): IO[Option[String]] =
+    def getSession(token: String): IO[Option[String]] =
       ref.get.map(_.get(s"auth:session:$token"))
   }
 

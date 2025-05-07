@@ -9,7 +9,7 @@ lazy val root = (project in file("."))
     Compile / run / fork := true,
     scalaSource := baseDirectory.value / "src" / "main" / "scala",
     Compile / unmanagedSourceDirectories += baseDirectory.value / "src" / "main" / "scala",
-    Test / scalaSource := baseDirectory.value / "src" / "test" / "scala",
+    Test / scalaSource := baseDirectory.value / "test" / "scala",
 
     // sbt-native-packager Docker settings
     dockerBaseImage := "eclipse-temurin:21-jre",
