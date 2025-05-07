@@ -4,8 +4,8 @@ import cache.RedisCache
 import cache.RedisCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
-import cats.effect.Concurrent
 import cats.effect.kernel.Async
+import cats.effect.Concurrent
 import cats.implicits.*
 import io.circe.syntax.EncoderOps
 import models.quests.CreateQuestPartial
@@ -15,11 +15,11 @@ import models.responses.DeletedResponse
 import models.responses.ErrorResponse
 import models.responses.UpdatedResponse
 import org.http4s.*
-import org.http4s.Challenge
 import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
+import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
 import services.QuestServiceAlgebra
 
@@ -36,6 +36,9 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
   implicit val createDecoder: EntityDecoder[F, CreateQuestPartial] = jsonOf[F, CreateQuestPartial]
   implicit val updateDecoder: EntityDecoder[F, UpdateQuestPartial] = jsonOf[F, UpdateQuestPartial]
 
+  private def extractBearerToken(req: Request[F]): Option[String] =
+    req.headers.get[headers.Authorization].map(_.value.stripPrefix("Bearer "))
+
   private def withValidSession(userId: String, token: String)(onValid: F[Response[F]]): F[Response[F]] =
     redisCache.getSession(userId).flatMap {
       case Some(tokenFromRedis) if tokenFromRedis == token =>
@@ -46,12 +49,9 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
         Forbidden("Invalid or expired session")
     }
 
-  private def extractBearerToken(req: Request[F]): Option[String] =
-    req.headers.get[headers.Authorization].map(_.value.stripPrefix("Bearer "))
-
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
-    //TODO: change this to return a list of paginated quests
+    // TODO: change this to return a list of paginated quests
     case req @ GET -> Root / "quest" / "all" / userIdFromRoute =>
       extractBearerToken(req) match {
         case Some(headerToken) =>

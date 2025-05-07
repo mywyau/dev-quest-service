@@ -45,8 +45,43 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
       client <- global.getOrFailR[HttpClientResource]()
     } yield (transactor, client)
 
+  // TODO: Change to test for retrieving all quests in paginated form or stream etc. 
   test(
-    "GET - /dev-quest-service/quest/user/USER001 - should find the quest data for given user id, returning OK and the correct quest json body"
+    "GET - /dev-quest-service/quest/all/USER001 - should find the quest data for given user id, returning OK and the correct quest json body"
+  ) { (transactorResource, log) =>
+
+    val transactor = transactorResource._1.xa
+    val client = transactorResource._2.client
+
+    val sessionToken = "test-session-token"
+
+    def testQuest(userId: String, questId: String): QuestPartial =
+      QuestPartial(
+        userId = userId,
+        questId = questId,
+        title = "Implement User Authentication",
+        description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+        status = Some(InProgress)
+      )
+
+    val request =
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/quest/all/USER001")
+        .putHeaders(Header.Raw(ci"Authorization", s"Bearer $sessionToken"))
+
+    val expectedQuest = testQuest("USER001", "QUEST001")
+
+    client.run(request).use { response =>
+      response.as[QuestPartial].map { body =>
+        expect.all(
+          response.status == Status.Ok,
+          body == expectedQuest
+        )
+      }
+    }
+  }
+
+  test(
+    "GET - /dev-quest-service/quest/USER001/QUEST001 - should find the quest data for given quest id, returning OK and the correct quest json body"
   ) { (transactorResource, log) =>
 
     val transactor = transactorResource._1.xa
@@ -64,7 +99,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
     val sessionToken = "test-session-token"
 
     val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/quest/user/USER001")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/quest/USER001/QUEST001")
         .putHeaders(Header.Raw(ci"Authorization", s"Bearer $sessionToken"))
 
     val expectedQuest = testQuest("USER001", "QUEST001")
@@ -80,42 +115,13 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
   }
 
   test(
-    "GET - /dev-quest-service/quest/QUEST001 - should find the quest data for given quest id, returning OK and the correct quest json body"
+    "POST - /dev-quest-service/quest/create/USER006 - should generate the quest data in db table, returning Created response"
   ) { (transactorResource, log) =>
 
     val transactor = transactorResource._1.xa
     val client = transactorResource._2.client
 
-    def testQuest(userId: String, questId: String): QuestPartial =
-      QuestPartial(
-        userId = userId,
-        questId = questId,
-        title = "Implement User Authentication",
-        description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
-        status = Some(InProgress)
-      )
-
-    val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/quest/QUEST001")
-
-    val expectedQuest = testQuest("USER001", "QUEST001")
-
-    client.run(request).use { response =>
-      response.as[QuestPartial].map { body =>
-        expect.all(
-          response.status == Status.Ok,
-          body == expectedQuest
-        )
-      }
-    }
-  }
-
-  test(
-    "POST - /dev-quest-service/quest/create - should generate the quest data in db table, returning Created response"
-  ) { (transactorResource, log) =>
-
-    val transactor = transactorResource._1.xa
-    val client = transactorResource._2.client
+    val sessionToken = "test-session-token"
 
     def testCreateQuest(userId: String, questId: String): CreateQuestPartial =
       CreateQuestPartial(
@@ -129,7 +135,8 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
     val businessAddressRequest: Json = testCreateQuest("user_id_6", "quest_id_6").asJson
 
     val request =
-      Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/quest/create")
+      Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/quest/create/USER006")
+        .putHeaders(Header.Raw(ci"Authorization", s"Bearer $sessionToken"))
         .withEntity(businessAddressRequest)
 
     val expectedBody = CreatedResponse(CreateSuccess.toString, "quest details created successfully")
@@ -145,12 +152,14 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
   }
 
   test(
-    "PUT - /dev-quest-service/quest/QUEST004 - " +
+    "PUT - /dev-quest-service/quest/USER004/QUEST004 - " +
       "should update the quest data for given quest_id, returning Updated response"
   ) { (transactorResource, log) =>
 
     val transactor = transactorResource._1.xa
     val client = transactorResource._2.client
+
+    val sessionToken = "test-session-token"
 
     val updateRequest: UpdateQuestPartial =
       UpdateQuestPartial(
@@ -162,7 +171,8 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
       )
 
     val request =
-      Request[IO](PUT, uri"http://127.0.0.1:9999/dev-quest-service/quest/update/QUEST004")
+      Request[IO](PUT, uri"http://127.0.0.1:9999/dev-quest-service/quest/update/USER004/QUEST004")
+        .putHeaders(Header.Raw(ci"Authorization", s"Bearer $sessionToken"))
         .withEntity(updateRequest.asJson)
 
     val expectedBody = UpdatedResponse(UpdateSuccess.toString, "quest updated successfully")
@@ -178,15 +188,18 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
   }
 
   test(
-    "DELETE - /dev-quest-service/quest/QUEST003 - " +
+    "DELETE - /dev-quest-service/quest/USER003/QUEST003 - " +
       "should delete the quest data for given quest_id, returning OK and Deleted response json"
   ) { (transactorResource, log) =>
 
     val transactor = transactorResource._1.xa
     val client = transactorResource._2.client
 
+    val sessionToken = "test-session-token"
+
     val request =
-      Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/quest/QUEST003")
+      Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/quest/USER003/QUEST003")
+        .putHeaders(Header.Raw(ci"Authorization", s"Bearer $sessionToken"))
 
     val expectedBody = DeletedResponse(DeleteSuccess.toString, "quest deleted successfully")
 
