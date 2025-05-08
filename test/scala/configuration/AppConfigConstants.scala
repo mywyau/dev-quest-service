@@ -4,10 +4,31 @@ import configuration.models.*
 
 object AppConfigConstants {
 
+  val featureSwitches =
+    FeatureSwitches(
+      useDockerHost = false
+    )
+
   val appServerConfig =
     ServerConfig(
       host = "0.0.0.0",
       port = 8080
+    )
+
+  val containerPostgresqlConfig =
+    PostgresqlConfig(
+      dbName = "dev_quest_db",
+      dockerHost = "dev-quest-container",
+      host = "localhost",
+      port = 5432,
+      username = "dev_quest_user",
+      password = "turnip"
+    )
+
+  val localConfig =
+    LocalConfig(
+      serverConfig = appServerConfig,
+      postgresqlConfig = containerPostgresqlConfig
     )
 
   val integrationSpecServerConfig =
@@ -26,31 +47,10 @@ object AppConfigConstants {
       password = "turnip"
     )
 
-  val containerPostgresqlConfig =
-    PostgresqlConfig(
-      dbName = "dev_quest",
-      dockerHost = "dev-quest-container",
-      host = "localhost",
-      port = 5432,
-      username = "dev_quest_user",
-      password = "turnip"
-    )
-
   val integrationSpecConfig =
     IntegrationSpecConfig(
       serverConfig = integrationSpecServerConfig,
       postgresqlConfig = integrationPostgresqlConfig
-    )
-
-  val localConfig =
-    LocalConfig(
-      serverConfig = appServerConfig,
-      postgresqlConfig = containerPostgresqlConfig
-    )
-
-  val featureSwitches =
-    FeatureSwitches(
-      useDockerHost = false
     )
 
   val appConfig =
