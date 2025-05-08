@@ -28,6 +28,13 @@ object Main extends IOApp {
 
   implicit def logger[F[_] : Sync]: Logger[F] = Slf4jLogger.getLogger[F]
 
+  def redisAddress[F[_] : Async](appConfig: AppConfig): Resource[F, (String, Int)] = {
+    val redisHost = sys.env.getOrElse("REDIS_HOST", appConfig.localConfig.redisConfig.host)
+    val redisPort = sys.env.get("REDIS_PORT").flatMap(_.toIntOption).getOrElse(appConfig.localConfig.redisConfig.port)
+
+    Resource.eval(Async[F].pure((redisHost, redisPort)))
+  }
+
   def transactorResource[F[_] : Async](appConfig: AppConfig): Resource[F, HikariTransactor[F]] = {
     val dbHost = sys.env.getOrElse("DB_HOST", appConfig.localConfig.postgresqlConfig.host)
     val dbUser = sys.env.getOrElse("DB_USER", appConfig.localConfig.postgresqlConfig.username)
@@ -51,15 +58,16 @@ object Main extends IOApp {
   }
 
   def createHttpRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async](
+    redisHost: String,
+    redisPort: Int,
     transactor: HikariTransactor[F],
     client: Client[F],
-    // algorithm: Algorithm,
     appConfig: AppConfig
   ): Resource[F, HttpRoutes[F]] =
     for {
       baseRoutes <- Resource.pure(baseRoutes())
-      authRoutes <- Resource.pure(authRoutes(appConfig))
-      questsRoutes <- Resource.pure(questsRoutes(transactor, appConfig))
+      authRoutes <- Resource.pure(authRoutes(redisHost, redisPort, appConfig))
+      questsRoutes <- Resource.pure(questsRoutes(redisHost, redisPort, transactor, appConfig))
       // authedRoutes <- Resource.pure(JwtAuth.routesWithAuth[F](transactor, client, algorithm))
 
       combinedRoutes = Router(
@@ -117,7 +125,12 @@ object Main extends IOApp {
       )
 
       transactor <- transactorResource[IO](appConfig)
+
+      redisAddress <- redisAddress[IO](appConfig)
+
       httpRoutes <- createHttpRoutes[IO](
+        redisAddress._1,
+        redisAddress._2,
         transactor,
         client,
         // algorithm,

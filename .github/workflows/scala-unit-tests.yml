@@ -18,13 +18,13 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: 11 # Specify the Java version required for your project
-          distribution: 'adopt'
+          distribution: "adopt"
 
       - name: Set up Scala and sbt
         uses: olafurpg/setup-scala@v14
         with:
-          java-version: '11'
-          sbt-version: '1.10.7'  # Specify the sbt version you want to use
+          java-version: "11"
+          sbt-version: "1.10.7" # Specify the sbt version you want to use
 
       - name: Cache SBT
         uses: actions/cache@v3
@@ -47,6 +47,19 @@ jobs:
     name: Run Integration Tests
     runs-on: ubuntu-latest
 
+    container:
+      image: openjdk:11
+
+    env:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: dev_quest_test_user
+      DB_PASSWORD: turnip
+      DB_NAME: dev_quest_test_db
+
     services:
       postgres:
         image: postgres:14
@@ -54,10 +67,16 @@ jobs:
           POSTGRES_USER: dev_quest_test_user
           POSTGRES_PASSWORD: turnip
           POSTGRES_DB: dev_quest_test_db
-        ports:
-          - 5431:5432
         options: >-
           --health-cmd "pg_isready -U dev_quest_test_user -d dev_quest_test_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -70,13 +89,13 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: 11
-          distribution: 'adopt'
+          distribution: "adopt"
 
       - name: Set up Scala and sbt
         uses: olafurpg/setup-scala@v14
         with:
-          java-version: '11'
-          sbt-version: '1.10.7'  # Specify the sbt version you want to use
+          java-version: "11"
+          sbt-version: "1.10.7"
 
       - name: Cache SBT
         uses: actions/cache@v3
@@ -92,12 +111,29 @@ jobs:
       - name: Install Dependencies
         run: sbt update
 
+      - name: Install redis-cli
+        run: apt-get update && apt-get install -y redis-tools
+
+      - name: Wait for Redis
+        run: |
+          for i in {1..30}; do
+            if redis-cli -h redis -p 6379 ping | grep PONG; then
+              echo "Redis is ready";
+              break;
+            fi
+            echo "Waiting for Redis...";
+            sleep 1;
+          done
+
+      - name: Install PostgreSQL Client
+        run: apt-get update && apt-get install -y postgresql-client
+
       - name: Wait for PostgreSQL
         env:
           PGPASSWORD: turnip
         run: |
           for i in {1..30}; do
-            if pg_isready -h localhost -p 5431 -U dev_quest_test_user; then
+            if pg_isready -h postgres -p 5432 -U dev_quest_test_user; then
               echo "Postgres is ready";
               break;
             fi
@@ -109,8 +145,8 @@ jobs:
         env:
           PGPASSWORD: turnip
         run: |
-          psql -h localhost -p 5431 -U dev_quest_test_user -d postgres -c "DROP DATABASE IF EXISTS dev_quest_test_db;"
-          psql -h localhost -p 5431 -U dev_quest_test_user -d postgres -c "CREATE DATABASE dev_quest_test_db;"
-        
+          psql -h postgres -p 5432 -U dev_quest_test_user -d postgres -c "DROP DATABASE IF EXISTS dev_quest_test_db;"
+          psql -h postgres -p 5432 -U dev_quest_test_user -d postgres -c "CREATE DATABASE dev_quest_test_db;"
+
       - name: Run Integration Tests
         run: sbt it/test
