@@ -56,7 +56,6 @@ object AppDependencies {
     "org.http4s" %% "http4s-ember-client" % "0.23.28" % Test,
     "com.disneystreaming" %% "weaver-scalacheck" % "0.7.6" % Test,
     "com.github.pureconfig" %% "pureconfig-core" % "0.17.8" % Test,
-    "org.typelevel" %% "kittens" % "3.5.0" % Test
   )
 
   // Additional workaround for macOS if needed
