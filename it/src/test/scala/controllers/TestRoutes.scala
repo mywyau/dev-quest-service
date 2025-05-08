@@ -1,6 +1,7 @@
 package controllers
 
 import cache.RedisCacheAlgebra
+import cache.RedisCacheImpl
 import cats.effect.*
 import cats.implicits.*
 import configuration.models.AppConfig
@@ -35,6 +36,18 @@ object TestRoutes {
     baseController.routes
   }
 
+  def authRoutes(
+    redisHost: String,
+    redisPort: Int,
+    appConfig: AppConfig
+  ): HttpRoutes[IO] = {
+
+    val redisCache = new RedisCacheImpl[IO](redisHost, redisPort, appConfig)
+    val authController = AuthController(redisCache)
+
+    authController.routes
+  }
+
   def questRoutes(transactor: Transactor[IO], appConfig: AppConfig): Resource[IO, HttpRoutes[IO]] = {
     val sessionToken = "test-session-token"
     for {
@@ -46,7 +59,7 @@ object TestRoutes {
             s"auth:session:USER003" -> sessionToken,
             s"auth:session:USER004" -> sessionToken,
             s"auth:session:USER005" -> sessionToken,
-            s"auth:session:USER006" -> sessionToken,
+            s"auth:session:USER006" -> sessionToken
           )
         )
       )
@@ -60,7 +73,7 @@ object TestRoutes {
   def createTestRouter(transactor: Transactor[IO], appConfig: AppConfig): Resource[IO, HttpRoutes[IO]] =
     questRoutes(transactor, appConfig).map { questRoute =>
       Router(
-        "/" -> baseRoutes(),
+        "/" -> (baseRoutes() <+> authRoutes(appConfig.integrationSpecConfig._3.host, appConfig.integrationSpecConfig._3.port, appConfig)),
         "/dev-quest-service" -> questRoute
       )
     }
