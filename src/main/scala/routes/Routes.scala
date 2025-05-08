@@ -1,6 +1,6 @@
 package routes
 
-import cache.RedisCache
+import cache.RedisCacheImpl
 import cats.effect.*
 import cats.NonEmptyParallel
 import configuration.models.AppConfig
@@ -22,21 +22,25 @@ object Routes {
   }
 
   def authRoutes[F[_] : Async : Logger](
+    redisHost: String,
+    redisPort: Int,
     appConfig: AppConfig
   ): HttpRoutes[F] = {
 
-    val redisCache = new RedisCache(appConfig)
+    val redisCache = new RedisCacheImpl(redisHost, redisPort, appConfig)
     val authController = AuthController(redisCache)
 
     authController.routes
   }
 
   def questsRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](
+    redisHost: String,
+    redisPort: Int,
     transactor: HikariTransactor[F],
     appConfig: AppConfig
   ): HttpRoutes[F] = {
 
-    val redisCache = new RedisCache(appConfig)
+    val redisCache = new RedisCacheImpl(redisHost, redisPort, appConfig)
     val questRepository = QuestRepository(transactor)
 
     val questService = QuestService(questRepository)

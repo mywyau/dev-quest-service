@@ -32,7 +32,7 @@ class AuthControllerImpl[F[_] : Async : Logger](
         redisCache.getSession(userId).flatMap {
           case Some(token) =>
             Logger[F].info(s"[AuthControllerImpl] Session found for $userId: $token") *>
-              Ok(s"Session token: $token")
+              Ok(GetResponse("200", s"Session token: $token").asJson)
           case None =>
             Logger[F].warn(s"[AuthControllerImpl] No session found for $userId") *>
               NotFound(ErrorResponse("NOT_FOUND", s"No session for userId $userId").asJson)

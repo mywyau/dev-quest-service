@@ -1,15 +1,16 @@
 package repository
 
-import cats.effect.{IO, Resource}
-import configuration.BaseAppConfig
+import cats.effect.IO
+import cats.effect.Resource
 import configuration.models.*
+import configuration.BaseAppConfig
 import doobie.*
 import doobie.hikari.HikariTransactor
 import doobie.implicits.*
-import shared.TransactorResource
-import weaver.{GlobalResource, GlobalWrite}
-
 import scala.concurrent.ExecutionContext
+import shared.TransactorResource
+import weaver.GlobalResource
+import weaver.GlobalWrite
 
 object DatabaseResource extends GlobalResource with BaseAppConfig {
 
@@ -76,16 +77,21 @@ object DatabaseResource extends GlobalResource with BaseAppConfig {
       connectEC = ce
     )
 
-  def sharedResources(global: GlobalWrite): Resource[IO, Unit] = {
+  def sharedResources(global: GlobalWrite): Resource[IO, Unit] =
     for {
       appConfig <- configResource
       postgresqlConfig <- postgresqlConfigResource(appConfig)
+      postgresqlHost <- Resource.eval {
+        IO.pure(sys.env.getOrElse("DB_HOST", postgresqlConfig.host))
+      }
+      postgresqlPort <- Resource.eval {
+        IO.pure(sys.env.get("DB_PORT").flatMap(p => scala.util.Try(p.toInt).toOption).getOrElse(postgresqlConfig.port))
+      }
       ce <- executionContextResource
-      xa <- transactorResource(postgresqlConfig, ce)
+      xa <- transactorResource(postgresqlConfig.copy(host = postgresqlHost, port = postgresqlPort), ce)
       _ <- global.putR(TransactorResource(xa))
       // Uncomment the following lines to enable schema printing and test insertion during initialization
       // _ <- printSchema(xa)
       // _ <- testInsert(xa)
     } yield ()
-  }
 }
