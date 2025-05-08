@@ -4,17 +4,52 @@ This Backend service is responsible for business domain data e.g. businesses, of
 
 ### Order of setup scripts:
 
+To set up the postgres db please run scripts from repo:
+
+### dev-irl-database-setup
+
 1. ./setup_postgres.sh
 2. ./setup_flyway_migrations.sh
-3. ./setup_app.sh (this can be ran whenever)
 
-### To run the app
+Then (this can be ran whenever):
+
+```
+ ./setup_app.sh
+```
+
+### connect to redis
+
+#### Run redis-server on port 6379:
+
+```
+redis-server
+```
+
+#### Run redis-cli to enter cli
+
+```
+redis-cli
+```
+
+```
+keys *
+```
+
+```
+get <keyId>
+```
+
+```
+del <keyId>
+```
+
+### To run the app locally
 
 ```
 ./run.sh
 ```
 
-### To run the tests
+### To run the tests locally
 
 ```
 ./run_tests.sh
@@ -26,36 +61,10 @@ Please remember to include the package/path for the shared resources,
 the shared resources is needed to help WeaverTests locate the shared resources needed for the tests
 
 ```
-./itTestOnly RegistrationControllerISpec controllers.ControllerSharedResource
+./itTestOnly QuestRegistrationControllerISpec controllers.ControllerSharedResource
 ```
 
 ---
-
-### To Set up the database
-
-```
-./setup_postgres.sh
-```
-
-### To populate the postgresql database using flyway
-
-Please run the docker compose scripts
-
-```
-./setup_flyway_migrations.sh
-```
-
-### To clear down the database
-
-```
-./clear_down_postgres.sh
-```
-
-### To clear down the flyway container
-
-```
-./clear_down_flyway.sh
-```
 
 ### To clear down docker container for app and orphans
 
@@ -68,13 +77,13 @@ docker-compose down --volumes --remove-orphans
 ### To connect to postgresql database
 
 ```
-psql -h localhost -p 5432 -U shared_user -d shared_db
+psql -h localhost -p 5432 -U dev_quest_user -d dev_quest_db
 ```
 
 #### App Database Password:
 
 ```
-share
+turnip
 ```
 
 ### To connect to TEST postgresql Database
@@ -105,42 +114,11 @@ ALTER ROLE shared_user SET search_path TO share_schema, public;
 We can use httpie instead of curl to trigger our endpoints.
 
 ```
-http POST http://localhost:8080/dev-quest-service/business/offices/address/create Content-Type:application/json businessId="BUS12345" officeId="OFF12345" buildingName="Example Building" floorNumber="12" street="123 Example Street" city="Example City" country="Example Country" county="Example County" postcode="12345" latitude:=12.345678 longitude:=-98.765432
+
 ```
-
-http PUT http://localhost:8080/dev-quest-service/business/offices/address/OFF-3fc560b7-c039-4267-9de3-023a10077a5f \
-buildingName="New Building" \
-floorNumber=3 \
-street="123 Main St" \
-city="ExampleCity" \
-country="ExampleCountry" \
-county="ExampleCounty" \
-postcode="12345" \
-latitude=12.34 \
-longitude=56.78 \
-updatedAt="2025-01-01T12:00:00"
-
-http GET http://localhost:8080/dev-quest-service/business/businesses/listing/cards/find/all
-
-http GET http://localhost:8080/dev-quest-service/business/office/listing/cards/find/all/BUS-4d50bd78-fe03-4dcd-a9ab-b2dabe7e9bd3
-
-http PUT http://localhost:8080/dev-quest-service/business/offices/contact/details/update/OFF-9573ca68-737e-47c2-97f1-c639c7b0daca \
-primaryContactFirstName="Mikey" \
-primaryContactLastName="Yau" \
-contactEmail="mikey@gmail.com" \
-contactNumber="07402205071" \
-updatedAt="2025-01-01T12:00:00"
 
 ### TODO: WIP
 
 ```
-
-
-```
-
-
 sbt docker:publishLocal
-
-docker run -p 8080:8080 dev-quest-service:0.1.0-SNAPSHOT
-
-❯ psql -h localhost -p 5431 -U dev_quest_test_user -d dev_quest_test_db
+```
