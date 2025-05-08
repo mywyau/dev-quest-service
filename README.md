@@ -19,6 +19,13 @@ Then (this can be ran whenever):
 
 ### connect to redis
 
+### run redis test container for integration testing, port: 6380
+
+```
+docker run --name redis-test-container -p 6380:6379 -d redis
+```
+
+
 #### Run redis-server on port 6379:
 
 ```

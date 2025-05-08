@@ -25,9 +25,7 @@ object AppDependencies {
     "org.http4s" %% "http4s-ember-server" % http4sVersion,
     "org.http4s" %% "http4s-circe" % http4sVersion,
     "org.http4s" %% "http4s-jawn" % http4sVersion,
-
     "com.auth0" % "java-jwt" % "4.4.0",
-    
     "org.tpolecat" %% "doobie-core" % doobieVersion,
     "org.tpolecat" %% "doobie-hikari" % doobieVersion,
     "org.tpolecat" %% "doobie-postgres" % doobieVersion,
@@ -57,7 +55,7 @@ object AppDependencies {
     "com.disneystreaming" %% "weaver-cats" % weaverVersion % Test,
     "org.http4s" %% "http4s-ember-client" % "0.23.28" % Test,
     "com.disneystreaming" %% "weaver-scalacheck" % "0.7.6" % Test,
-    "com.github.pureconfig" %% "pureconfig-core" % "0.17.8" % Test
+    "com.github.pureconfig" %% "pureconfig-core" % "0.17.8" % Test,
   )
 
   // Additional workaround for macOS if needed
