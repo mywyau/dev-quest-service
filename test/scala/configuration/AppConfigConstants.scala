@@ -15,7 +15,7 @@ object AppConfigConstants {
       port = 8080
     )
 
-  val containerPostgresqlConfig =
+  val containerPostgreSqlConfig =
     PostgresqlConfig(
       dbName = "dev_quest_db",
       dockerHost = "dev-quest-container",
@@ -25,19 +25,27 @@ object AppConfigConstants {
       password = "turnip"
     )
 
+  val redisConfig =
+    RedisConfig(
+      dockerHost = "redis-container",
+      host = "localhost",
+      port = 6379
+    )
+
   val localConfig =
     LocalConfig(
       serverConfig = appServerConfig,
-      postgresqlConfig = containerPostgresqlConfig
+      postgresqlConfig = containerPostgreSqlConfig,
+      redisConfig = redisConfig
     )
 
-  val integrationSpecServerConfig =
+  val itSpecServerConfig =
     ServerConfig(
       host = "127.0.0.1",
       port = 9999
     )
 
-  val integrationPostgresqlConfig =
+  val itPostgresqlConfig =
     PostgresqlConfig(
       dbName = "dev_quest_test_db",
       dockerHost = "dev-quest-db-it",
@@ -47,10 +55,18 @@ object AppConfigConstants {
       password = "turnip"
     )
 
+  val itRedisConfig =
+    RedisConfig(
+      dockerHost = "redis-test-container",
+      host = "localhost",
+      port = 6380
+    )
+
   val integrationSpecConfig =
     IntegrationSpecConfig(
-      serverConfig = integrationSpecServerConfig,
-      postgresqlConfig = integrationPostgresqlConfig
+      serverConfig = itSpecServerConfig,
+      postgresqlConfig = itPostgresqlConfig,
+      redisConfig = itRedisConfig
     )
 
   val appConfig =
