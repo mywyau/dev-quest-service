@@ -118,7 +118,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
 
     // TODO: change this to return a list of paginated quests
     case req @ GET -> Root / "quest" / "all" / userIdFromRoute =>
-      extractBearerToken(req) match {
+      extractSessionToken(req) match {
         case Some(headerToken) =>
           withValidSession(userIdFromRoute, headerToken) {
             Logger[F].info(s"[QuestController] GET - Authenticated for userId $userIdFromRoute") *>
@@ -134,7 +134,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
       }
 
     case req @ GET -> Root / "quest" / userIdFromRoute / questId =>
-      extractBearerToken(req) match {
+      extractSessionToken(req) match {
         case Some(headerToken) =>
           withValidSession(userIdFromRoute, headerToken) {
             Logger[F].info(s"[QuestController] GET - Authenticated for userId $userIdFromRoute") *>
@@ -149,7 +149,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
       }
 
     case req @ POST -> Root / "quest" / "create" / userIdFromRoute =>
-      extractBearerToken(req) match {
+      extractSessionToken(req) match {
         case Some(headerToken) =>
           withValidSession(userIdFromRoute, headerToken) {
             Logger[F].info(s"[QuestControllerImpl] POST - Creating quest") *>
@@ -168,7 +168,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
       }
 
     case req @ PUT -> Root / "quest" / "update" / userIdFromRoute / questId =>
-      extractBearerToken(req) match {
+      extractSessionToken(req) match {
         case Some(headerToken) =>
           withValidSession(userIdFromRoute, headerToken) {
             Logger[F].info(s"[QuestControllerImpl] PUT - Updating quest with ID: $questId") *>
@@ -188,7 +188,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
       }
 
     case req @ DELETE -> Root / "quest" / userIdFromRoute / questId =>
-      extractBearerToken(req) match {
+      extractSessionToken(req) match {
         case Some(headerToken) =>
           withValidSession(userIdFromRoute, headerToken) {
             Logger[F].info(s"[QuestControllerImpl] DELETE - Attempting to delete quest") *>
