@@ -57,37 +57,6 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
         Forbidden("Invalid or expired session")
     }
 
-  // def streamFakeQuests[F[_]]: Stream[F, String] = {
-  //   val quests = (1 to 100).map { i =>
-  //     Json
-  //       .obj(
-  //         "questId" -> Json.fromString(f"QUEST$i%03d"),
-  //         "title" -> Json.fromString(s"Quest Title $i"),
-  //         "description" -> Json.fromString(s"This is quest number $i"),
-  //         "status" -> Json.fromString("not-started")
-  //       )
-  //       .noSpaces
-  //   }
-
-  //   Stream.emits(quests).covary[F].intersperse("\n")
-  // }
-
-  def streamFakeQuests[F[_]](limit: Int, offset: Int): Stream[F, String] = {
-    val quests = (1 to 100).map { i =>
-      Json
-        .obj(
-          "questId" -> Json.fromString(f"QUEST$i%03d"),
-          "title" -> Json.fromString(s"Quest Title $i"),
-          "description" -> Json.fromString(s"This is quest number $i"),
-          "status" -> Json.fromString("not-started")
-        )
-        .noSpaces
-    }
-
-    // Apply pagination
-    Stream.emits(quests.slice(offset, offset + limit)).covary[F].intersperse("\n")
-  }
-
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
     case req @ GET -> Root / "quest" / "stream" / userIdFromRoute =>
@@ -98,14 +67,17 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
             val limit = req.params.get("limit").flatMap(_.toIntOption).getOrElse(10)
             val offset = (page - 1) * limit
 
-            Logger[F].info(s"[QuestController] Streaming paginated quests for $userIdFromRoute (page=$page, limit=$limit)") *>
+            Logger[F].info(
+              s"[QuestController] Streaming paginated quests for $userIdFromRoute (page=$page, limit=$limit)"
+            ) *>
               Ok(
                 questService
                   .streamByUserId(userIdFromRoute, limit, offset)
-                  .map(_.asJson.noSpaces)
-                  .intersperse("\n")
+                  .map(_.asJson.noSpaces) // Quest ⇒ JSON string
+                  .evalTap(json => Logger[F].info(s"[QuestController] → $json")) // <── log every line
+                  .intersperse("\n") // ND-JSON framing
                   .handleErrorWith { e =>
-                    Stream.eval(Logger[F].error(e)(s"[QuestController] Stream error")) >> Stream.empty
+                    Stream.eval(Logger[F].info(e)("[QuestController] Stream error")) >> Stream.empty
                   }
                   .onFinalize(Logger[F].info("[QuestController] Stream completed").void)
               )
