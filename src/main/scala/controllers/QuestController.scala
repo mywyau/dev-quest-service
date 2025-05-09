@@ -15,6 +15,7 @@ import models.quests.UpdateQuestPartial
 import models.responses.CreatedResponse
 import models.responses.DeletedResponse
 import models.responses.ErrorResponse
+import models.responses.GetResponse
 import models.responses.UpdatedResponse
 import org.http4s.*
 import org.http4s.circe.*
@@ -58,6 +59,10 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
     }
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
+
+    case req @ GET -> Root / "health" =>
+      Logger[F].info(s"[BaseControllerImpl] GET - Health check for backend QuestController service") *>
+        Ok(GetResponse("/dev-quest-service/health", "I am alive").asJson)
 
     case req @ GET -> Root / "quest" / "stream" / userIdFromRoute =>
       extractSessionToken(req) match {

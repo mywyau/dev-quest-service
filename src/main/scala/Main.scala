@@ -79,7 +79,6 @@ object Main extends IOApp {
       baseRoutes <- Resource.pure(baseRoutes())
       authRoutes <- Resource.pure(authRoutes(redisHost, redisPort, appConfig))
       questsRoutes <- Resource.pure(questsRoutes(redisHost, redisPort, transactor, appConfig))
-      // authedRoutes <- Resource.pure(JwtAuth.routesWithAuth[F](transactor, client, algorithm))
 
       combinedRoutes = Router(
         "/" -> (baseRoutes <+> authRoutes),
@@ -95,13 +94,10 @@ object Main extends IOApp {
           Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000))
         )
       )
-      .withAllowCredentials(true) // Allow credentials
-      .withAllowHeadersAll // Allow all headers (or restrict if necessary)
-      .withMaxAge(1.day) // Cache the CORS preflight response for 1 day
-      .withAllowMethodsIn(Set(Method.GET, Method.POST,
-                          Method.PUT, Method.DELETE, // add whatever you use
-                          Method.OPTIONS))
-      // .withAllowHeadersIn(Set(ci"Content-Type", ci"Authorization", ci"X-Custom-Header")) // Allowing these custom headers
+      .withAllowCredentials(true)
+      .withAllowHeadersAll 
+      .withMaxAge(1.day) 
+      .withAllowMethodsAll   
       .apply(combinedRoutes)
 
       throttledRoutes <- Resource.eval(throttleMiddleware(corsRoutes))
