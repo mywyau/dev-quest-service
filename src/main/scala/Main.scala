@@ -1,32 +1,33 @@
+import cats.NonEmptyParallel
 import cats.effect.*
 import cats.implicits.*
-import cats.NonEmptyParallel
 import com.auth0.jwt.algorithms.Algorithm
 import com.comcast.ip4s.*
-import configuration.models.AppConfig
 import configuration.ConfigReader
+import configuration.models.AppConfig
 import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts
 import middleware.JwksKeyProvider
 import middleware.JwtAuth
 import middleware.Middleware.throttleMiddleware
 import middleware.StaticJwksKeyProvider
-import org.http4s.client.middleware.Logger as ClientLogger
+import org.http4s.HttpRoutes
+import org.http4s.Method
+import org.http4s.Uri
 import org.http4s.client.Client
+import org.http4s.client.middleware.Logger as ClientLogger
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.headers.Origin
 import org.http4s.implicits.*
+import org.http4s.server.Router
 import org.http4s.server.middleware.CORS
 import org.http4s.server.middleware.CORSConfig
-import org.http4s.server.Router
-import org.http4s.HttpRoutes
-import org.http4s.Method
-import org.http4s.Uri
 import org.typelevel.ci.CIStringSyntax
-import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import routes.Routes.*
+
 import scala.concurrent.duration.DurationInt
 
 object Main extends IOApp {
@@ -68,7 +69,9 @@ object Main extends IOApp {
     transactor: HikariTransactor[F],
     client: Client[F],
     appConfig: AppConfig
-  ): Resource[F, HttpRoutes[F]] =
+  ): Resource[F, HttpRoutes[F]] = {
+    val regName = sys.env.getOrElse("CORS_REG_NAME", "localhost")
+
     for {
       baseRoutes <- Resource.pure(baseRoutes())
       authRoutes <- Resource.pure(authRoutes(redisHost, redisPort, appConfig))
@@ -81,13 +84,20 @@ object Main extends IOApp {
       )
 
       corsRoutes = CORS.policy
-        .withAllowOriginHost(Set(Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000)))) // Only allow localhost:3000
-        .withAllowCredentials(true) // Allow credentials
-        .withAllowHeadersAll // Allow all headers (or restrict if necessary)
-        .withMaxAge(1.day) // Cache the CORS preflight response for 1 day
+        .withAllowOriginHost(Set(Origin.Host(Uri.Scheme.https, Uri.RegName(regName), None)))
+        .withAllowCredentials(true) // <---  REQUIRED when you send cookies
         .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.OPTIONS)) // Allow GET, POST, and OPTIONS methods
-        .withAllowHeadersIn(Set(ci"Content-Type", ci"Authorization", ci"X-Custom-Header")) // Allowing these custom headers
+        .withAllowHeadersAll // or pick the exact headers you need
+        .withMaxAge(1.day)
         .apply(combinedRoutes)
+
+      // .withAllowOriginHost(Set(Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000)))) // Only allow localhost:3000
+      // .withAllowCredentials(true) // Allow credentials
+      // .withAllowHeadersAll // Allow all headers (or restrict if necessary)
+      // .withMaxAge(1.day) // Cache the CORS preflight response for 1 day
+      // .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.OPTIONS)) // Allow GET, POST, and OPTIONS methods
+      // .withAllowHeadersIn(Set(ci"Content-Type", ci"Authorization", ci"X-Custom-Header")) // Allowing these custom headers
+      // .apply(combinedRoutes)
 
       // .withAllowOriginHost(Set(Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000))))
       // // .withAllowOriginAll // or use .withAllowOrigin(Set("http://localhost:3000")) for specific origin
@@ -98,6 +108,7 @@ object Main extends IOApp {
 
       throttledRoutes <- Resource.eval(throttleMiddleware(corsRoutes))
     } yield throttledRoutes
+  }
 
   def createServer[F[_] : Async](
     host: Host,
