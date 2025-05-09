@@ -4,12 +4,12 @@ import cache.RedisCache
 import cache.RedisCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
-import cats.effect.Concurrent
 import cats.effect.kernel.Async
+import cats.effect.Concurrent
 import cats.implicits.*
 import fs2.Stream
-import io.circe.Json
 import io.circe.syntax.EncoderOps
+import io.circe.Json
 import models.quests.CreateQuestPartial
 import models.quests.UpdateQuestPartial
 import models.responses.CreatedResponse
@@ -17,15 +17,14 @@ import models.responses.DeletedResponse
 import models.responses.ErrorResponse
 import models.responses.UpdatedResponse
 import org.http4s.*
-import org.http4s.Challenge
 import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
+import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
-import services.QuestServiceAlgebra
-
 import scala.concurrent.duration.*
+import services.QuestServiceAlgebra
 
 trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -100,18 +99,20 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
             val offset = (page - 1) * limit
 
             Logger[F].info(s"[QuestController] Streaming paginated quests for $userIdFromRoute (page=$page, limit=$limit)") *>
-              // Ok(streamFakeQuests[F](limit, offset))
               Ok(
                 questService
                   .streamByUserId(userIdFromRoute, limit, offset)
-                  .evalTap(quest => Logger[F].info(s"[QuestController] Streaming quest: ${quest.questId}"))
                   .map(_.asJson.noSpaces)
                   .intersperse("\n")
+                  .handleErrorWith { e =>
+                    Stream.eval(Logger[F].error(e)(s"[QuestController] Stream error")) >> Stream.empty
+                  }
+                  .onFinalize(Logger[F].info("[QuestController] Stream completed").void)
               )
           }
 
         case None =>
-          Logger[F].info(s"[QuestController] GET - /quest/stream/userId - Unauthorised") *>
+          Logger[F].info("[QuestController] Unauthorized request to /quest/stream") *>
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
       }
 
