@@ -73,7 +73,7 @@ object Main extends IOApp {
     appConfig: AppConfig
   ): Resource[F, HttpRoutes[F]] = {
 
-    val regName = sys.env.getOrElse("CORS_REG_NAME", "devirl.com")
+    // val regName = sys.env.getOrElse("CORS_REG_NAME", "devirl.com")
 
     for {
       baseRoutes <- Resource.pure(baseRoutes())
@@ -86,21 +86,21 @@ object Main extends IOApp {
         )  
 
       
-      corsRoutes = CORS.policy
-      .withAllowOriginHost(
-        Set(
-          Origin.Host(Uri.Scheme.https, Uri.RegName("devirl.com"), None),
-          Origin.Host(Uri.Scheme.https, Uri.RegName("api.devirl.com"),  None),
-          Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000))
-        )
-      )
-      .withAllowCredentials(true)
-      .withAllowHeadersAll 
-      .withMaxAge(1.day) 
-      .withAllowMethodsAll   
-      .apply(combinedRoutes)
+      // corsRoutes = CORS.policy
+      // .withAllowOriginHost(
+      //   Set(
+      //     Origin.Host(Uri.Scheme.https, Uri.RegName("devirl.com"), None),
+      //     Origin.Host(Uri.Scheme.https, Uri.RegName("api.devirl.com"),  None),
+      //     Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000))
+      //   )
+      // )
+      // .withAllowCredentials(true)
+      // .withAllowHeadersAll 
+      // .withMaxAge(1.day) 
+      // .withAllowMethodsAll   
+      // .apply(combinedRoutes)
 
-      throttledRoutes <- Resource.eval(throttleMiddleware(corsRoutes))
+      throttledRoutes <- Resource.eval(throttleMiddleware(combinedRoutes))
     } yield throttledRoutes
   }
 
