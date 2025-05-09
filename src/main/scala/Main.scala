@@ -1,5 +1,6 @@
 import cats.NonEmptyParallel
 import cats.effect.*
+import cats.effect.IO
 import cats.implicits.*
 import com.auth0.jwt.algorithms.Algorithm
 import com.comcast.ip4s.*
@@ -16,6 +17,7 @@ import org.http4s.Method
 import org.http4s.Uri
 import org.http4s.client.Client
 import org.http4s.client.middleware.Logger as ClientLogger
+import org.http4s.dsl.io.*
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.headers.Origin
@@ -71,9 +73,8 @@ object Main extends IOApp {
     appConfig: AppConfig
   ): Resource[F, HttpRoutes[F]] = {
 
-    val regName = sys.env.getOrElse("CORS_REG_NAME", "api.devirl.com")
-    // val port = sys.env.getOrElse("CORS_REG_NAME", "3000")
-    // println(regName)
+    val regName = sys.env.getOrElse("CORS_REG_NAME", "devirl.com")
+
     for {
       baseRoutes <- Resource.pure(baseRoutes())
       authRoutes <- Resource.pure(authRoutes(redisHost, redisPort, appConfig))
@@ -83,43 +84,25 @@ object Main extends IOApp {
       combinedRoutes = Router(
         "/" -> (baseRoutes <+> authRoutes),
         "/dev-quest-service" -> questsRoutes
-      )
+        )  
 
       
       corsRoutes = CORS.policy
-      .withAllowOriginHost(Set(
-        Origin.Host(Uri.Scheme.https, Uri.RegName(regName), None),
-        Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000))
-        ))
+      .withAllowOriginHost(
+        Set(
+          Origin.Host(Uri.Scheme.https, Uri.RegName("devirl.com"), None),
+          Origin.Host(Uri.Scheme.https, Uri.RegName("api.devirl.com"),  None),
+          Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000))
+        )
+      )
       .withAllowCredentials(true) // Allow credentials
       .withAllowHeadersAll // Allow all headers (or restrict if necessary)
       .withMaxAge(1.day) // Cache the CORS preflight response for 1 day
-      .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.OPTIONS)) // Allow GET, POST, and OPTIONS methods
-      .withAllowHeadersIn(Set(ci"Content-Type", ci"Authorization", ci"X-Custom-Header")) // Allowing these custom headers
-      .apply(combinedRoutes)
-
-
-        // .withAllowOriginHost(Set(Origin.Host(Uri.Scheme.https, Uri.RegName(regName), Some(3000))))  // needs port for localhost
-        // .withAllowCredentials(true) // <---  REQUIRED when you send cookies
-        // .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.OPTIONS)) // Allow GET, POST, and OPTIONS methods
-        // .withAllowHeadersAll // or pick the exact headers you need
-        // .withMaxAge(1.day)
-        // .apply(combinedRoutes)
-
-      // .withAllowOriginHost(Set(Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000)))) // Only allow localhost:3000
-      // .withAllowCredentials(true) // Allow credentials
-      // .withAllowHeadersAll // Allow all headers (or restrict if necessary)
-      // .withMaxAge(1.day) // Cache the CORS preflight response for 1 day
-      // .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.OPTIONS)) // Allow GET, POST, and OPTIONS methods
+      .withAllowMethodsIn(Set(Method.GET, Method.POST,
+                          Method.PUT, Method.DELETE, // add whatever you use
+                          Method.OPTIONS))
       // .withAllowHeadersIn(Set(ci"Content-Type", ci"Authorization", ci"X-Custom-Header")) // Allowing these custom headers
-      // .apply(combinedRoutes)
-
-      // .withAllowOriginHost(Set(Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000))))
-      // // .withAllowOriginAll // or use .withAllowOrigin(Set("http://localhost:3000")) for specific origin
-      // .withAllowCredentials(true)
-      // .withAllowHeadersAll
-      // .withMaxAge(1.day)
-      // .apply(combinedRoutes)
+      .apply(combinedRoutes)
 
       throttledRoutes <- Resource.eval(throttleMiddleware(corsRoutes))
     } yield throttledRoutes
@@ -143,9 +126,6 @@ object Main extends IOApp {
 
     val serverResource: Resource[IO, Unit] = for {
       client <- EmberClientBuilder.default[IO].build
-      // keys <- Resource.eval(JwksKeyProvider.loadJwks[IO]("https://dev-3cz1mwtxetvjzpjg.uk.auth0.com/.well-known/jwks.json", client))
-      // keyProvider = new StaticJwksKeyProvider(keys)
-      // algorithm = Algorithm.RSA256(keyProvider)
 
       appConfig <- Resource.eval(configReader.loadAppConfig.handleErrorWith { e =>
         IO.raiseError(new RuntimeException(s"Failed to load app configuration: ${e.getMessage}", e))
