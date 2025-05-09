@@ -71,7 +71,7 @@ object Main extends IOApp {
     appConfig: AppConfig
   ): Resource[F, HttpRoutes[F]] = {
 
-    val regName = sys.env.getOrElse("CORS_REG_NAME", "localhost")
+    val regName = sys.env.getOrElse("CORS_REG_NAME", "api.devirl.com")
     // val port = sys.env.getOrElse("CORS_REG_NAME", "3000")
     // println(regName)
     for {
@@ -87,7 +87,10 @@ object Main extends IOApp {
 
       
       corsRoutes = CORS.policy
-      .withAllowOriginHost(Set(Origin.Host(Uri.Scheme.http, Uri.RegName(regName), None))) // Only allow localhost:3000  we need port 3000 for local Some(3000)
+      .withAllowOriginHost(Set(
+        Origin.Host(Uri.Scheme.https, Uri.RegName(regName), None),
+        Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000))
+        ))
       .withAllowCredentials(true) // Allow credentials
       .withAllowHeadersAll // Allow all headers (or restrict if necessary)
       .withMaxAge(1.day) // Cache the CORS preflight response for 1 day
