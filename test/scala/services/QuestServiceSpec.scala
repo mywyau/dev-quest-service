@@ -1,4 +1,4 @@
-package services.quest
+package services
 
 import cats.data.Validated.Valid
 import cats.effect.IO
@@ -12,7 +12,7 @@ import weaver.SimpleIOSuite
 
 import java.time.LocalDateTime
 
-object QuestServiceSpec extends SimpleIOSuite {
+object QuestServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
   test(".getByQuestId() - when there is an existing quest details given a businessId should return the correct address details - Right(address)") {
 
@@ -44,7 +44,7 @@ object QuestServiceSpec extends SimpleIOSuite {
     val service = QuestService(mockQuestRepository)
 
     for {
-      result <- service.create(testPartial)
+      result <- service.create(testPartial, userId1)
     } yield expect(result == Valid(CreateSuccess))
   }
 }

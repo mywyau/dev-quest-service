@@ -29,7 +29,7 @@ trait QuestServiceAlgebra[F[_]] {
 
   def getByQuestId(questId: String): F[Option[QuestPartial]]
 
-  def create(questRequest: CreateQuestPartial, userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def create(request: CreateQuestPartial, userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def update(questId: String, request: UpdateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 

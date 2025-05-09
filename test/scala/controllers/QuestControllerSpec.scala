@@ -28,18 +28,19 @@ object QuestControllerSpec extends SimpleIOSuite with ControllerSpecBase {
   ): HttpRoutes[IO] =
     QuestController[IO](questService, mockRedisCache).routes
 
-  test("GET - /quest/USER001/questId should return 200 when quest is retrieved successfully") {
+  test("GET - /quest/USER001/QUEST001 should return 200 when quest is retrieved successfully") {
 
     val sessionToken = "test-session-token"
-    val mockQuestService = new MockQuestService(Map("questId1" -> sampleQuest1))
-    val request = Request[IO](Method.GET, uri"/quest/USER001/questId1")
+    val mockQuestService = new MockQuestService(Map("QUEST001" -> sampleQuest1))
+    val request = Request[IO](Method.GET, uri"/quest/USER001/QUEST001")
 
     for {
       ref <- Ref.of[IO, Map[String, String]](Map(s"auth:session:USER001" -> sessionToken))
       mockRedisCache = new MockRedisCache(ref)
       controller = createUserController(mockQuestService, mockRedisCache)
       response <- controller.orNotFound.run(
-        request.withHeaders(Header.Raw(ci"Authorization", s"Bearer $sessionToken"))
+        request
+          .addCookie("auth_session", sessionToken)
       )
     } yield expect(response.status == Status.Ok)
   }

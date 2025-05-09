@@ -8,16 +8,13 @@ import testData.TestConstants.*
 
 object QuestServiceConstants {
 
-  def testQuestRequest(userId: String,  questId:String): CreateQuestPartial =
+  def testQuestRequest(userId: String, questId: String): CreateQuestPartial =
     CreateQuestPartial(
-      userId = userId,
-      questId = questId,
       title = "",
-      description = Some(""),
-      status = Some(InProgress)
+      description = Some("")
     )
 
-  def testQuest(userId: String, questId:String): QuestPartial =
+  def testQuest(userId: String, questId: String): QuestPartial =
     QuestPartial(
       userId = userId,
       questId = questId,
