@@ -70,8 +70,10 @@ object Main extends IOApp {
     client: Client[F],
     appConfig: AppConfig
   ): Resource[F, HttpRoutes[F]] = {
-    val regName = sys.env.getOrElse("CORS_REG_NAME", "localhost")
 
+    val regName = sys.env.getOrElse("CORS_REG_NAME", "localhost")
+    // val port = sys.env.getOrElse("CORS_REG_NAME", "3000")
+    // println(regName)
     for {
       baseRoutes <- Resource.pure(baseRoutes())
       authRoutes <- Resource.pure(authRoutes(redisHost, redisPort, appConfig))
@@ -83,13 +85,23 @@ object Main extends IOApp {
         "/dev-quest-service" -> questsRoutes
       )
 
+      
       corsRoutes = CORS.policy
-        .withAllowOriginHost(Set(Origin.Host(Uri.Scheme.https, Uri.RegName(regName), None)))
-        .withAllowCredentials(true) // <---  REQUIRED when you send cookies
-        .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.OPTIONS)) // Allow GET, POST, and OPTIONS methods
-        .withAllowHeadersAll // or pick the exact headers you need
-        .withMaxAge(1.day)
-        .apply(combinedRoutes)
+      .withAllowOriginHost(Set(Origin.Host(Uri.Scheme.http, Uri.RegName(regName), None))) // Only allow localhost:3000  we need port 3000 for local Some(3000)
+      .withAllowCredentials(true) // Allow credentials
+      .withAllowHeadersAll // Allow all headers (or restrict if necessary)
+      .withMaxAge(1.day) // Cache the CORS preflight response for 1 day
+      .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.OPTIONS)) // Allow GET, POST, and OPTIONS methods
+      .withAllowHeadersIn(Set(ci"Content-Type", ci"Authorization", ci"X-Custom-Header")) // Allowing these custom headers
+      .apply(combinedRoutes)
+
+
+        // .withAllowOriginHost(Set(Origin.Host(Uri.Scheme.https, Uri.RegName(regName), Some(3000))))  // needs port for localhost
+        // .withAllowCredentials(true) // <---  REQUIRED when you send cookies
+        // .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.OPTIONS)) // Allow GET, POST, and OPTIONS methods
+        // .withAllowHeadersAll // or pick the exact headers you need
+        // .withMaxAge(1.day)
+        // .apply(combinedRoutes)
 
       // .withAllowOriginHost(Set(Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000)))) // Only allow localhost:3000
       // .withAllowCredentials(true) // Allow credentials
