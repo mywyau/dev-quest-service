@@ -17,12 +17,15 @@ import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.implicits.*
 import org.http4s.server.middleware.CORS
+import org.http4s.server.middleware.CORSConfig
 import org.http4s.server.Router
 import org.http4s.HttpRoutes
+import org.http4s.Uri
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.Logger
 import routes.Routes.*
 import scala.concurrent.duration.DurationInt
+import org.http4s.headers.Origin
 
 object Main extends IOApp {
 
@@ -75,8 +78,9 @@ object Main extends IOApp {
         "/dev-quest-service" -> questsRoutes
       )
 
-      corsRoutes = CORS.policy.withAllowOriginAll
-        .withAllowCredentials(false)
+      corsRoutes = CORS.policy
+        .withAllowOriginHost(Set(Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000))))
+        .withAllowCredentials(true)
         .withAllowHeadersAll
         .withMaxAge(1.day)
         .apply(combinedRoutes)
