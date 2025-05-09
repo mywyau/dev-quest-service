@@ -19,8 +19,9 @@ import testData.TestConstants.*
 import weaver.GlobalRead
 import weaver.IOSuite
 import weaver.ResourceTag
+import repository.RepositoryISpecBase
 
-class QuestRepositoryISpec(global: GlobalRead) extends IOSuite {
+class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryISpecBase {
   type Res = QuestRepositoryImpl[IO]
 
   private def initializeSchema(transactor: TransactorResource): Resource[IO, Unit] =
@@ -32,11 +33,8 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite {
 
   def testQuestRequest(userId: String, businessId: String): CreateQuestPartial =
     CreateQuestPartial(
-      userId = userId,
-      questId = "QUEST001",
       title = "Implement User Authentication",
-      description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
-      status = Some(InProgress)
+      description = Some("Set up Auth0 integration and secure routes using JWT tokens.")
     )
 
   def sharedResource: Resource[IO, QuestRepositoryImpl[IO]] = {
@@ -49,7 +47,7 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite {
     setup
   }
 
-  test(".findByUserId() - should find and return the quest if user_id exists for a previously created quest") { questRepo =>
+  test(".findAllByUserId() - should find and return the quest if user_id exists for a previously created quest") { questRepo =>
 
     val expectedResult =
       QuestPartial(
@@ -61,8 +59,8 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite {
       )
 
     for {
-      questOpt <- questRepo.findByUserId("USER001")
-    } yield expect(questOpt == Some(expectedResult))
+      quests <- questRepo.findAllByUserId("USER001")
+    } yield expect(quests == List(expectedResult))
   }
 
   test(".findByQuestId() - should find and return the quest if quest_id exists for a previously created quest") { questRepo =>

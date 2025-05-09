@@ -8,22 +8,25 @@ import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
+import doobie.util.transactor.Transactor
+import fs2.Stream
 import models.QuestStatus
 import models.database.*
-import models.quests.CreateQuestPartial
-import models.quests.QuestPartial
-import models.quests.UpdateQuestPartial
+import models.quests.*
+import org.typelevel.log4cats.Logger
 
 import java.sql.Timestamp
 import java.time.LocalDateTime
 
 trait QuestRepositoryAlgebra[F[_]] {
 
-  def findByUserId(userId: String): F[Option[QuestPartial]]
+  def streamByUserId(userId: String, limit: Int, offset: Int): Stream[F, QuestPartial]
+
+  def findAllByUserId(userId: String): F[List[QuestPartial]]
 
   def findByQuestId(questId: String): F[Option[QuestPartial]]
 
-  def create(request: CreateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def create(request: CreateQuest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def update(questId: String, request: UpdateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
@@ -32,15 +35,32 @@ trait QuestRepositoryAlgebra[F[_]] {
   def deleteAllByUserId(userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
-class QuestRepositoryImpl[F[_] : Concurrent : Monad](transactor: Transactor[F]) extends QuestRepositoryAlgebra[F] {
+class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends QuestRepositoryAlgebra[F] {
 
   implicit val questMeta: Meta[QuestStatus] = Meta[String].timap(QuestStatus.fromString)(_.toString)
 
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
 
-  override def findByUserId(userId: String): F[Option[QuestPartial]] = {
-    val findQuery: F[Option[QuestPartial]] =
+  override def streamByUserId(userId: String, limit: Int, offset: Int): Stream[F, QuestPartial] = {
+    val queryStream: Stream[F, QuestPartial] =
+      sql"""
+        SELECT user_id, quest_id, title, description, status
+        FROM quests
+        WHERE user_id = $userId
+        ORDER BY created_at DESC
+        LIMIT $limit OFFSET $offset
+      """
+        .query[QuestPartial]
+        .stream
+        .transact(transactor)
+        .evalTap(q => Logger[F].info(s"[QuestRepository] Fetched quest: ${q.questId}"))
+
+    Stream.eval(Logger[F].info(s"[QuestRepository] Streaming quests (userId=$userId, limit=$limit, offset=$offset)")) >> queryStream
+  }
+
+  override def findAllByUserId(userId: String): F[List[QuestPartial]] = {
+    val findQuery: F[List[QuestPartial]] =
       sql"""
          SELECT 
             user_id,
@@ -50,7 +70,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad](transactor: Transactor[F]) 
             status
          FROM quests
          WHERE user_id = $userId
-       """.query[QuestPartial].option.transact(transactor)
+       """.query[QuestPartial].to[List].transact(transactor)
 
     findQuery
   }
@@ -71,7 +91,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad](transactor: Transactor[F]) 
     findQuery
   }
 
-  override def create(request: CreateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def create(request: CreateQuest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       INSERT INTO quests (
          user_id,
@@ -188,6 +208,6 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad](transactor: Transactor[F]) 
 }
 
 object QuestRepository {
-  def apply[F[_] : Concurrent : Monad](transactor: Transactor[F]): QuestRepositoryAlgebra[F] =
+  def apply[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]): QuestRepositoryAlgebra[F] =
     new QuestRepositoryImpl[F](transactor)
 }
