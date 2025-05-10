@@ -73,8 +73,6 @@ object Main extends IOApp {
     appConfig: AppConfig
   ): Resource[F, HttpRoutes[F]] = {
 
-    // val regName = sys.env.getOrElse("CORS_REG_NAME", "devirl.com")
-
     for {
       baseRoutes <- Resource.pure(baseRoutes())
       authRoutes <- Resource.pure(authRoutes(redisHost, redisPort, appConfig))
@@ -86,21 +84,25 @@ object Main extends IOApp {
         )  
 
       
-      // corsRoutes = CORS.policy
-      // .withAllowOriginHost(
-      //   Set(
-      //     Origin.Host(Uri.Scheme.https, Uri.RegName("devirl.com"), None),
-      //     Origin.Host(Uri.Scheme.https, Uri.RegName("api.devirl.com"),  None),
-      //     Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000))
-      //   )
-      // )
-      // .withAllowCredentials(true)
-      // .withAllowHeadersAll 
-      // .withMaxAge(1.day) 
-      // .withAllowMethodsAll   
-      // .apply(combinedRoutes)
+      corsRoutes = CORS.policy
+      .withAllowOriginHost(
+        Set(
+          Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000))
+        )
+      )
+      .withAllowCredentials(true)
+      .withAllowHeadersIn(Set(
+        ci"Content-Type",    // your JSON bodies
+        ci"Authorization",    // if you ever send a Bearer token
+        ci"Cookie",           // your session cookie
+        ci"X-Requested-With"  // if you use any X- headers
+      ))      
+      .withMaxAge(1.day) 
+      .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.PUT, Method.DELETE,  Method.OPTIONS))
+      .apply(combinedRoutes)
 
-      throttledRoutes <- Resource.eval(throttleMiddleware(combinedRoutes))
+      routesToUse = if(appConfig.featureSwitches.localTesting){ corsRoutes } else { combinedRoutes } 
+      throttledRoutes <- Resource.eval(throttleMiddleware(routesToUse))   
     } yield throttledRoutes
   }
 
@@ -150,7 +152,6 @@ object Main extends IOApp {
         redisAddress._2,
         transactor,
         client,
-        // algorithm,
         appConfig
       )
       _ <- createServer[IO](host, port, httpRoutes)

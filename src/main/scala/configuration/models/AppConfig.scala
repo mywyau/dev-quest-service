@@ -1,10 +1,10 @@
 package configuration.models
 
 import cats.kernel.Eq
-import pureconfig.generic.derivation.*
 import pureconfig.ConfigReader
+import pureconfig.generic.derivation.*
 
-case class FeatureSwitches(useDockerHost: Boolean) derives ConfigReader
+case class FeatureSwitches(useDockerHost: Boolean, localTesting: Boolean) derives ConfigReader
 
 case class RedisConfig(dockerHost: String, host: String, port: Int) derives ConfigReader
 
