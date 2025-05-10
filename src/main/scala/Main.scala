@@ -91,12 +91,7 @@ object Main extends IOApp {
         )
       )
       .withAllowCredentials(true)
-      .withAllowHeadersIn(Set(
-        ci"Content-Type",    // your JSON bodies
-        ci"Authorization",    // if you ever send a Bearer token
-        ci"Cookie",           // your session cookie
-        ci"X-Requested-With"  // if you use any X- headers
-      ))      
+      .withAllowHeadersAll   
       .withMaxAge(1.day) 
       .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.PUT, Method.DELETE,  Method.OPTIONS))
       .apply(combinedRoutes)
