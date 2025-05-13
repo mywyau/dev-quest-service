@@ -25,6 +25,7 @@ import org.http4s.implicits.*
 import org.http4s.server.Router
 import org.http4s.server.middleware.CORS
 import org.http4s.server.middleware.CORSConfig
+import org.typelevel.ci.CIString
 import org.typelevel.ci.CIStringSyntax
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
@@ -91,12 +92,21 @@ object Main extends IOApp {
         )
       )
       .withAllowCredentials(true)
-      .withAllowHeadersAll   
+      .withAllowHeadersIn(
+        Set(
+          CIString("Content-Type"),
+          CIString("Authorization"),
+          CIString("X-Requested-With")
+        )
+      )
       .withMaxAge(1.day) 
       .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.PUT, Method.DELETE,  Method.OPTIONS))
       .apply(combinedRoutes)
 
-      routesToUse = if(appConfig.featureSwitches.localTesting){ corsRoutes } else { combinedRoutes } 
+      routesToUse = if(appConfig.featureSwitches.localTesting){ 
+        println("Using Cors")
+        corsRoutes
+       } else { combinedRoutes } 
       throttledRoutes <- Resource.eval(throttleMiddleware(routesToUse))   
     } yield throttledRoutes
   }
