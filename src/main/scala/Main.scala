@@ -114,7 +114,7 @@ object Main extends IOApp {
           combinedRoutes
         }
       throttledRoutes <-
-        Resource.eval(throttleMiddleware(corsRoutes))
+        Resource.eval(throttleMiddleware(combinedRoutes))
     } yield throttledRoutes
 
   def createServer[F[_] : Async](
