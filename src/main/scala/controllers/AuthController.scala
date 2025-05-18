@@ -45,7 +45,6 @@ class AuthControllerImpl[F[_] : Async : Logger](
             redisCache.storeSession(userId, cookie.content) *>
               Created(CreatedResponse(userId, "Session stored from cookie").asJson)
                 .map(_.withContentType(`Content-Type`(MediaType.application.json)))
-
           case None =>
             Logger[F].warn(s"No auth_session cookie for $userId") *>
               BadRequest(ErrorResponse("NO_COOKIE", "auth_session cookie not found").asJson)
