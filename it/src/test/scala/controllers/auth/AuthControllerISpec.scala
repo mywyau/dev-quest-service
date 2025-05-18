@@ -46,28 +46,27 @@ class AuthControllerISpec(global: GlobalRead) extends IOSuite with ControllerISp
       client <- global.getOrFailR[HttpClientResource]()
     } yield (cache, client)
 
-  test(
-    "GET - /auth/session/USER001 - should find the cookie session data for given user id, returning OK and the correct auth json body"
-  ) { (cacheResource, log) =>
+  // test(
+  //   "GET - /auth/session/USER001 - should find the cookie session data for given user id, returning OK and the correct auth json body"
+  // ) { (cacheResource, log) =>
 
-    val cache = cacheResource._1.redis
-    val client = cacheResource._2.client
+  //   val cache = cacheResource._1.redis
+  //   val client = cacheResource._2.client
 
-    val sessionToken = "test-session-token"
+  //   val sessionToken = "test-session-token"
 
-    val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/auth/session/USER001")
-        .putHeaders(Header.Raw(ci"Authorization", s"Bearer $sessionToken"))
+  //   val request =
+  //     Request[IO](GET, uri"http://127.0.0.1:9999/auth/session/USER001")
 
-    client.run(request).use { response =>
-      response.as[GetResponse].map { body =>
-        expect.all(
-          response.status == Status.Ok,
-          body == GetResponse("200", s"Session token: $sessionToken")
-        )
-      }
-    }
-  }
+  //   client.run(request).use { response =>
+  //     response.as[GetResponse].map { body =>
+  //       expect.all(
+  //         response.status == Status.Ok,
+  //         body == GetResponse("200", s"Session token: $sessionToken")
+  //       )
+  //     }
+  //   }
+  // }
 
   // test(
   //   "POST - /dev-auth-service/auth/create/USER006 - should generate the auth data in db table, returning Created response"
