@@ -107,6 +107,7 @@ object Main extends IOApp {
 
       routesToUse = 
         if(appConfig.featureSwitches.useCors){ 
+          logger.info("Main using cors routes")
           corsRoutes
         } else {
           combinedRoutes 

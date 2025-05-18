@@ -155,7 +155,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
                     Logger[F].info(s"[QuestControllerImpl] PUT - Successfully updated quest for ID: $questId") *>
                       Ok(UpdatedResponse(response.toString, "quest updated successfully").asJson)
                   case Invalid(errors) =>
-                    Logger[F].warn(s"[QuestControllerImpl] PUT - Validation failed for quest update: ${errors.toList}") *>
+                    Logger[F].info(s"[QuestControllerImpl] PUT - Validation failed for quest update: ${errors.toList}") *>
                       BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
                 }
               }

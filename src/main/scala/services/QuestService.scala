@@ -81,7 +81,7 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
       case Some(quest) =>
         Logger[F].info(s"[QuestService] Found quest with ID: $questId") *> Concurrent[F].pure(Some(quest))
       case None =>
-        Logger[F].warn(s"[QuestService] No quest found with ID: $questId") *> Concurrent[F].pure(None)
+        Logger[F].info(s"[QuestService] No quest found with ID: $questId") *> Concurrent[F].pure(None)
     }
 
   // Log quest creation

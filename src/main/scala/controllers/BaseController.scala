@@ -24,7 +24,7 @@ class BaseControllerImpl[F[_] : Concurrent : Logger]() extends BaseControllerAlg
         Ok(GetResponse("success", "I am alive").asJson)
 
     case req =>
-      Logger[F].warn(s"❌ Unmatched request: ${req.method} ${req.uri}") *>
+      Logger[F].info(s"❌ Unmatched request: ${req.method} ${req.uri}") *>
         NotFound("Not Found")
   }
 

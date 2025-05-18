@@ -34,7 +34,7 @@ class AuthControllerImpl[F[_] : Async : Logger](
             Logger[F].info(s"[AuthControllerImpl] Session found for $userId: $token") *>
               Ok(GetResponse("200", s"Session token: $token").asJson)
           case None =>
-            Logger[F].warn(s"[AuthControllerImpl] No session found for $userId") *>
+            Logger[F].info(s"[AuthControllerImpl] No session found for $userId") *>
               NotFound(ErrorResponse("NOT_FOUND", s"No session for userId $userId").asJson)
         }
 
@@ -46,7 +46,7 @@ class AuthControllerImpl[F[_] : Async : Logger](
               Created(CreatedResponse(userId, "Session stored from cookie").asJson)
                 .map(_.withContentType(`Content-Type`(MediaType.application.json)))
           case None =>
-            Logger[F].warn(s"No auth_session cookie for $userId") *>
+            Logger[F].info(s"No auth_session cookie for $userId") *>
               BadRequest(ErrorResponse("NO_COOKIE", "auth_session cookie not found").asJson)
                 .map(_.withContentType(`Content-Type`(MediaType.application.json)))
         }
