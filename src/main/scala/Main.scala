@@ -88,7 +88,8 @@ object Main extends IOApp {
       corsRoutes = CORS.policy
       .withAllowOriginHost(
         Set(
-          Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000))
+          Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000)),
+          Origin.Host(Uri.Scheme.https, Uri.RegName("devirl.com"), None)
         )
       )
       .withAllowCredentials(true)
@@ -100,14 +101,17 @@ object Main extends IOApp {
         )
       )
       .withMaxAge(1.day) 
-      .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.PUT, Method.DELETE,  Method.OPTIONS))
+      .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.PUT, Method.DELETE, Method.OPTIONS))
       .apply(combinedRoutes)
 
-      routesToUse = if(appConfig.featureSwitches.localTesting){ 
-        println("Using Cors")
-        corsRoutes
-       } else { combinedRoutes } 
-      throttledRoutes <- Resource.eval(throttleMiddleware(routesToUse))   
+      routesToUse = 
+        if(appConfig.featureSwitches.useCors){ 
+          corsRoutes
+        } else {
+          combinedRoutes 
+        } 
+      throttledRoutes <- 
+        Resource.eval(throttleMiddleware(routesToUse))   
     } yield throttledRoutes
   }
 
