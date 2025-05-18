@@ -1,36 +1,35 @@
-import cats.NonEmptyParallel
 import cats.effect.*
 import cats.effect.IO
 import cats.implicits.*
+import cats.NonEmptyParallel
 import com.auth0.jwt.algorithms.Algorithm
 import com.comcast.ip4s.*
-import configuration.ConfigReader
 import configuration.models.AppConfig
+import configuration.ConfigReader
 import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts
 import middleware.JwksKeyProvider
 import middleware.JwtAuth
 import middleware.Middleware.throttleMiddleware
 import middleware.StaticJwksKeyProvider
-import org.http4s.HttpRoutes
-import org.http4s.Method
-import org.http4s.Uri
-import org.http4s.client.Client
 import org.http4s.client.middleware.Logger as ClientLogger
+import org.http4s.client.Client
 import org.http4s.dsl.io.*
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.headers.Origin
 import org.http4s.implicits.*
-import org.http4s.server.Router
 import org.http4s.server.middleware.CORS
 import org.http4s.server.middleware.CORSConfig
+import org.http4s.server.Router
+import org.http4s.HttpRoutes
+import org.http4s.Method
+import org.http4s.Uri
 import org.typelevel.ci.CIString
 import org.typelevel.ci.CIStringSyntax
-import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.Logger
 import routes.Routes.*
-
 import scala.concurrent.duration.DurationInt
 
 object Main extends IOApp {
@@ -72,8 +71,7 @@ object Main extends IOApp {
     transactor: HikariTransactor[F],
     client: Client[F],
     appConfig: AppConfig
-  ): Resource[F, HttpRoutes[F]] = {
-
+  ): Resource[F, HttpRoutes[F]] =
     for {
       baseRoutes <- Resource.pure(baseRoutes())
       authRoutes <- Resource.pure(authRoutes(redisHost, redisPort, appConfig))
@@ -81,41 +79,43 @@ object Main extends IOApp {
 
       combinedRoutes = Router(
         "/" -> (baseRoutes <+> authRoutes),
-        "/dev-quest-service" -> questsRoutes,
-        )  
+        "/dev-quest-service" -> questsRoutes
+      )
 
-
-      
       corsRoutes = CORS.policy
-      .withAllowOriginHost(
-        Set(
-          Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000)),
-          Origin.Host(Uri.Scheme.https, Uri.RegName("devirl.com"), None)
+        .withAllowOriginHost(
+          Set(
+            Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000)),
+            Origin.Host(Uri.Scheme.https, Uri.RegName("devirl.com"), None)
+          )
         )
-      )
-      .withAllowCredentials(true)
-      .withAllowHeadersIn(
-        Set(
-          CIString("Content-Type"),
-          CIString("Authorization"),
-          CIString("X-Requested-With")
+        .withAllowCredentials(true)
+        .withAllowHeadersIn(
+          Set(
+            CIString("Content-Type"),
+            CIString("Authorization"),
+            CIString("X-Requested-With"),
+            CIString("Accept"),
+            CIString("Origin"),
+            CIString("Referer"),
+            CIString("Access-Control-Request-Method"),
+            CIString("Access-Control-Request-Headers")
+          )
         )
-      )
-      .withMaxAge(1.day) 
-      .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.PUT, Method.DELETE, Method.OPTIONS))
-      .apply(combinedRoutes)
+        .withMaxAge(1.day)
+        .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.PUT, Method.DELETE, Method.OPTIONS))
+        .apply(combinedRoutes)
 
-      routesToUse = 
-        if(appConfig.featureSwitches.useCors){ 
+      routesToUse =
+        if (appConfig.featureSwitches.useCors) {
           logger.info("Main using cors routes")
           corsRoutes
         } else {
-          combinedRoutes 
-        } 
-      throttledRoutes <- 
-        Resource.eval(throttleMiddleware(routesToUse))   
+          combinedRoutes
+        }
+      throttledRoutes <-
+        Resource.eval(throttleMiddleware(routesToUse))
     } yield throttledRoutes
-  }
 
   def createServer[F[_] : Async](
     host: Host,
