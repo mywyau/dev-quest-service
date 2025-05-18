@@ -1,3 +1,5 @@
+#  Does not work!!
+
 # Stage 1: Build the fat JAR
 FROM sbtscala/scala-sbt:eclipse-temurin-focal-11.0.22_7_1.9.9_3.4.0 AS builder
 
