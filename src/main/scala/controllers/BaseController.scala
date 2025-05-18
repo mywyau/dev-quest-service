@@ -18,14 +18,16 @@ trait BaseControllerAlgebra[F[_]] {
 
 class BaseControllerImpl[F[_] : Concurrent : Logger]() extends BaseControllerAlgebra[F] with Http4sDsl[F] {
 
-  // val securedRoutes: AuthedRoutes[DecodedJWT, F] = AuthedRoutes.of { case GET -> Root / "me" as jwt =>
-  //   Ok(s"Hello, ${jwt.getSubject}, your email: ${jwt.getClaim("email").asString()}")
-  // }
+  override val routes: HttpRoutes[F] = HttpRoutes.of[F] {
+    case req @ GET -> Root / "health" =>
+      Logger[F].info(s"[BaseControllerImpl] GET - Health check for backend service") *>
+        Ok(GetResponse("success", "I am alive").asJson)
 
-  override val routes: HttpRoutes[F] = HttpRoutes.of[F] { case req @ GET -> Root / "health" =>
-    Logger[F].info(s"[BaseControllerImpl] GET - Health check for backend service") *>
-      Ok(GetResponse("success", "I am alive").asJson)
+    case req =>
+      Logger[F].warn(s"❌ Unmatched request: ${req.method} ${req.uri}") *>
+        NotFound("Not Found")
   }
+
 }
 
 object BaseController {

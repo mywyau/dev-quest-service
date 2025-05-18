@@ -81,8 +81,9 @@ object Main extends IOApp {
 
       combinedRoutes = Router(
         "/" -> (baseRoutes <+> authRoutes),
-        "/dev-quest-service" -> questsRoutes
+        "/dev-quest-service" -> questsRoutes,
         )  
+
 
       
       corsRoutes = CORS.policy
