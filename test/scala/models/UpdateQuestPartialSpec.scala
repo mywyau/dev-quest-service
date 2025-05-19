@@ -12,11 +12,8 @@ object UpdateQuestPartialSpec extends SimpleIOSuite with ModelsBaseSpec {
 
   val testUpdatedRequest =
     UpdateQuestPartial(
-      userId = "userId1",
-      questId = "questId1",
       title = "Some quest title",
-      description = Some("Some description"),
-      status = Some(Completed)
+      description = Some("Some description")
     )
 
   test("UpdateQuestPartial model encodes correctly to JSON") {
@@ -26,11 +23,8 @@ object UpdateQuestPartialSpec extends SimpleIOSuite with ModelsBaseSpec {
     val expectedJson =
       """
         |{
-        |  "userId": "userId1",
-        |  "questId": "questId1",
         |  "title": "Some quest title",
-        |  "description": "Some description",
-        |  "status": "Completed"
+        |  "description": "Some description"
         |}
         |""".stripMargin
 

@@ -19,6 +19,7 @@ import models.quests.UpdateQuestPartial
 import models.NotStarted
 import org.typelevel.log4cats.Logger
 import repositories.QuestRepositoryAlgebra
+import models.quests.{CreateQuest, CreateQuestPartial, QuestPartial, UpdateQuestPartial}
 
 trait QuestServiceAlgebra[F[_]] {
 

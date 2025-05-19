@@ -4,12 +4,11 @@ import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.generic.semiauto.deriveEncoder
-import models.QuestStatus
 
 case class UpdateQuestPartial(
   title: String,
   description: Option[String]
-    )
+)
 
 object UpdateQuestPartial {
   implicit val encoder: Encoder[UpdateQuestPartial] = deriveEncoder[UpdateQuestPartial]

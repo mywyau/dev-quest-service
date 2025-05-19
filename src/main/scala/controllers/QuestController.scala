@@ -4,12 +4,13 @@ import cache.RedisCache
 import cache.RedisCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
-import cats.effect.Concurrent
 import cats.effect.kernel.Async
+import cats.effect.Concurrent
 import cats.implicits.*
 import fs2.Stream
-import io.circe.Json
 import io.circe.syntax.EncoderOps
+import io.circe.Json
+import models.database.UpdateSuccess
 import models.quests.CreateQuestPartial
 import models.quests.UpdateQuestPartial
 import models.responses.CreatedResponse
@@ -18,16 +19,14 @@ import models.responses.ErrorResponse
 import models.responses.GetResponse
 import models.responses.UpdatedResponse
 import org.http4s.*
-import org.http4s.Challenge
 import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
+import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
-import services.QuestServiceAlgebra
-
 import scala.concurrent.duration.*
-import models.database.UpdateSuccess
+import services.QuestServiceAlgebra
 
 trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
