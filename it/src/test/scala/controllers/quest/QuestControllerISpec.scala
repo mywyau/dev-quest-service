@@ -169,7 +169,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         .addCookie("auth_session", sessionToken)
         .withEntity(updateRequest.asJson)
 
-    val expectedBody = UpdatedResponse(UpdateSuccess.toString, "quest updated successfully")
+    val expectedBody = UpdatedResponse(UpdateSuccess.toString, "Quest QUEST004 updated successfully")
 
     client.run(request).use { response =>
       response.as[UpdatedResponse].map { body =>
