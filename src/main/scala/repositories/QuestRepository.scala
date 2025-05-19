@@ -127,11 +127,8 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
     sql"""
       UPDATE quests
       SET
-          user_id = ${request.userId},
-          quest_id = ${request.questId},
           title = ${request.title},
           description = ${request.description},
-          status = ${request.status},
           updated_at = ${LocalDateTime.now()}
       WHERE quest_id = ${quest_id}
     """.update.run

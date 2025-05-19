@@ -7,12 +7,9 @@ import io.circe.generic.semiauto.deriveEncoder
 import models.QuestStatus
 
 case class UpdateQuestPartial(
-  userId: String,
-  questId: String,
   title: String,
-  description: Option[String],
-  status: Option[QuestStatus]
-)
+  description: Option[String]
+    )
 
 object UpdateQuestPartial {
   implicit val encoder: Encoder[UpdateQuestPartial] = deriveEncoder[UpdateQuestPartial]

@@ -20,6 +20,9 @@ object TestRoutes {
 
   class MockRedisCache(ref: Ref[IO, Map[String, String]]) extends RedisCacheAlgebra[IO] {
 
+    override def updateSession(userId: String, token: String): IO[Unit] =
+      ref.update(_.updated(s"auth:session:$userId", token))
+
     override def deleteSession(userId: String): IO[Long] = ???
 
     def storeSession(userId: String, token: String): IO[Unit] =

@@ -37,11 +37,14 @@ class MockQuestService(userQuestData: Map[String, QuestPartial]) extends QuestSe
 
 class MockRedisCache(ref: Ref[IO, Map[String, String]]) extends RedisCacheAlgebra[IO] {
 
-  override def deleteSession(token: String): IO[Long] = ???
-
   def storeSession(token: String, userId: String): IO[Unit] =
     ref.update(_.updated(s"auth:session:$token", userId))
 
   def getSession(token: String): IO[Option[String]] =
     ref.get.map(_.get(s"auth:session:$token"))
+
+  override def updateSession(userId: String, token: String): IO[Unit] = ???
+
+  override def deleteSession(token: String): IO[Long] = ???
+
 }

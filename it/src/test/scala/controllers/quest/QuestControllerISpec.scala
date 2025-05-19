@@ -160,11 +160,8 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
 
     val updateRequest: UpdateQuestPartial =
       UpdateQuestPartial(
-        userId = "USER004",
-        questId = "QUEST004",
         title = "Updated title",
-        description = Some("Some updated description"),
-        status = Some(Completed)
+        description = Some("Some updated description")
       )
 
     val request =

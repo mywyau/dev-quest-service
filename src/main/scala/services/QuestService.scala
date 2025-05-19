@@ -1,7 +1,5 @@
 package services
 
-import cats.Monad
-import cats.NonEmptyParallel
 import cats.data.Validated
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
@@ -9,17 +7,18 @@ import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
+import cats.Monad
+import cats.NonEmptyParallel
 import fs2.Stream
-import models.NotStarted
+import java.util.UUID
 import models.database.*
 import models.quests.CreateQuest
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
+import models.NotStarted
 import org.typelevel.log4cats.Logger
 import repositories.QuestRepositoryAlgebra
-
-import java.util.UUID
 
 trait QuestServiceAlgebra[F[_]] {
 
@@ -107,14 +106,13 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
       }
   }
 
-  // Log quest update
   override def update(questId: String, request: UpdateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     questRepo.update(questId, request).flatMap {
       case Valid(value) =>
-        Logger[F].info(s"[QuestService] Successfully updated quest with ID: $questId") *>
+        Logger[F].info(s"[QuestService][update] Successfully updated quest with ID: $questId") *>
           Concurrent[F].pure(Valid(value))
       case Invalid(errors) =>
-        Logger[F].error(s"[QuestService] Failed to update quest with ID: $questId. Errors: ${errors.toList.mkString(", ")}") *>
+        Logger[F].error(s"[QuestService][update] Failed to update quest with ID: $questId. Errors: ${errors.toList.mkString(", ")}") *>
           Concurrent[F].pure(Invalid(errors))
     }
 

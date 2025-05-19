@@ -22,10 +22,6 @@ class BaseControllerImpl[F[_] : Concurrent : Logger]() extends BaseControllerAlg
     case req @ GET -> Root / "health" =>
       Logger[F].info(s"[BaseControllerImpl] GET - Health check for backend service") *>
         Ok(GetResponse("success", "I am alive").asJson)
-
-    case req =>
-      Logger[F].info(s"❌ Unmatched request: ${req.method} ${req.uri}") *>
-        NotFound("Not Found")
   }
 
 }

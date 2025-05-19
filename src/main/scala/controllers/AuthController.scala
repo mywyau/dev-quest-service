@@ -7,13 +7,12 @@ import io.circe.syntax.*
 import io.circe.syntax.EncoderOps
 import models.responses.*
 import org.http4s.*
-import org.http4s.MediaType
 import org.http4s.circe.*
-import org.http4s.dsl.Http4sDsl
 import org.http4s.dsl.io.*
+import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`Content-Type`
+import org.http4s.MediaType
 import org.typelevel.log4cats.Logger
-
 import scala.concurrent.duration.*
 
 trait AuthControllerAlgebra[F[_]] {
@@ -52,11 +51,17 @@ class AuthControllerImpl[F[_] : Async : Logger](
         }
 
     case req @ PUT -> Root / "auth" / "session" / userId =>
-      req.as[String].flatMap { newToken =>
-        Logger[F].info(s"[AuthControllerImpl] PUT - Updating session for $userId with token") *>
-          redisCache.storeSession(newToken, userId) *>
-          Ok(UpdatedResponse(userId, "Session updated").asJson)
-      }
+      Logger[F].info(s"POST - Updating session for userId: $userId") *>
+        Async[F].delay(req.cookies.find(_.name == "auth_session")).flatMap {
+          case Some(cookie) =>
+            redisCache.updateSession(userId, cookie.content) *>
+              Created(UpdatedResponse(userId, "Session updated from cookie").asJson)
+                .map(_.withContentType(`Content-Type`(MediaType.application.json)))
+          case None =>
+            Logger[F].info(s"Not updated no auth_session cookie for $userId") *>
+              BadRequest(ErrorResponse("NO_COOKIE", "Not updated auth_session cookie not found").asJson)
+                .map(_.withContentType(`Content-Type`(MediaType.application.json)))
+        }
 
     case DELETE -> Root / "auth" / "session" / userId =>
       Logger[F].info(s"[AuthControllerImpl] DELETE - Deleting session for $userId") *>

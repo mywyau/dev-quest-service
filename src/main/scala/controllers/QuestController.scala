@@ -4,12 +4,12 @@ import cache.RedisCache
 import cache.RedisCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
-import cats.effect.kernel.Async
 import cats.effect.Concurrent
+import cats.effect.kernel.Async
 import cats.implicits.*
 import fs2.Stream
-import io.circe.syntax.EncoderOps
 import io.circe.Json
+import io.circe.syntax.EncoderOps
 import models.quests.CreateQuestPartial
 import models.quests.UpdateQuestPartial
 import models.responses.CreatedResponse
@@ -18,14 +18,16 @@ import models.responses.ErrorResponse
 import models.responses.GetResponse
 import models.responses.UpdatedResponse
 import org.http4s.*
+import org.http4s.Challenge
 import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
-import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
-import scala.concurrent.duration.*
 import services.QuestServiceAlgebra
+
+import scala.concurrent.duration.*
+import models.database.UpdateSuccess
 
 trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -53,8 +55,10 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
       case Some(tokenFromRedis) if tokenFromRedis == token =>
         onValid
       case Some(_) =>
-        Forbidden("Session user does not match requested userId.")
+        Logger[F].info("[QuestControllerImpl][withValidSession] User session does not match requested user session token value from redis.")
+        Forbidden("User session does not match requested user session token value from redis.")
       case None =>
+        Logger[F].info("[QuestControllerImpl][withValidSession] Invalid or expired session")
         Forbidden("Invalid or expired session")
     }
 
@@ -107,7 +111,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
 
         case None =>
           Logger[F].info(s"[QuestController] GET - Unauthorised") *>
-            Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
+            Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
     case req @ GET -> Root / "quest" / userIdFromRoute / questId =>
@@ -122,7 +126,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
           }
         case None =>
           Logger[F].info(s"[QuestController] GET - Unauthorised") *>
-            Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
+            Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
     case req @ POST -> Root / "quest" / "create" / userIdFromRoute =>
@@ -141,7 +145,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
               }
           }
         case None =>
-          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
+          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
     case req @ PUT -> Root / "quest" / "update" / userIdFromRoute / questId =>
@@ -153,7 +157,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
                 questService.update(questId, request).flatMap {
                   case Valid(response) =>
                     Logger[F].info(s"[QuestControllerImpl] PUT - Successfully updated quest for ID: $questId") *>
-                      Ok(UpdatedResponse(response.toString, "quest updated successfully").asJson)
+                      Ok(UpdatedResponse(UpdateSuccess.toString, s"Quest $questId updated successfully").asJson)
                   case Invalid(errors) =>
                     Logger[F].info(s"[QuestControllerImpl] PUT - Validation failed for quest update: ${errors.toList}") *>
                       BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
@@ -161,7 +165,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
               }
           }
         case None =>
-          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
+          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
     case req @ DELETE -> Root / "quest" / userIdFromRoute / questId =>

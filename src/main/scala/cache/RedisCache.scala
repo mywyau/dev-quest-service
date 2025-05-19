@@ -6,7 +6,6 @@ import configuration.models.AppConfig
 import dev.profunktor.redis4cats.*
 import dev.profunktor.redis4cats.effect.Log.Stdout.*
 import org.typelevel.log4cats.Logger
-
 import scala.concurrent.duration.*
 
 trait RedisCacheAlgebra[F[_]] {
@@ -14,6 +13,8 @@ trait RedisCacheAlgebra[F[_]] {
   def getSession(userId: String): F[Option[String]]
 
   def storeSession(userId: String, token: String): F[Unit]
+
+  def updateSession(userId: String, token: String): F[Unit] // NEW
 
   def deleteSession(userId: String): F[Long]
 }
@@ -37,6 +38,13 @@ class RedisCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int, a
     Logger[F].info(s"[RedisCache] Storing session for userId=$userId") *>
       withRedis(_.setEx(s"auth:session:$userId", token, 1.day)) <*
       Logger[F].info(s"[RedisCache] Session stored with TTL 1 day for userId=$userId")
+
+
+  // No difference to def storeSession
+  override def updateSession(userId: String, token: String): F[Unit] =
+    Logger[F].info(s"[RedisCache] Updating session for userId=$userId") *>
+      withRedis(_.setEx(s"auth:session:$userId", token, 1.day)) <*
+      Logger[F].info(s"[RedisCache] Session updated with TTL 1 day for userId=$userId")
 
   override def deleteSession(userId: String): F[Long] =
     Logger[F].info(s"[RedisCache] Deleting session for userId=$userId") *>
