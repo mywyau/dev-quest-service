@@ -6,22 +6,21 @@ import cats.effect.Resource
 import cats.implicits.*
 import doobie.*
 import doobie.implicits.*
-import models.Completed
-import models.InProgress
+import java.time.LocalDateTime
 import models.database.*
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
+import models.Completed
+import models.InProgress
 import repositories.QuestRepositoryImpl
-import repository.RepositoryISpecBase
 import repository.fragments.QuestRepoFragments.*
+import repository.RepositoryISpecBase
 import shared.TransactorResource
 import testData.TestConstants.*
 import weaver.GlobalRead
 import weaver.IOSuite
 import weaver.ResourceTag
-
-import java.time.LocalDateTime
 
 class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryISpecBase {
   type Res = QuestRepositoryImpl[IO]

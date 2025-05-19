@@ -49,10 +49,20 @@ jobs:
 
       - name: Tag and push Docker image
         run: |
-          IMAGE_TAG=latest
+          IMAGE_TAG=${{ github.sha }}
           IMAGE_REPO=890742562318.dkr.ecr.us-east-1.amazonaws.com/dev-quest-service
           IMAGE_URI=$IMAGE_REPO:$IMAGE_TAG
           docker build -t $IMAGE_URI target/docker/stage/
           docker push $IMAGE_URI
+
+      - name: Save image tag to SSM
+        run: |
+          aws ssm put-parameter \
+            --name /devquest/backend/image-tag \
+            --value ${{ github.sha }} \
+            --type String \
+            --overwrite \
+            --region us-east-1
+     
 
 

@@ -2,7 +2,6 @@ package controllers.quest
 
 import cats.effect.*
 import controller.fragments.QuestControllerFragments.*
-import controllers.constants.QuestControllerConstants.*
 import controllers.ControllerISpecBase
 import doobie.implicits.*
 import doobie.util.transactor.Transactor
