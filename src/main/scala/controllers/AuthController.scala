@@ -55,7 +55,7 @@ class AuthControllerImpl[F[_] : Async : Logger](
         Async[F].delay(req.cookies.find(_.name == "auth_session")).flatMap {
           case Some(cookie) =>
             redisCache.updateSession(userId, cookie.content) *>
-              Created(UpdatedResponse(userId, "Session updated from cookie").asJson)
+              Ok(UpdatedResponse(userId, "Session updated from cookie").asJson)
                 .map(_.withContentType(`Content-Type`(MediaType.application.json)))
           case None =>
             Logger[F].info(s"Not updated no auth_session cookie for $userId") *>

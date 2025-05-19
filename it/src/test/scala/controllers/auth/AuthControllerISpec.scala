@@ -108,7 +108,7 @@ class AuthControllerISpec(global: GlobalRead) extends IOSuite with ControllerISp
       Request[IO](PUT, uri"http://127.0.0.1:9999/auth/session/USER004")
         .addCookie("auth_session", sessionToken)
 
-    val expectedBody = UpdatedResponse("USER004", "Session updated")
+    val expectedBody = UpdatedResponse("USER004", "Session updated from cookie")
 
     client.run(request).use { response =>
       response.as[UpdatedResponse].map { body =>
