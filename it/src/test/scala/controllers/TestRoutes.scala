@@ -79,8 +79,7 @@ object TestRoutes {
 
     questRoutes(transactor, appConfig).map { questRoute =>
       Router(
-        "/" -> (baseRoutes() <+> authRoutes(redisHost, redisPort, appConfig)),
-        "/dev-quest-service" -> questRoute
+        "/dev-quest-service" -> (baseRoutes() <+> authRoutes(redisHost, redisPort, appConfig) <+> questRoute)
       )
     }
   }

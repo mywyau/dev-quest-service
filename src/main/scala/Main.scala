@@ -78,8 +78,7 @@ object Main extends IOApp {
       questsRoutes <- Resource.pure(questsRoutes(redisHost, redisPort, transactor, appConfig))
 
       combinedRoutes = Router(
-        "/" -> (baseRoutes <+> authRoutes),
-        "/dev-quest-service" -> questsRoutes
+        "/dev-quest-service" -> (baseRoutes <+> authRoutes <+> questsRoutes)
       )
 
       corsRoutes = CORS.policy

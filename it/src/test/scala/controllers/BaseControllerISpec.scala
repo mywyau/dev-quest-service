@@ -23,11 +23,11 @@ class BaseControllerISpec(global: GlobalRead) extends IOSuite with ControllerISp
       client <- global.getOrFailR[HttpClientResource]()
     } yield (transactor, client)
 
-  test("GET - /health - should get the correct body for health") { (sharedResources, log) =>
+  test("GET - /dev-quest-serivce/health - should get the correct body for health") { (sharedResources, log) =>
     val client = sharedResources._2.client
 
     val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/health")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-serivce/health")
 
     client.run(request).use { response =>
       response.as[GetResponse].map { body =>

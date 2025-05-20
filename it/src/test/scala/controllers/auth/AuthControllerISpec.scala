@@ -48,7 +48,7 @@ class AuthControllerISpec(global: GlobalRead) extends IOSuite with ControllerISp
     } yield (cache, client)
 
   test(
-    "GET - /auth/session/USER001 - should find the cookie session data for given user id, returning OK and the correct auth json body"
+    "GET - /dev-quest-service/auth/session/USER001 - should find the cookie session data for given user id, returning OK and the correct auth json body"
   ) { (cacheResource, log) =>
 
     val cache = cacheResource._1.redis
@@ -57,7 +57,7 @@ class AuthControllerISpec(global: GlobalRead) extends IOSuite with ControllerISp
     val sessionToken = "test-session-token"
 
     val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/auth/session/USER001")
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/auth/session/USER001")
 
     client.run(request).use { response =>
       response.as[GetResponse].map { body =>
@@ -70,7 +70,7 @@ class AuthControllerISpec(global: GlobalRead) extends IOSuite with ControllerISp
   }
 
   test(
-    "POST - /auth/create/USER006 - should generate the auth data in db table, returning Created response"
+    "POST - /dev-quest-service/auth/create/USER006 - should generate the auth data in db table, returning Created response"
   ) { (cacheResource, log) =>
 
     val cache = cacheResource._1.redis
@@ -79,7 +79,7 @@ class AuthControllerISpec(global: GlobalRead) extends IOSuite with ControllerISp
     val sessionToken = "test-session-token"
 
     val request =
-      Request[IO](POST, uri"http://127.0.0.1:9999/auth/session/USER006")
+      Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/auth/session/USER006")
         .addCookie("auth_session", sessionToken)
 
     val expectedBody = CreatedResponse("USER006", "Session stored from cookie")
@@ -95,7 +95,7 @@ class AuthControllerISpec(global: GlobalRead) extends IOSuite with ControllerISp
   }
 
   test(
-    "PUT - /auth/session/USER004 - " +
+    "PUT - /dev-quest-service/auth/session/USER004 - " +
       "should update the auth data for given user_id, returning Updated response"
   ) { (cacheResource, log) =>
 
@@ -105,7 +105,7 @@ class AuthControllerISpec(global: GlobalRead) extends IOSuite with ControllerISp
     val sessionToken = "updated-test-session-token"
 
     val request =
-      Request[IO](PUT, uri"http://127.0.0.1:9999/auth/session/USER004")
+      Request[IO](PUT, uri"http://127.0.0.1:9999/dev-quest-service/auth/session/USER004")
         .addCookie("auth_session", sessionToken)
 
     val expectedBody = UpdatedResponse("USER004", "Session updated from cookie")
@@ -121,7 +121,7 @@ class AuthControllerISpec(global: GlobalRead) extends IOSuite with ControllerISp
   }
 
   test(
-    "DELETE - /auth/session/USER003 - " +
+    "DELETE - /dev-quest-service/auth/session/USER003 - " +
       "should delete the auth data for given user_id, returning OK and Deleted response json"
   ) { (cacheResource, log) =>
 
@@ -129,7 +129,7 @@ class AuthControllerISpec(global: GlobalRead) extends IOSuite with ControllerISp
     val client = cacheResource._2.client
 
     val request =
-      Request[IO](DELETE, uri"http://127.0.0.1:9999/auth/session/USER003")
+      Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/auth/session/USER003")
 
     val expectedBody = DeletedResponse("USER003", "Session deleted")
 
