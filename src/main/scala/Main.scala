@@ -1,35 +1,25 @@
-import cats.effect.*
-import cats.effect.IO
-import cats.implicits.*
 import cats.NonEmptyParallel
-import com.auth0.jwt.algorithms.Algorithm
+import cats.effect.*
+import cats.implicits.*
 import com.comcast.ip4s.*
-import configuration.models.AppConfig
 import configuration.ConfigReader
+import configuration.models.AppConfig
 import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts
-import middleware.JwksKeyProvider
-import middleware.JwtAuth
 import middleware.Middleware.throttleMiddleware
-import middleware.StaticJwksKeyProvider
-import org.http4s.client.middleware.Logger as ClientLogger
+import org.http4s.{HttpRoutes, Method, Uri}
 import org.http4s.client.Client
-import org.http4s.dsl.io.*
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.headers.Origin
 import org.http4s.implicits.*
-import org.http4s.server.middleware.CORS
-import org.http4s.server.middleware.CORSConfig
 import org.http4s.server.Router
-import org.http4s.HttpRoutes
-import org.http4s.Method
-import org.http4s.Uri
+import org.http4s.server.middleware.CORS
 import org.typelevel.ci.CIString
-import org.typelevel.ci.CIStringSyntax
-import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import routes.Routes.*
+
 import scala.concurrent.duration.DurationInt
 
 object Main extends IOApp {
@@ -107,13 +97,12 @@ object Main extends IOApp {
 
       routesToUse =
         if (appConfig.featureSwitches.useCors) {
-          logger.info("Main using cors routes")
           corsRoutes
         } else {
           combinedRoutes
         }
       throttledRoutes <-
-        Resource.eval(throttleMiddleware(combinedRoutes))
+        Resource.eval(throttleMiddleware(routesToUse))
     } yield throttledRoutes
 
   def createServer[F[_] : Async](
