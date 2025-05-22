@@ -12,6 +12,8 @@ case class MockQuestRepository(
   existingQuest: Map[String, QuestPartial] = Map.empty
 ) extends QuestRepositoryAlgebra[IO] {
 
+  override def streamAll(limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
+
   def showAllUsers: IO[Map[String, QuestPartial]] = IO.pure(existingQuest)
 
   override def streamByUserId(userId: String, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???

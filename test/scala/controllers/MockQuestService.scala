@@ -15,6 +15,8 @@ import services.QuestServiceAlgebra
 
 class MockQuestService(userQuestData: Map[String, QuestPartial]) extends QuestServiceAlgebra[IO] {
 
+  override def streamAll(limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
+
   override def streamByUserId(userId: String, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
 
   override def getAllQuests(userId: String): IO[List[QuestPartial]] = ???
