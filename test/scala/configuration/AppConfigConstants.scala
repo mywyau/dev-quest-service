@@ -8,7 +8,7 @@ object AppConfigConstants {
     FeatureSwitches(
       useDockerHost = false,
       localTesting = false,
-      useCors = true
+      useCors = false
     )
 
   val appServerConfig =

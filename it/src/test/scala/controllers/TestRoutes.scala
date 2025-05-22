@@ -7,14 +7,13 @@ import cats.implicits.*
 import configuration.models.AppConfig
 import dev.profunktor.redis4cats.RedisCommands
 import doobie.util.transactor.Transactor
-import org.http4s.HttpRoutes
 import org.http4s.server.Router
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.http4s.HttpRoutes
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-import repositories.QuestRepository
-import services.QuestService
-
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import repositories.*
 import scala.concurrent.duration.*
+import services.*
 
 object TestRoutes {
 
@@ -73,15 +72,43 @@ object TestRoutes {
     } yield questController.routes
   }
 
+  def userDataRoutes(transactor: Transactor[IO], appConfig: AppConfig): Resource[IO, HttpRoutes[IO]] = {
+
+    val sessionToken = "test-session-token"
+    for {
+      ref <- Resource.eval(
+        Ref.of[IO, Map[String, String]](
+          Map(
+            s"auth:session:USER001" -> sessionToken,
+            s"auth:session:USER002" -> sessionToken,
+            s"auth:session:USER003" -> sessionToken,
+            s"auth:session:USER004" -> sessionToken,
+            s"auth:session:USER005" -> sessionToken,
+            s"auth:session:USER006" -> sessionToken
+          )
+        )
+      )
+      mockRedisCache = new MockRedisCache(ref)
+      userDataRepository = UserDataRepository(transactor)
+      userDataService = UserDataService(userDataRepository)
+      userDataController = UserDataController(userDataService, mockRedisCache)
+    } yield userDataController.routes
+  }
+
   def createTestRouter(transactor: Transactor[IO], appConfig: AppConfig): Resource[IO, HttpRoutes[IO]] = {
     val redisHost = sys.env.getOrElse("REDIS_HOST", appConfig.integrationSpecConfig._3.host)
     val redisPort = sys.env.get("REDIS_PORT").flatMap(p => scala.util.Try(p.toInt).toOption).getOrElse(appConfig.integrationSpecConfig._3.port)
 
-    questRoutes(transactor, appConfig).map { questRoute =>
-      Router(
-        "/dev-quest-service" -> (baseRoutes() <+> authRoutes(redisHost, redisPort, appConfig) <+> questRoute)
+    for {
+      userDataRoutes <- userDataRoutes(transactor, appConfig)
+      questRoute <- questRoutes(transactor, appConfig)
+    } yield Router(
+      "/dev-quest-service" -> (
+        baseRoutes() <+>
+          authRoutes(redisHost, redisPort, appConfig) <+>
+          questRoute <+>
+          userDataRoutes
       )
-    }
+    )
   }
-
 }
