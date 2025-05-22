@@ -96,7 +96,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
       }
 
-    case req @ GET -> Root / "quest" / "stream" / "all" /userIdFromRoute =>
+    case req @ GET -> Root / "quest" / "stream" / "all" / userIdFromRoute =>
       extractSessionToken(req) match {
         case Some(headerToken) =>
           withValidSession(userIdFromRoute, headerToken) {
@@ -109,7 +109,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
             ) *>
               Ok(
                 questService
-                  .streamByUserId(userIdFromRoute, limit, offset)
+                  .streamAll(limit, offset)
                   .map(_.asJson.noSpaces) // Quest ⇒ JSON string
                   .evalTap(json => Logger[F].info(s"[QuestController] → $json")) // <── log every line
                   .intersperse("\n") // ND-JSON framing
