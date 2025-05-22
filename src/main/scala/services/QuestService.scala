@@ -19,11 +19,12 @@ import models.quests.UpdateQuestPartial
 import models.NotStarted
 import org.typelevel.log4cats.Logger
 import repositories.QuestRepositoryAlgebra
-import models.quests.{CreateQuest, CreateQuestPartial, QuestPartial, UpdateQuestPartial}
 
 trait QuestServiceAlgebra[F[_]] {
 
   def streamByUserId(userId: String, limit: Int, offset: Int): Stream[F, QuestPartial]
+
+  def streamAll(limit: Int, offset: Int): Stream[F, QuestPartial]
 
   def getAllQuests(userId: String): F[List[QuestPartial]]
 
@@ -61,6 +62,35 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
     val dataStream: Stream[F, QuestPartial] =
       questRepo
         .streamByUserId(userId, limit, offset)
+        .evalTap(q =>
+          Logger[F].info(
+            s"[QuestService] Fetched quest: ${q.questId}, title: ${q.title}"
+          )
+        )
+
+    headLog ++ dataStream
+  }
+
+  // Log and stream quests by userId
+  override def streamAll(
+    limit: Int,
+    offset: Int
+  ): Stream[F, QuestPartial] = {
+
+    // A single-value stream that just performs the “start” log
+    val headLog: Stream[F, QuestPartial] =
+      Stream
+        .eval(
+          Logger[F].info(
+            s"[QuestService] Streaming all quests (limit=$limit, offset=$offset)"
+          )
+        )
+        .drain
+
+    // The actual DB stream with per-row logging
+    val dataStream: Stream[F, QuestPartial] =
+      questRepo
+        .streamAll(limit, offset)
         .evalTap(q =>
           Logger[F].info(
             s"[QuestService] Fetched quest: ${q.questId}, title: ${q.title}"

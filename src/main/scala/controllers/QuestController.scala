@@ -4,12 +4,13 @@ import cache.RedisCache
 import cache.RedisCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
-import cats.effect.Concurrent
 import cats.effect.kernel.Async
+import cats.effect.Concurrent
 import cats.implicits.*
 import fs2.Stream
-import io.circe.Json
 import io.circe.syntax.EncoderOps
+import io.circe.Json
+import models.database.UpdateSuccess
 import models.quests.CreateQuestPartial
 import models.quests.UpdateQuestPartial
 import models.responses.CreatedResponse
@@ -18,17 +19,14 @@ import models.responses.ErrorResponse
 import models.responses.GetResponse
 import models.responses.UpdatedResponse
 import org.http4s.*
-import org.http4s.Challenge
 import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
+import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
-import services.QuestServiceAlgebra
-
 import scala.concurrent.duration.*
-import models.database.UpdateSuccess
-import models.quests.{CreateQuestPartial, UpdateQuestPartial}
+import services.QuestServiceAlgebra
 
 trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -98,6 +96,35 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
       }
 
+    case req @ GET -> Root / "quest" / "stream" / "all" /userIdFromRoute =>
+      extractSessionToken(req) match {
+        case Some(headerToken) =>
+          withValidSession(userIdFromRoute, headerToken) {
+            val page = req.params.get("page").flatMap(_.toIntOption).getOrElse(1)
+            val limit = req.params.get("limit").flatMap(_.toIntOption).getOrElse(10)
+            val offset = (page - 1) * limit
+
+            Logger[F].info(
+              s"[QuestController] Streaming paginated quests for $userIdFromRoute (page=$page, limit=$limit)"
+            ) *>
+              Ok(
+                questService
+                  .streamByUserId(userIdFromRoute, limit, offset)
+                  .map(_.asJson.noSpaces) // Quest ⇒ JSON string
+                  .evalTap(json => Logger[F].info(s"[QuestController] → $json")) // <── log every line
+                  .intersperse("\n") // ND-JSON framing
+                  .handleErrorWith { e =>
+                    Stream.eval(Logger[F].info(e)("[QuestController] Stream error")) >> Stream.empty
+                  }
+                  .onFinalize(Logger[F].info("[QuestController] Stream completed").void)
+              )
+          }
+
+        case None =>
+          Logger[F].info("[QuestController] Unauthorized request to /quest/stream") *>
+            Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
+      }
+
     // TODO: change this to return a list of paginated quests
     case req @ GET -> Root / "quest" / "all" / userIdFromRoute =>
       extractSessionToken(req) match {
@@ -121,8 +148,11 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
           withValidSession(userIdFromRoute, headerToken) {
             Logger[F].info(s"[QuestController] GET - Authenticated for userId $userIdFromRoute") *>
               questService.getByQuestId(questId).flatMap {
-                case Some(quest) => Ok(quest.asJson)
-                case None => BadRequest(ErrorResponse("NO_QUEST", "No quest found").asJson)
+                case Some(quest) =>
+                  Logger[F].info(s"[QuestController] GET - Found quest ${quest.questId.toString()}") *>
+                    Ok(quest.asJson)
+                case None =>
+                  BadRequest(ErrorResponse("NO_QUEST", "No quest found").asJson)
               }
           }
         case None =>
