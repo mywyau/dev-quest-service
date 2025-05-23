@@ -1,4 +1,4 @@
-package controller.fragments
+package controllers.fragments
 
 import doobie.implicits.*
 import doobie.util.fragment
