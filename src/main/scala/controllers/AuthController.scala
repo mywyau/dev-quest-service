@@ -38,6 +38,7 @@ class AuthControllerImpl[F[_] : Async : Logger](
         }
 
     case req @ POST -> Root / "auth" / "session" / userId =>
+      Logger[F].info(s"Incoming cookies: ${req.cookies.map(c => s"${c.name}=${c.content}").mkString(", ")}")  *>
       Logger[F].info(s"POST - Creating session for userId: $userId") *>
         Async[F].delay(req.cookies.find(_.name == "auth_session")).flatMap {
           case Some(cookie) =>
@@ -63,7 +64,7 @@ class AuthControllerImpl[F[_] : Async : Logger](
                 .map(_.withContentType(`Content-Type`(MediaType.application.json)))
         }
 
-    case DELETE -> Root / "auth" / "session" / userId =>
+    case DELETE -> Root / "auth" / "session" / "delete" / userId =>
       Logger[F].info(s"[AuthControllerImpl] DELETE - Deleting session for $userId") *>
         redisCache.deleteSession(userId) *>
         Ok(DeletedResponse(userId, "Session deleted").asJson)

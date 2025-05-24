@@ -121,7 +121,7 @@ class AuthControllerISpec(global: GlobalRead) extends IOSuite with ControllerISp
   }
 
   test(
-    "DELETE - /dev-quest-service/auth/session/USER003 - " +
+    "DELETE - /dev-quest-service/auth/session/delete/USER003 - " +
       "should delete the auth data for given user_id, returning OK and Deleted response json"
   ) { (cacheResource, log) =>
 
@@ -129,7 +129,7 @@ class AuthControllerISpec(global: GlobalRead) extends IOSuite with ControllerISp
     val client = cacheResource._2.client
 
     val request =
-      Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/auth/session/USER003")
+      Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/auth/session/delete/USER003")
 
     val expectedBody = DeletedResponse("USER003", "Session deleted")
 

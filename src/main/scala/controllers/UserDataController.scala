@@ -2,6 +2,7 @@ package controllers
 
 import cache.RedisCache
 import cache.RedisCacheAlgebra
+import cache.SessionCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
 import cats.effect.kernel.Async
@@ -35,7 +36,7 @@ trait UserDataControllerAlgebra[F[_]] {
 
 class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
   userService: UserDataServiceAlgebra[F],
-  redisCache: RedisCacheAlgebra[F]
+  sessionCache: SessionCacheAlgebra[F]
 ) extends Http4sDsl[F]
     with UserDataControllerAlgebra[F] {
 
@@ -51,7 +52,7 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
       .map(_.content)
 
   private def withValidSession(userId: String, token: String)(onValid: F[Response[F]]): F[Response[F]] =
-    redisCache.getSession(userId).flatMap {
+    sessionCache.getSession(userId).flatMap {
       case Some(tokenFromRedis) if tokenFromRedis == token =>
         onValid
       case Some(_) =>
@@ -86,7 +87,7 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
-    case req @ POST -> Root / "user" / "create" / userId =>
+    case req @ POST -> Root / "user" / "data" / "create" / userId =>
       extractSessionToken(req) match {
         case Some(headerToken) =>
           withValidSession(userId, headerToken) {
@@ -148,7 +149,7 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
 object UserDataController {
   def apply[F[_] : Async : Concurrent](
     userService: UserDataServiceAlgebra[F],
-    redisCache: RedisCacheAlgebra[F]
+    sessionCache: SessionCacheAlgebra[F]
   )(implicit logger: Logger[F]): UserDataControllerAlgebra[F] =
-    new UserDataControllerImpl[F](userService, redisCache)
+    new UserDataControllerImpl[F](userService, sessionCache)
 }

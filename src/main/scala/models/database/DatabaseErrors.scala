@@ -1,5 +1,7 @@
 package models.database
 
+import models.database.DatabaseErrors
+
 trait DatabaseErrors
 
 case class UpdateNotFound(message: String) extends DatabaseErrors

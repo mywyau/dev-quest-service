@@ -16,6 +16,7 @@ import models.database.*
 import models.rewards.*
 import models.RewardStatus
 import org.typelevel.log4cats.Logger
+import models.database.{ConstraintViolation, CreateSuccess, DataTooLongError, DatabaseConnectionError, DatabaseError, DatabaseErrors, DatabaseSuccess, DeleteSuccess, ForeignKeyViolationError, NotFoundError, SqlExecutionError, UnexpectedResultError, UnknownError, UpdateSuccess}
 
 trait RewardRepositoryAlgebra[F[_]] {
 

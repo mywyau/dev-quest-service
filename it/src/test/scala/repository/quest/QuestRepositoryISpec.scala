@@ -21,6 +21,7 @@ import testData.TestConstants.*
 import weaver.GlobalRead
 import weaver.IOSuite
 import weaver.ResourceTag
+import models.database.{DeleteSuccess, UpdateSuccess}
 
 class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryISpecBase {
   type Res = QuestRepositoryImpl[IO]
