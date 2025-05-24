@@ -11,6 +11,7 @@ import org.http4s.*
 import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
 import org.typelevel.log4cats.Logger
+import models.database.CreateSuccess
 
 trait BaseControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]

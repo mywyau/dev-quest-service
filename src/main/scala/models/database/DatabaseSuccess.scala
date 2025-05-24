@@ -1,5 +1,7 @@
 package models.database
 
+import models.database.DatabaseSuccess
+
 sealed trait DatabaseSuccess
 
 case object ReadSuccess extends DatabaseSuccess

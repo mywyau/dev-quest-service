@@ -11,6 +11,7 @@ import testData.TestConstants.*
 import weaver.SimpleIOSuite
 
 import java.time.LocalDateTime
+import models.database.CreateSuccess
 
 object QuestServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 

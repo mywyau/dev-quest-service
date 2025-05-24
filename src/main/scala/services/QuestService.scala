@@ -19,6 +19,7 @@ import models.quests.UpdateQuestPartial
 import models.NotStarted
 import org.typelevel.log4cats.Logger
 import repositories.QuestRepositoryAlgebra
+import models.database.{DatabaseErrors, DatabaseSuccess}
 
 trait QuestServiceAlgebra[F[_]] {
 

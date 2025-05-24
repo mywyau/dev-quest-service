@@ -27,6 +27,7 @@ import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
 import scala.concurrent.duration.*
 import services.QuestServiceAlgebra
+import models.database.UpdateSuccess
 
 trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]

@@ -28,6 +28,7 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import shared.HttpClientResource
 import shared.TransactorResource
 import weaver.*
+import models.database.{CreateSuccess, DeleteSuccess, UpdateSuccess}
 
 class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 

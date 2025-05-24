@@ -23,6 +23,7 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import shared.HttpClientResource
 import shared.TransactorResource
 import weaver.*
+import models.database.{CreateSuccess, DeleteSuccess, UpdateSuccess}
 
 class UserDataControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
@@ -74,7 +75,7 @@ class UserDataControllerISpec(global: GlobalRead) extends IOSuite with Controlle
   }
 
   test(
-    "POST - /dev-quest-service/user/create/USER006 - should generate the user data in db table, returning Created response"
+    "POST - /dev-quest-service/user/data/create/USER006 - should generate the user data in db table, returning Created response"
   ) { (transactorResource, log) =>
 
     val transactor = transactorResource._1.xa
@@ -93,7 +94,7 @@ class UserDataControllerISpec(global: GlobalRead) extends IOSuite with Controlle
     val requestBody: Json = testCreateUserData("USER006").asJson
 
     val reuser =
-      Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/user/create/USER006")
+      Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/user/data/create/USER006")
         .addCookie("auth_session", sessionToken)
         .withEntity(requestBody)
 

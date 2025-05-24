@@ -7,6 +7,7 @@ import fs2.Stream
 import models.database.*
 import models.quests.*
 import repositories.QuestRepositoryAlgebra
+import models.database.{CreateSuccess, DatabaseErrors, DatabaseSuccess}
 
 case class MockQuestRepository(
   existingQuest: Map[String, QuestPartial] = Map.empty

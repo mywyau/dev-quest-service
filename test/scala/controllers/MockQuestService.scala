@@ -12,6 +12,7 @@ import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
 import services.QuestServiceAlgebra
+import models.database.{CreateSuccess, DatabaseErrors, DatabaseSuccess, DeleteSuccess, UpdateSuccess}
 
 class MockQuestService(userQuestData: Map[String, QuestPartial]) extends QuestServiceAlgebra[IO] {
 

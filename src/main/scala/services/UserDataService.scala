@@ -12,6 +12,8 @@ import cats.NonEmptyParallel
 import fs2.Stream
 import java.util.UUID
 import models.database.*
+import models.database.DatabaseErrors
+import models.database.DatabaseSuccess
 import models.users.*
 import models.UserType
 import org.typelevel.log4cats.Logger
@@ -28,7 +30,7 @@ trait UserDataServiceAlgebra[F[_]] {
   def deleteUser(userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
-class UserDataServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
+class UserDataServiceImpl[F[_] : Concurrent : Monad : Logger](
   userRepo: UserDataRepositoryAlgebra[F]
 ) extends UserDataServiceAlgebra[F] {
 
@@ -40,9 +42,8 @@ class UserDataServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
         Logger[F].info(s"[UserDataService] No user found with ID: $userId") *> Concurrent[F].pure(None)
     }
 
-  override def createUser(userId: String, createUserData: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
-
-    Logger[F].info(s"[UserDataService] Creating a new user for user: $userId") *>
+  override def createUser(userId: String, createUserData: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    Logger[F].info(s"[UserDataService] Creating a new user for userId: $userId") *>
       userRepo.createUser(userId, createUserData).flatMap {
         case Valid(value) =>
           Logger[F].info(s"[UserDataService] User successfully created with ID: $userId") *>
@@ -51,7 +52,6 @@ class UserDataServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
           Logger[F].error(s"[UserDataService] Failed to create user. Errors: ${errors.toList.mkString(", ")}") *>
             Concurrent[F].pure(Invalid(errors))
       }
-  }
 
   override def updateUserType(userId: String, userType: UserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     userRepo.updateUserType(userId, userType).flatMap {
