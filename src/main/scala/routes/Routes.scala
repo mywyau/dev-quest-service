@@ -1,6 +1,7 @@
 package routes
 
 import cache.RedisCacheImpl
+import cache.SessionCache
 import cache.SessionCacheImpl
 import cats.effect.*
 import cats.NonEmptyParallel
@@ -25,11 +26,14 @@ object Routes {
   def authRoutes[F[_] : Async : Logger](
     redisHost: String,
     redisPort: Int,
+    transactor: HikariTransactor[F],
     appConfig: AppConfig
   ): HttpRoutes[F] = {
 
-    val redisCache = new RedisCacheImpl(redisHost, redisPort, appConfig)
-    val authController = AuthController(redisCache)
+    val userDataRepository = new UserDataRepositoryImpl(transactor)
+    val sessionCache = SessionCache(redisHost, redisPort, appConfig)
+    val sessionService = SessionService(userDataRepository, sessionCache)
+    val authController = AuthController(sessionService)
 
     authController.routes
   }
@@ -42,9 +46,11 @@ object Routes {
   ): HttpRoutes[F] = {
 
     val userDataRepository = new UserDataRepositoryImpl(transactor)
-    val sessionCache = new SessionCacheImpl(redisHost, redisPort, appConfig)
-    val updateSessionService = new UpdateSessionServiceImpl(userDataRepository, sessionCache)
     val userDataService = new UserDataServiceImpl(userDataRepository)
+
+    val sessionCache = new SessionCacheImpl(redisHost, redisPort, appConfig)
+    val sessionService = SessionService(userDataRepository, sessionCache)
+    
     val userDataController = UserDataController(userDataService, sessionCache)
 
     userDataController.routes

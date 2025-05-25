@@ -7,7 +7,6 @@ import io.circe.Encoder
 import models.UserType
 
 case class UpdateUserType(
-  userId: String,
   userType: UserType
 )
 

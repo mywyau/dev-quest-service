@@ -64,7 +64,7 @@ object Main extends IOApp {
   ): Resource[F, HttpRoutes[F]] =
     for {
       baseRoutes <- Resource.pure(baseRoutes())
-      authRoutes <- Resource.pure(authRoutes(redisHost, redisPort, appConfig))
+      authRoutes <- Resource.pure(authRoutes(redisHost, redisPort, transactor, appConfig))
       questsRoutes <- Resource.pure(questsRoutes(redisHost, redisPort, transactor, appConfig))
       userDataRoutes <- Resource.pure(userDataRoutes(redisHost, redisPort, transactor, appConfig))
       registrationRoutes <- Resource.pure(registrationRoutes(redisHost, redisPort, transactor, appConfig))

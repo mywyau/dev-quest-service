@@ -10,6 +10,9 @@ import io.circe.Json
 import java.time.LocalDateTime
 import models.*
 import models.database.*
+import models.database.CreateSuccess
+import models.database.DeleteSuccess
+import models.database.UpdateSuccess
 import models.responses.*
 import models.users.*
 import org.http4s.*
@@ -23,7 +26,6 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import shared.HttpClientResource
 import shared.TransactorResource
 import weaver.*
-import models.database.{CreateSuccess, DeleteSuccess, UpdateSuccess}
 
 class UserDataControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
@@ -122,7 +124,6 @@ class UserDataControllerISpec(global: GlobalRead) extends IOSuite with Controlle
 
     val updateUserTypeRequest: UpdateUserType =
       UpdateUserType(
-        userId = "USER003",
         userType = Client
       )
 

@@ -3,6 +3,7 @@ package controllers
 import cache.RedisCacheAlgebra
 import cache.RedisCacheImpl
 import cache.SessionCacheAlgebra
+import cache.SessionCacheImpl
 import cats.data.Validated
 import cats.data.ValidatedNel
 import cats.effect.*
@@ -40,6 +41,10 @@ object TestRoutes {
 
   class MockSessionCache(ref: Ref[IO, Map[String, String]]) extends SessionCacheAlgebra[IO] {
 
+    override def storeOnlyCookie(userId: String, token: String): IO[Unit] = ???
+
+    override def storeSession(userId: String, session: Option[UserSession]): IO[ValidatedNel[CacheErrors, CacheSuccess]] = ???
+
     override def getSession(userId: String): IO[Option[String]] =
       ref.get.map(_.get(s"auth:session:$userId"))
 
@@ -66,11 +71,14 @@ object TestRoutes {
   def authRoutes(
     redisHost: String,
     redisPort: Int,
+    transactor: Transactor[IO],
     appConfig: AppConfig
   ): HttpRoutes[IO] = {
 
-    val redisCache = new RedisCacheImpl[IO](redisHost, redisPort, appConfig)
-    val authController = AuthController(redisCache)
+    val userDataRepository = UserDataRepository(transactor)
+    val sessionCache = new SessionCacheImpl[IO](redisHost, redisPort, appConfig)
+    val sessionService = new SessionServiceImpl[IO](userDataRepository, sessionCache)
+    val authController = AuthController(sessionService)
 
     authController.routes
   }
@@ -136,7 +144,7 @@ object TestRoutes {
             s"auth:session:USER007" -> sessionToken,
             s"auth:session:USER008" -> sessionToken,
             s"auth:session:USER009" -> sessionToken,
-            s"auth:session:USER010" -> sessionToken,
+            s"auth:session:USER010" -> sessionToken
           )
         )
       )
@@ -159,7 +167,7 @@ object TestRoutes {
     } yield Router(
       "/dev-quest-service" -> (
         baseRoutes() <+>
-          authRoutes(redisHost, redisPort, appConfig) <+>
+          authRoutes(redisHost, redisPort, transactor, appConfig) <+>
           questRoute <+>
           userDataRoutes <+>
           registrationRoutes
