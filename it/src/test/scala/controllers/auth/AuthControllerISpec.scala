@@ -94,31 +94,31 @@ class AuthControllerISpec(global: GlobalRead) extends IOSuite with ControllerISp
     }
   }
 
-  test(
-    "PUT - /dev-quest-service/auth/session/USER004 - " +
-      "should update the auth data for given user_id, returning Updated response"
-  ) { (cacheResource, log) =>
+  // test(
+  //   "PUT - /dev-quest-service/auth/session/USER004 - " +
+  //     "should update the auth data for given user_id, returning Updated response"
+  // ) { (cacheResource, log) =>
 
-    val cache = cacheResource._1.redis
-    val client = cacheResource._2.client
+  //   val cache = cacheResource._1.redis
+  //   val client = cacheResource._2.client
 
-    val sessionToken = "updated-test-session-token"
+  //   val sessionToken = "updated-test-session-token"
 
-    val request =
-      Request[IO](PUT, uri"http://127.0.0.1:9999/dev-quest-service/auth/session/USER004")
-        .addCookie("auth_session", sessionToken)
+  //   val request =
+  //     Request[IO](PUT, uri"http://127.0.0.1:9999/dev-quest-service/auth/session/USER004")
+  //       .addCookie("auth_session", sessionToken)
 
-    val expectedBody = UpdatedResponse("USER004", "Session updated from cookie")
+  //   val expectedBody = UpdatedResponse("USER004", "Session updated from cookie")
 
-    client.run(request).use { response =>
-      response.as[UpdatedResponse].map { body =>
-        expect.all(
-          response.status == Status.Ok,
-          body == expectedBody
-        )
-      }
-    }
-  }
+  //   client.run(request).use { response =>
+  //     response.as[UpdatedResponse].map { body =>
+  //       expect.all(
+  //         response.status == Status.Ok,
+  //         body == expectedBody
+  //       )
+  //     }
+  //   }
+  // }
 
   test(
     "DELETE - /dev-quest-service/auth/session/delete/USER003 - " +

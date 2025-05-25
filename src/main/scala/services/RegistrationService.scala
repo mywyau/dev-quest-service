@@ -14,23 +14,26 @@ import java.util.UUID
 import models.database.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
+import models.users.CreateUserData
 import models.UserType
 import org.typelevel.log4cats.Logger
-import models.users.CreateUserData
-import repositories.UserDataRepositoryImpl
 import repositories.UserDataRepositoryAlgebra
+import repositories.UserDataRepositoryImpl
 
 trait RegistrationServiceAlgebra[F[_]] {
 
   def createUser(userId: String, createRegistration: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def updateUserType(userId: String, userType: UserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
 class RegistrationServiceImpl[F[_] : Concurrent : Monad : Logger](
   userDataRepo: UserDataRepositoryAlgebra[F]
 ) extends RegistrationServiceAlgebra[F] {
 
-  override def createUser(userId: String, createUserData: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
-    Logger[F].info(s"[RegistrationService] Creating a new user for user: $userId") *>
+  override def createUser(userId: String, createUserData: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+
+    val createUserWithLogging =
       userDataRepo.createUser(userId, createUserData).flatMap {
         case Valid(value) =>
           Logger[F].info(s"[RegistrationService] User successfully created with ID: $userId") *>
@@ -39,6 +42,26 @@ class RegistrationServiceImpl[F[_] : Concurrent : Monad : Logger](
           Logger[F].error(s"[RegistrationService] Failed to create user. Errors: ${errors.toList.mkString(", ")}") *>
             Concurrent[F].pure(Invalid(errors))
       }
+
+    Logger[F].info(s"[RegistrationService] Attempting to create a new user for userId: $userId") *>
+      userDataRepo.findUser(userId).flatMap {
+        case None =>
+          createUserWithLogging
+        case Some(value) =>
+          Logger[F].info(s"[RegistrationService] User already created with ID: ${value.userId}") *>
+            Concurrent[F].pure(Valid(ReadSuccess))
+      }
+  }
+
+  override def updateUserType(userId: String, userType: UserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    userDataRepo.updateUserType(userId, userType).flatMap {
+      case Valid(value) =>
+        Logger[F].info(s"[UserDataService][update] Successfully updated user with ID: $userId") *>
+          Concurrent[F].pure(Valid(value))
+      case Invalid(errors) =>
+        Logger[F].error(s"[UserDataService][update] Failed to update user with ID: $userId. Errors: ${errors.toList.mkString(", ")}") *>
+          Concurrent[F].pure(Invalid(errors))
+    }
 }
 
 object RegistrationService {

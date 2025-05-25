@@ -22,6 +22,10 @@ trait SessionCacheAlgebra[F[_]] {
 
   def getSession(userId: String): F[Option[String]]
 
+  def storeOnlyCookie(userId: String, token: String): F[Unit]
+
+  def storeSession(userId: String, session: Option[UserSession]): F[ValidatedNel[CacheErrors, CacheSuccess]]
+
   def updateSession(userId: String, session: Option[UserSession]): F[ValidatedNel[CacheErrors, CacheSuccess]]
 
   def deleteSession(userId: String): F[Long]
@@ -43,6 +47,27 @@ class SessionCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int,
         case Some(_) => Logger[F].info(s"[SessionCache] Session found for userId=$userId")
         case None => Logger[F].info(s"[SessionCache] No session found for userId=$userId")
       }
+
+  override def storeOnlyCookie(userId: String, token: String): F[Unit] =
+    Logger[F].info(s"[RedisCache] Storing session for userId=$userId") *>
+      withRedis(_.setEx(s"auth:session:$userId", token, 1.day)) <*
+      Logger[F].info(s"[RedisCache] Session stored with TTL 1 day for userId=$userId")
+
+  override def storeSession(userId: String, session: Option[UserSession]): F[ValidatedNel[CacheErrors, CacheSuccess]] =
+    session match {
+      case Some(sess) =>
+        for {
+          _ <- Logger[F].info(s"[SessionCache] Storing session for userId=$userId")
+          _ <- withRedis(_.setEx(s"auth:session:$userId", sess.asJson.noSpaces, 1.day))
+          _ <- Logger[F].info(s"[SessionCache] Session updated with TTL 1 day for userId=$userId")
+        } yield (
+          Valid(CacheUpdateSuccess)
+        )
+
+      case None =>
+        Logger[F].info(s"[SessionCache] No session provided, skipping update for userId=$userId") *>
+          Validated.invalidNel(CacheUpdateFailure).pure[F]
+    }
 
   // No difference to def storeSession
   override def updateSession(userId: String, session: Option[UserSession]): F[ValidatedNel[CacheErrors, CacheSuccess]] =

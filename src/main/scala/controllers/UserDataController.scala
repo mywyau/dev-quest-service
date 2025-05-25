@@ -43,9 +43,6 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
   implicit val updateUserTypeDecoder: EntityDecoder[F, UpdateUserType] = jsonOf[F, UpdateUserType]
   implicit val createUserDataDecoder: EntityDecoder[F, CreateUserData] = jsonOf[F, CreateUserData]
 
-  private def extractBearerToken(req: Request[F]): Option[String] =
-    req.headers.get[headers.Authorization].map(_.value.stripPrefix("Bearer "))
-
   private def extractSessionToken(req: Request[F]): Option[String] =
     req.cookies
       .find(_.name == "auth_session")
@@ -71,12 +68,12 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
 
     case req @ GET -> Root / "user" / "data" / userId =>
       extractSessionToken(req) match {
-        case Some(headerToken) =>
-          withValidSession(userId, headerToken) {
+        case Some(cookieToken) =>
+          withValidSession(userId, cookieToken) {
             Logger[F].info(s"[UserDataController] GET - Authenticated for userId $userId") *>
               userService.getUser(userId).flatMap {
                 case Some(user) =>
-                  Logger[F].info(s"[UserDataController] GET - Found user ${user.userId.toString()}") *>
+                  Logger[F].info(s"[UserDataController] GET - Found user ${userId.toString()}") *>
                     Ok(user.asJson)
                 case None =>
                   BadRequest(ErrorResponse("NO_QUEST", "No user found").asJson)
