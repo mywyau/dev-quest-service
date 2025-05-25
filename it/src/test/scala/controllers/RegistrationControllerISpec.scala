@@ -65,7 +65,7 @@ class RegistrationControllerISpec(global: GlobalRead) extends IOSuite with Contr
       }
     }
   }
-  
+
   test(
     "POST - /dev-quest-service/registration/data/create/USER007 - should generate the user data in db table, returning Created response"
   ) { (transactorResource, log) =>
@@ -102,62 +102,35 @@ class RegistrationControllerISpec(global: GlobalRead) extends IOSuite with Contr
     }
   }
 
-  // test(
-  //   "PUT - /dev-quest-service/registration/data/update/type/USER008 - " +
-  //     "given a valid user_id should update the user type for given user - returning Updated response"
-  // ) { (transactorResource, log) =>
+  test(
+    "PUT - /dev-quest-service/registration/update/user/type/USER008 - " +
+      "given a valid user_id should update the user type for given user - returning Updated response"
+  ) { (transactorResource, log) =>
 
-  //   val transactor = transactorResource._1.xa
-  //   val client = transactorResource._2.client
+    val transactor = transactorResource._1.xa
+    val client = transactorResource._2.client
 
-  //   val sessionToken = "test-session-token"
+    val sessionToken = "test-session-token"
 
-  //   val updateUserTypeRequest: UpdateUserType =
-  //     UpdateUserType(
-  //       userId = "USER008",
-  //       userType = Client
-  //     )
+    val updateUserTypeRequest: UpdateUserType =
+      UpdateUserType(
+        userType = Client
+      )
 
-  //   val reuser =
-  //     Request[IO](PUT, uri"http://127.0.0.1:9999/dev-quest-service/registration/data/update/type/USER008")
-  //       .addCookie("auth_session", sessionToken)
-  //       .withEntity(updateUserTypeRequest.asJson)
+    val reuser =
+      Request[IO](PUT, uri"http://127.0.0.1:9999/dev-quest-service/registration/update/user/type/USER008")
+        .addCookie("auth_session", sessionToken)
+        .withEntity(updateUserTypeRequest.asJson)
 
-  //   val expectedBody = UpdatedResponse(UpdateSuccess.toString, "User USER008 updated successfully with type: Client")
+    val expectedBody = UpdatedResponse(UpdateSuccess.toString, "User USER008 updated successfully with type: Client")
 
-  //   client.run(reuser).use { response =>
-  //     response.as[UpdatedResponse].map { body =>
-  //       expect.all(
-  //         response.status == Status.Ok,
-  //         body == expectedBody
-  //       )
-  //     }
-  //   }
-  // }
-
-  // test(
-  //   "DELETE - /dev-quest-service/registration/data/delete/USER009 - " +
-  //     "should delete the user data for a given user_id, returning OK and Deleted response json"
-  // ) { (transactorResource, log) =>
-
-  //   val transactor = transactorResource._1.xa
-  //   val client = transactorResource._2.client
-
-  //   val sessionToken = "test-session-token"
-
-  //   val reuser =
-  //     Request[IO](DELETE, uri"http://127.0.0.1:9999/dev-quest-service/registration/data/delete/USER009")
-  //       .addCookie("auth_session", sessionToken)
-
-  //   val expectedBody = DeletedResponse(DeleteSuccess.toString, "User deleted successfully")
-
-  //   client.run(reuser).use { response =>
-  //     response.as[DeletedResponse].map { body =>
-  //       expect.all(
-  //         response.status == Status.Ok,
-  //         body == expectedBody
-  //       )
-  //     }
-  //   }
-  // }
+    client.run(reuser).use { response =>
+      response.as[UpdatedResponse].map { body =>
+        expect.all(
+          response.status == Status.Ok,
+          body == expectedBody
+        )
+      }
+    }
+  }
 }
