@@ -65,41 +65,7 @@ class RegistrationControllerISpec(global: GlobalRead) extends IOSuite with Contr
       }
     }
   }
-
-  // test(
-  //   "GET - /dev-quest-service/registration/data/USER001 -  for given user id should find the user data, returning OK and the correct user json body"
-  // ) { (transactorResource, log) =>
-
-  //   val transactor = transactorResource._1.xa
-  //   val client = transactorResource._2.client
-
-  //   val sessionToken = "test-session-token"
-
-  //   def testRegistration(userId: String): UserData =
-  //     UserData(
-  //       userId = userId,
-  //       email = "bob_smith@gmail.com",
-  //       firstName = Some("Bob"),
-  //       lastName = Some("Smith"),
-  //       userType = Some(Dev)
-  //     )
-
-  //   val reuser =
-  //     Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/registration/data/USER001")
-  //       .addCookie("auth_session", sessionToken)
-
-  //   val expectedRegistration = testRegistration("USER001")
-
-  //   client.run(reuser).use { response =>
-  //     response.as[Option[UserData]].map { body =>
-  //       expect.all(
-  //         response.status == Status.Ok,
-  //         body == Option(expectedRegistration)
-  //       )
-  //     }
-  //   }
-  // }
-
+  
   test(
     "POST - /dev-quest-service/registration/data/create/USER007 - should generate the user data in db table, returning Created response"
   ) { (transactorResource, log) =>
