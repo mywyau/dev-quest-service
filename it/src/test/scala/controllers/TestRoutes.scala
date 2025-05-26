@@ -41,6 +41,8 @@ object TestRoutes {
 
   class MockSessionCache(ref: Ref[IO, Map[String, String]]) extends SessionCacheAlgebra[IO] {
 
+    override def lookupSession(token: String): IO[Option[UserSession]] = ???
+
     override def storeOnlyCookie(userId: String, token: String): IO[Unit] = ???
 
     override def storeSession(userId: String, session: Option[UserSession]): IO[ValidatedNel[CacheErrors, CacheSuccess]] = ???

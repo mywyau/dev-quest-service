@@ -11,6 +11,7 @@ import dev.profunktor.redis4cats.*
 import dev.profunktor.redis4cats.effect.Log.Stdout.*
 import io.circe.syntax.EncoderOps
 import io.circe.Json
+import io.circe.parser
 import models.auth.UserSession
 import models.cache.*
 import org.http4s.circe.*
@@ -29,6 +30,9 @@ trait SessionCacheAlgebra[F[_]] {
   def updateSession(userId: String, session: Option[UserSession]): F[ValidatedNel[CacheErrors, CacheSuccess]]
 
   def deleteSession(userId: String): F[Long]
+
+    // New: lookup by session token
+  def lookupSession(token: String): F[Option[UserSession]]
 }
 
 class SessionCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int, appConfig: AppConfig) extends SessionCacheAlgebra[F] {
@@ -93,6 +97,21 @@ class SessionCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int,
           Logger[F].info(s"[SessionCache] Successfully deleted session for userId=$userId")
         else
           Logger[F].info(s"[SessionCache] No session to delete for userId=$userId")
+      }
+
+    // Implementation of lookupSession
+  override def lookupSession(userId: String): F[Option[UserSession]] =
+    Logger[F].info(s"[SessionCache] Looking up session for userId=$userId") *>
+      withRedis(_.get(s"auth:session:$userId")).flatMap {
+        case Some(json) =>
+          parser.decode[UserSession](json) match {
+            case Right(sess) =>
+              Logger[F].info(s"[SessionCache] Session found for token=$userId") *> sess.some.pure[F]
+            case Left(err) =>
+              Logger[F].error(err)(s"[SessionCache] Failed to decode session JSON for token=$userId") *> none[UserSession].pure[F]
+          }
+        case None =>
+          Logger[F].info(s"[SessionCache] No session found for token=$userId") *> none[UserSession].pure[F]
       }
 }
 
