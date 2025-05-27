@@ -23,7 +23,10 @@ import repositories.UserDataRepositoryAlgebra
 
 trait SessionServiceAlgebra[F[_]] {
 
-  def getSession(userId: String): F[Option[String]]
+
+  def getSessionCookieOnly(userId: String): F[Option[String]]
+
+  def getSession(userId: String): F[Option[UserSession]]
 
   def storeOnlyCookie(userId: String, token: String): F[Unit]
 
@@ -39,7 +42,11 @@ class SessionServiceImpl[F[_] : Concurrent : Monad : Logger](
   sessionCache: SessionCacheAlgebra[F]
 ) extends SessionServiceAlgebra[F] {
 
-  override def getSession(userId: String): F[Option[String]] =
+
+  override def getSessionCookieOnly(userId: String): F[Option[String]] = 
+    sessionCache.getSessionCookieOnly(userId)
+
+  override def getSession(userId: String): F[Option[UserSession]] =
     sessionCache.getSession(userId)
 
   override def storeOnlyCookie(userId: String, cookieToken: String): F[Unit] = 
@@ -54,7 +61,7 @@ class SessionServiceImpl[F[_] : Concurrent : Monad : Logger](
         val userSession =
           UserSession(
             userId = userDetails.userId,
-            cookieToken = cookieToken,
+            cookieValue = cookieToken,
             email = userDetails.email,
             userType = userDetails.userType.getOrElse(UnknownUserType).toString()
           )
@@ -74,7 +81,7 @@ class SessionServiceImpl[F[_] : Concurrent : Monad : Logger](
         val userSession =
           UserSession(
             userId = userDetails.userId,
-            cookieToken = cookieToken,
+            cookieValue = cookieToken,
             email = userDetails.email,
             userType = userDetails.userType.getOrElse(UnknownUserType).toString()
           )

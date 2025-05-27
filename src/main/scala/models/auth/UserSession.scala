@@ -7,7 +7,7 @@ import io.circe.Encoder
 
 case class UserSession(
   userId: String,
-  cookieToken: String,
+  cookieValue: String,
   email: String,
   userType: String
 )

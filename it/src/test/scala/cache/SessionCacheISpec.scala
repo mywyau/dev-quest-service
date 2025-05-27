@@ -22,21 +22,21 @@ class SessionCacheISpec(global: GlobalRead) extends IOSuite with ControllerISpec
   // Sample session data for tests
   private val testSession = UserSession(
     userId = "user-1",
-    cookieToken = "tok-xyz",
+    cookieValue = "tok-xyz",
     email = "foo@bar.com",
     userType = "Client"
   )
 
   private val testSession3 = UserSession(
     userId = "user-3",
-    cookieToken = "tok-xyz-123",
+    cookieValue = "tok-xyz-123",
     email = "foo3@bar.com",
     userType = "Client"
   )
 
   private val testSession4 = UserSession(
     userId = "user-4",
-    cookieToken = "tok-xyz-124",
+    cookieValue = "tok-xyz-124",
     email = "foo4@bar.com",
     userType = "Dev"
   )
@@ -60,7 +60,7 @@ class SessionCacheISpec(global: GlobalRead) extends IOSuite with ControllerISpec
       e1 = expect(resultJson.toOption.contains(CacheUpdateSuccess))
       // fetch raw JSON
       rawOpt <- cache.getSession(testSession.userId)
-      e2 = expect(rawOpt.exists(_.contains(testSession.cookieToken)))
+      e2 = expect(rawOpt.exists(_.cookieValue.contains(testSession.cookieValue)))
     } yield e1.and(e2)
   }
 
@@ -82,17 +82,19 @@ class SessionCacheISpec(global: GlobalRead) extends IOSuite with ControllerISpec
       e1 = expect(deleted > 0)
       afterGet <- cache.getSession(testSession3.userId)
       e2 = expect(afterGet.isEmpty)
-      afterLook <- cache.lookupSession(testSession3.cookieToken)
+      afterLook <- cache.lookupSession(testSession3.cookieValue)
       e3 = expect(afterLook.isEmpty)
     } yield e1.and(e2).and(e3)
   }
 
   test("storeOnlyCookie writes raw token and lookupSession fails") { (shared, log) =>
+
     val cache = shared._1.sessionCache
+
     for {
       _ <- cache.storeOnlyCookie("user-2", "plain-token")
-      rawOpt <- cache.getSession("user-2")
-      e1 = expect(rawOpt.contains("plain-token"))
+      rawOpt <- cache.getSessionCookieOnly("user-2")
+      e1 = expect(rawOpt == Some("plain-token"))
       lookup <- cache.lookupSession("plain-token")
       e2 = expect(lookup.isEmpty)
     } yield e1.and(e2)

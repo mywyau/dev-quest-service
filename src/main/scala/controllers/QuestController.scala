@@ -13,11 +13,7 @@ import io.circe.Json
 import models.database.UpdateSuccess
 import models.quests.CreateQuestPartial
 import models.quests.UpdateQuestPartial
-import models.responses.CreatedResponse
-import models.responses.DeletedResponse
-import models.responses.ErrorResponse
-import models.responses.GetResponse
-import models.responses.UpdatedResponse
+import models.responses.*
 import org.http4s.*
 import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
@@ -27,7 +23,6 @@ import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
 import scala.concurrent.duration.*
 import services.QuestServiceAlgebra
-import models.database.UpdateSuccess
 
 trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -52,7 +47,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
 
   private def withValidSession(userId: String, token: String)(onValid: F[Response[F]]): F[Response[F]] =
     redisCache.getSession(userId).flatMap {
-      case Some(tokenFromRedis) if tokenFromRedis == token =>
+      case Some(userSessionJson) if userSessionJson.cookieValue == token =>
         onValid
       case Some(_) =>
         Logger[F].info("[QuestControllerImpl][withValidSession] User session does not match requested user session token value from redis.")

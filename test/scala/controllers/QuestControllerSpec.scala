@@ -6,17 +6,18 @@ import cats.effect.IO
 import controllers.ControllerSpecBase
 import controllers.QuestController
 import controllers.QuestControllerConstants.*
+import models.auth.UserSession
 import models.responses.ErrorResponse
 import org.http4s.*
-import org.http4s.Method.*
-import org.http4s.Status.BadRequest
-import org.http4s.Status.Ok
 import org.http4s.circe.*
 import org.http4s.circe.CirceEntityDecoder.*
 import org.http4s.implicits.*
+import org.http4s.Method.*
+import org.http4s.Status.BadRequest
+import org.http4s.Status.Ok
 import org.typelevel.ci.CIStringSyntax
-import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import services.QuestServiceAlgebra
 import weaver.SimpleIOSuite
 
@@ -31,11 +32,20 @@ object QuestControllerSpec extends SimpleIOSuite with ControllerSpecBase {
   test("GET - /quest/USER001/QUEST001 should return 200 when quest is retrieved successfully") {
 
     val sessionToken = "test-session-token"
+
+    val fakeUserSession =
+      UserSession(
+        userId = "USER001",
+        cookieValue = sessionToken,
+        email = "fakeEmail@gmail.com",
+        userType = "Dev"
+      )
+
     val mockQuestService = new MockQuestService(Map("QUEST001" -> sampleQuest1))
     val request = Request[IO](Method.GET, uri"/quest/USER001/QUEST001")
 
     for {
-      ref <- Ref.of[IO, Map[String, String]](Map(s"auth:session:USER001" -> sessionToken))
+      ref <- Ref.of[IO, Map[String, UserSession]](Map(s"auth:session:USER001" -> fakeUserSession))
       mockRedisCache = new MockRedisCache(ref)
       controller = createUserController(mockQuestService, mockRedisCache)
       response <- controller.orNotFound.run(

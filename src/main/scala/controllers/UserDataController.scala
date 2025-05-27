@@ -50,7 +50,7 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
 
   private def withValidSession(userId: String, token: String)(onValid: F[Response[F]]): F[Response[F]] =
     sessionCache.getSession(userId).flatMap {
-      case Some(tokenFromRedis) if tokenFromRedis == token =>
+      case Some(userSessionJson) if userSessionJson.cookieValue == token =>
         onValid
       case Some(_) =>
         Logger[F].info("[UserDataControllerImpl][withValidSession] User session does not match reusered user session token value from redis.")
