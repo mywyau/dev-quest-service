@@ -50,11 +50,8 @@ class RegistrationControllerISpec(global: GlobalRead) extends IOSuite with Contr
     val transactor = transactorResource._1.xa
     val client = transactorResource._2.client
 
-    val sessionToken = "test-session-token"
-
     val reuser =
       Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/registration/health")
-      // .addCookie("auth_session", sessionToken)
 
     client.run(reuser).use { response =>
       response.as[GetResponse].map { body =>
@@ -73,7 +70,8 @@ class RegistrationControllerISpec(global: GlobalRead) extends IOSuite with Contr
     val transactor = transactorResource._1.xa
     val client = transactorResource._2.client
 
-    val sessionToken = "test-session-token"
+    val sessionToken = 
+      "test-session-token"
 
     def testCreateRegistration(): CreateUserData =
       CreateUserData(

@@ -15,12 +15,15 @@ import models.database.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
 import models.users.CreateUserData
+import models.users.UserData
 import models.UserType
 import org.typelevel.log4cats.Logger
 import repositories.UserDataRepositoryAlgebra
 import repositories.UserDataRepositoryImpl
 
 trait RegistrationServiceAlgebra[F[_]] {
+
+  def getUser(userId: String): F[Option[UserData]]
 
   def createUser(userId: String, createRegistration: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
@@ -30,6 +33,14 @@ trait RegistrationServiceAlgebra[F[_]] {
 class RegistrationServiceImpl[F[_] : Concurrent : Monad : Logger](
   userDataRepo: UserDataRepositoryAlgebra[F]
 ) extends RegistrationServiceAlgebra[F] {
+
+  override def getUser(userId: String): F[Option[UserData]] =
+    userDataRepo.findUser(userId).flatMap {
+      case Some(user) =>
+        Logger[F].info(s"[UserDataService] Found user with ID: $userId") *> Concurrent[F].pure(Some(user))
+      case None =>
+        Logger[F].info(s"[UserDataService] No user found with ID: $userId") *> Concurrent[F].pure(None)
+    }
 
   override def createUser(userId: String, createUserData: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
 

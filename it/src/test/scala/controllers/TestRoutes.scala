@@ -61,7 +61,7 @@ object TestRoutes {
 
   class MockSessionCache(ref: Ref[IO, Map[String, UserSession]]) extends SessionCacheAlgebra[IO] {
 
-    override def getSessionCookieOnly(userId: String): IO[Option[String]] = ???
+    override def getSessionCookieOnly(userId: String): IO[Option[String]] = IO(Some("test-session-token"))
 
     override def lookupSession(token: String): IO[Option[UserSession]] = ???
 
@@ -142,10 +142,10 @@ object TestRoutes {
           )
         )
       )
-      mockRedisCache = new MockRedisCache(ref)
+      mockSessionCache = new MockSessionCache(ref)
       questRepository = QuestRepository(transactor)
       questService = QuestService(questRepository)
-      questController = QuestController(questService, mockRedisCache)
+      questController = QuestController(questService, mockSessionCache)
     } yield questController.routes
   }
 

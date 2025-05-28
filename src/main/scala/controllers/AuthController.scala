@@ -55,19 +55,6 @@ class AuthControllerImpl[F[_] : Async : Logger](
                 .map(_.withContentType(`Content-Type`(MediaType.application.json)))
         }
 
-    // case req @ PUT -> Root / "auth" / "session" / userId =>
-    //   Logger[F].info(s"POST - Updating session for userId: $userId") *>
-    //     Async[F].delay(req.cookies.find(_.name == "auth_session")).flatMap {
-    //       case Some(cookie) =>
-    //         sessionService.updateSession(userId, cookie.content) *>
-    //           Ok(UpdatedResponse(userId, "Session updated from cookie").asJson)
-    //             .map(_.withContentType(`Content-Type`(MediaType.application.json)))
-    //       case None =>
-    //         Logger[F].info(s"Not updated no auth_session cookie for $userId") *>
-    //           BadRequest(ErrorResponse("NO_COOKIE", "Not updated auth_session cookie not found").asJson)
-    //             .map(_.withContentType(`Content-Type`(MediaType.application.json)))
-    //     }
-
     case req @ POST -> Root / "auth" / "session" / "sync" / userId =>
       Logger[F].info(s"Incoming cookies: ${req.cookies.map(c => s"${c.name}=${c.content}").mkString(", ")}") *>
         Logger[F].info(s"POST - Updating session for userId: $userId") *>

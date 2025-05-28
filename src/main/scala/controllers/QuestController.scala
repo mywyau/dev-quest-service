@@ -23,6 +23,7 @@ import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
 import scala.concurrent.duration.*
 import services.QuestServiceAlgebra
+import cache.SessionCacheAlgebra
 
 trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -30,7 +31,7 @@ trait QuestControllerAlgebra[F[_]] {
 
 class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
   questService: QuestServiceAlgebra[F],
-  redisCache: RedisCacheAlgebra[F]
+  sessionCache: SessionCacheAlgebra[F]
 ) extends Http4sDsl[F]
     with QuestControllerAlgebra[F] {
 
@@ -46,7 +47,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
       .map(_.content)
 
   private def withValidSession(userId: String, token: String)(onValid: F[Response[F]]): F[Response[F]] =
-    redisCache.getSession(userId).flatMap {
+    sessionCache.getSession(userId).flatMap {
       case Some(userSessionJson) if userSessionJson.cookieValue == token =>
         onValid
       case Some(_) =>
@@ -216,6 +217,6 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
 }
 
 object QuestController {
-  def apply[F[_] : Async : Concurrent](questService: QuestServiceAlgebra[F], redisCache: RedisCacheAlgebra[F])(implicit logger: Logger[F]): QuestControllerAlgebra[F] =
-    new QuestControllerImpl[F](questService, redisCache)
+  def apply[F[_] : Async : Concurrent](questService: QuestServiceAlgebra[F], sessionCache: SessionCacheAlgebra[F])(implicit logger: Logger[F]): QuestControllerAlgebra[F] =
+    new QuestControllerImpl[F](questService, sessionCache)
 }

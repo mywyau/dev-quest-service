@@ -40,7 +40,7 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
 ) extends Http4sDsl[F]
     with RegistrationControllerAlgebra[F] {
 
-  implicit val UpdateUserTypeDecoder: EntityDecoder[F, UpdateUserType] = jsonOf[F, UpdateUserType]
+  implicit val updateUserTypeDecoder: EntityDecoder[F, UpdateUserType] = jsonOf[F, UpdateUserType]
   implicit val createRegistrationDecoder: EntityDecoder[F, CreateUserData] = jsonOf[F, CreateUserData]
 
   private def extractBearerToken(req: Request[F]): Option[String] =
@@ -52,8 +52,8 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
       .map(_.content)
 
   private def withValidSession(userId: String, token: String)(onValid: F[Response[F]]): F[Response[F]] =
-    sessionCache.getSession(userId).flatMap {
-      case Some(userSessionJson) if userSessionJson.cookieValue == token =>
+    sessionCache.getSessionCookieOnly(userId).flatMap {
+      case Some(cookieToken) if cookieToken == token =>
         onValid
       case Some(_) =>
         Logger[F].info("[RegistrationController][withValidSession] User session does not match reusered user session token value from redis.")
@@ -69,6 +69,23 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
       Logger[F].info(s"[RegistrationController] GET - Health check for backend RegistrationController service") *>
         Ok(GetResponse("dev-quest-service/registration/health", "I am alive").asJson)
 
+    case req @ GET -> Root/  "registration" / "user" / "data" / userId =>
+      extractSessionToken(req) match {
+        case Some(cookieToken) =>
+          withValidSession(userId, cookieToken) {
+            Logger[F].info(s"[UserDataController] GET - Authenticated for userId $userId") *>
+              registrationService.getUser(userId).flatMap {
+                case Some(user) =>
+                  Logger[F].info(s"[UserDataController] GET - Found user ${userId.toString()}") *>
+                    Ok(user.asJson)
+                case None =>
+                  BadRequest(ErrorResponse("NO_QUEST", "No user found").asJson)
+              }
+          }
+        case None =>
+          Logger[F].info(s"[UserDataController] GET - Unauthorised") *>
+            Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
+      }
 
     case req @ POST -> Root / "registration" / "data" / "create" / userId =>
       extractSessionToken(req) match {

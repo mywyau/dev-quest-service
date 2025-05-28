@@ -18,6 +18,10 @@ import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
 import services.QuestServiceAlgebra
+import cats.effect.IO
+import cats.effect.Ref
+import cache.RedisCacheAlgebra
+import models.auth.UserSession
 
 class MockQuestService(userQuestData: Map[String, QuestPartial]) extends QuestServiceAlgebra[IO] {
 
@@ -43,10 +47,7 @@ class MockQuestService(userQuestData: Map[String, QuestPartial]) extends QuestSe
     IO.pure(Valid(DeleteSuccess))
 }
 
-import cats.effect.IO
-import cats.effect.Ref
-import cache.RedisCacheAlgebra
-import models.auth.UserSession
+
 
 /** 
  * A fully‐customizable mock.  
@@ -56,6 +57,7 @@ import models.auth.UserSession
  * @param mkSession
  *   A function the mock will use to turn (userId, token) → UserSession  
  */
+
 class MockRedisCache(
   ref: Ref[IO, Map[String, UserSession]],
   mkSession: (String, String) => UserSession = (userId, token) =>
