@@ -60,17 +60,23 @@ class AuthControllerImpl[F[_] : Async : Logger](
         Logger[F].info(s"POST - Updating session for userId: $userId") *>
         Async[F].delay(req.cookies.find(_.name == "auth_session")).flatMap {
           case Some(cookie) =>
-            sessionService.storeUserSession(userId, cookie.content).flatMap {
-              case Valid(_) =>
-                Logger[F].info(s"[AuthController] Cache updated for $userId") *>
-                  Created(CreatedResponse(userId, "Session synced from DB").asJson)
-                    .map(_.withContentType(`Content-Type`(MediaType.application.json)))
+            Logger[F].info(s"[AuthController][/auth/session/sync] Cache updated with cookie content: ${cookie.content}") *>
+              sessionService
+                .storeUserSession(
+                  userId = userId,
+                  cookieToken = cookie.content
+                )
+                .flatMap {
+                  case Valid(_) =>
+                    Logger[F].info(s"[AuthController] Cache updated for $userId") *>
+                      Created(CreatedResponse(userId, "Session synced from DB").asJson)
+                        .map(_.withContentType(`Content-Type`(MediaType.application.json)))
 
-              case Invalid(errors) =>
-                Logger[F].warn(s"[AuthController] Cache update failed for $userId: $errors") *>
-                  BadRequest(ErrorResponse("CACHE_UPDATE_FAILED", errors.toList.map(_.toString).mkString(", ")).asJson)
-                    .map(_.withContentType(`Content-Type`(MediaType.application.json)))
-            }
+                  case Invalid(errors) =>
+                    Logger[F].warn(s"[AuthController] Cache update failed for $userId: $errors") *>
+                      BadRequest(ErrorResponse("CACHE_UPDATE_FAILED", errors.toList.map(_.toString).mkString(", ")).asJson)
+                        .map(_.withContentType(`Content-Type`(MediaType.application.json)))
+                }
 
           case None =>
             Logger[F].warn(s"[AuthController] No auth_session cookie for $userId") *>

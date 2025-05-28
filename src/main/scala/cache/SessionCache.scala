@@ -62,25 +62,24 @@ class SessionCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int,
     val key = s"auth:session:$userId"
 
     for {
-      _ <- Logger[F].info(s"[RedisCache] Retrieving session for userId=$userId")
+      _ <- Logger[F].info(s"[SessionCache] Retrieving session for userId=$userId")
       maybeJ <- withRedis(_.get(key))
       result <- maybeJ match {
         case None =>
           Logger[F]
-            .info(s"[RedisCache] No session found for userId=$userId")
+            .info(s"[SessionCache] No session found for userId=$userId")
             .as(None)
         case Some(jsonStr) =>
-          Logger[F].info(s"[RedisCache] Session JSON for userId=$userId: $jsonStr") *>
+          Logger[F].info(s"[SessionCache] Session JSON for userId=$userId: $jsonStr") *>
             (
               decode[UserSession](jsonStr) match {
                 case Right(session) =>
                   Logger[F]
-                    .info(s"[RedisCache] Parsed session for userId=$userId")
+                    .info(s"[SessionCache] Parsed session for userId=$userId")
                     .as(Some(session))
-
                 case Left(err) =>
                   Logger[F]
-                    .error(s"[RedisCache] JSON parsing failed: $err")
+                    .error(s"[SessionCache] JSON parsing failed: $err")
                     .as(None)
               }
             )
@@ -89,9 +88,9 @@ class SessionCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int,
   }
 
   override def storeOnlyCookie(userId: String, token: String): F[Unit] =
-    Logger[F].info(s"[RedisCache] Storing session for userId=$userId") *>
+    Logger[F].info(s"[SessionCache] Storing session for userId=$userId") *>
       withRedis(_.setEx(s"auth:session:$userId", token, 1.day)) <*
-      Logger[F].info(s"[RedisCache] Session stored with TTL 1 day for userId=$userId")
+      Logger[F].info(s"[SessionCache] Session stored with TTL 1 day for userId=$userId")
 
   override def storeSession(userId: String, session: Option[UserSession]): F[ValidatedNel[CacheErrors, CacheSuccess]] =
     session match {

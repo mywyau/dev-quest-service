@@ -2,6 +2,7 @@ package controllers
 
 import cache.RedisCache
 import cache.RedisCacheAlgebra
+import cache.SessionCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
 import cats.effect.kernel.Async
@@ -23,7 +24,6 @@ import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
 import scala.concurrent.duration.*
 import services.QuestServiceAlgebra
-import cache.SessionCacheAlgebra
 
 trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -49,7 +49,8 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
   private def withValidSession(userId: String, token: String)(onValid: F[Response[F]]): F[Response[F]] =
     sessionCache.getSession(userId).flatMap {
       case Some(userSessionJson) if userSessionJson.cookieValue == token =>
-        onValid
+        Logger[F].info("[QuestControllerImpl][withValidSession] Found valid session for userdId:") *>
+          onValid
       case Some(_) =>
         Logger[F].info("[QuestControllerImpl][withValidSession] User session does not match requested user session token value from redis.")
         Forbidden("User session does not match requested user session token value from redis.")
@@ -95,8 +96,8 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
 
     case req @ GET -> Root / "quest" / "stream" / "all" / userIdFromRoute =>
       extractSessionToken(req) match {
-        case Some(headerToken) =>
-          withValidSession(userIdFromRoute, headerToken) {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
             val page = req.params.get("page").flatMap(_.toIntOption).getOrElse(1)
             val limit = req.params.get("limit").flatMap(_.toIntOption).getOrElse(10)
             val offset = (page - 1) * limit
