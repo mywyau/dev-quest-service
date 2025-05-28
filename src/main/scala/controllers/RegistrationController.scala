@@ -62,7 +62,6 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
         Logger[F].info("[RegistrationController][withValidSession] Invalid or expired session")
         Forbidden("Invalid or expired session")
     }
-
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
     case req @ GET -> Root / "registration" / "health" =>
@@ -108,8 +107,8 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
 
     case req @ PUT -> Root / "registration" / "update" / "user" / "type" / userId =>
       extractSessionToken(req) match {
-        case Some(headerToken) =>
-          withValidSession(userId, headerToken) {
+        case Some(cookieToken) =>
+          withValidSession(userId, cookieToken) {
             Logger[F].info(s"[RegistrationController] PUT - Updating user type for userId: $userId") *>
               req.decode[UpdateUserType] { request =>
                 registrationService.updateUserType(userId, request.userType).flatMap {
