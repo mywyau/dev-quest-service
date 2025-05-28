@@ -9,6 +9,10 @@ import cats.syntax.all.*
 import configuration.models.AppConfig
 import dev.profunktor.redis4cats.*
 import dev.profunktor.redis4cats.effect.Log.Stdout.*
+import io.circe.generic.auto._
+import io.circe.parser
+import io.circe.parser.decode
+import io.circe.syntax._
 import io.circe.syntax.EncoderOps
 import io.circe.Json
 import models.auth.UserSession
@@ -20,7 +24,9 @@ import scala.concurrent.duration.*
 
 trait SessionCacheAlgebra[F[_]] {
 
-  def getSession(userId: String): F[Option[String]]
+  def getSessionCookieOnly(userId: String): F[Option[String]]
+
+  def getSession(userId: String): F[Option[UserSession]]
 
   def storeOnlyCookie(userId: String, token: String): F[Unit]
 
@@ -29,11 +35,14 @@ trait SessionCacheAlgebra[F[_]] {
   def updateSession(userId: String, session: Option[UserSession]): F[ValidatedNel[CacheErrors, CacheSuccess]]
 
   def deleteSession(userId: String): F[Long]
+
+  // New: lookup by session token
+  def lookupSession(token: String): F[Option[UserSession]]
 }
 
 class SessionCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int, appConfig: AppConfig) extends SessionCacheAlgebra[F] {
 
-  implicit val updateDecoder: EntityDecoder[F, UserSession] = jsonOf[F, UserSession]
+  implicit val userSessionDecoder: EntityDecoder[F, UserSession] = jsonOf[F, UserSession]
 
   private def withRedis[A](fa: RedisCommands[F, String, String] => F[A]): F[A] = {
     val redisUri = s"redis://$redisHost:$redisPort"
@@ -41,12 +50,43 @@ class SessionCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int,
       Redis[F].utf8(redisUri).use(fa)
   }
 
-  override def getSession(userId: String): F[Option[String]] =
+  override def getSessionCookieOnly(userId: String): F[Option[String]] =
     Logger[F].info(s"[SessionCache] Retrieving session for userId=$userId") *>
       withRedis(_.get(s"auth:session:$userId")).flatTap {
         case Some(_) => Logger[F].info(s"[SessionCache] Session found for userId=$userId")
         case None => Logger[F].info(s"[SessionCache] No session found for userId=$userId")
       }
+
+  def getSession(userId: String): F[Option[UserSession]] = {
+
+    val key = s"auth:session:$userId"
+
+    for {
+      _ <- Logger[F].info(s"[RedisCache] Retrieving session for userId=$userId")
+      maybeJ <- withRedis(_.get(key))
+      result <- maybeJ match {
+        case None =>
+          Logger[F]
+            .info(s"[RedisCache] No session found for userId=$userId")
+            .as(None)
+        case Some(jsonStr) =>
+          Logger[F].info(s"[RedisCache] Session JSON for userId=$userId: $jsonStr") *>
+            (
+              decode[UserSession](jsonStr) match {
+                case Right(session) =>
+                  Logger[F]
+                    .info(s"[RedisCache] Parsed session for userId=$userId")
+                    .as(Some(session))
+
+                case Left(err) =>
+                  Logger[F]
+                    .error(s"[RedisCache] JSON parsing failed: $err")
+                    .as(None)
+              }
+            )
+      }
+    } yield result
+  }
 
   override def storeOnlyCookie(userId: String, token: String): F[Unit] =
     Logger[F].info(s"[RedisCache] Storing session for userId=$userId") *>
@@ -93,6 +133,21 @@ class SessionCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int,
           Logger[F].info(s"[SessionCache] Successfully deleted session for userId=$userId")
         else
           Logger[F].info(s"[SessionCache] No session to delete for userId=$userId")
+      }
+
+    // Implementation of lookupSession
+  override def lookupSession(userId: String): F[Option[UserSession]] =
+    Logger[F].info(s"[SessionCache] Looking up session for userId=$userId") *>
+      withRedis(_.get(s"auth:session:$userId")).flatMap {
+        case Some(json) =>
+          parser.decode[UserSession](json) match {
+            case Right(sess) =>
+              Logger[F].info(s"[SessionCache] Session found for token=$userId") *> sess.some.pure[F]
+            case Left(err) =>
+              Logger[F].error(err)(s"[SessionCache] Failed to decode session JSON for token=$userId") *> none[UserSession].pure[F]
+          }
+        case None =>
+          Logger[F].info(s"[SessionCache] No session found for token=$userId") *> none[UserSession].pure[F]
       }
 }
 

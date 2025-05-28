@@ -8,7 +8,11 @@ import doobie.util.transactor.Transactor
 import io.circe.syntax.*
 import io.circe.Json
 import java.time.LocalDateTime
+import models.auth.UserSession
 import models.database.*
+import models.database.CreateSuccess
+import models.database.DeleteSuccess
+import models.database.UpdateSuccess
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
@@ -28,7 +32,6 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import shared.HttpClientResource
 import shared.TransactorResource
 import weaver.*
-import models.database.{CreateSuccess, DeleteSuccess, UpdateSuccess}
 
 class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
@@ -45,7 +48,17 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
       client <- global.getOrFailR[HttpClientResource]()
     } yield (transactor, client)
 
-  // TODO: Change to test for retrieving all quests in paginated form or stream etc. 
+  val sessionToken = "test-session-token"
+
+  def fakeUserSession(userId: String) =
+    UserSession(
+      userId = "USER001",
+      sessionToken,
+      email = "fakeEmail@gmail.com",
+      userType = "Dev"
+    )
+
+  // TODO: Change to test for retrieving all quests in paginated form or stream etc.
   test(
     "GET - /dev-quest-service/quest/all/USER001 - should find the quest data for given user id, returning OK and the correct quest json body"
   ) { (transactorResource, log) =>

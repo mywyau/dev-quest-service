@@ -78,11 +78,11 @@ object Routes {
     appConfig: AppConfig
   ): HttpRoutes[F] = {
 
-    val redisCache = new RedisCacheImpl(redisHost, redisPort, appConfig)
+    val sessionCache = new SessionCacheImpl(redisHost, redisPort, appConfig)
     val questRepository = QuestRepository(transactor)
 
     val questService = QuestService(questRepository)
-    val questController = QuestController(questService, redisCache)
+    val questController = QuestController(questService, sessionCache)
 
     questController.routes
   }

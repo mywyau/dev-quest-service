@@ -25,32 +25,66 @@ import services.*
 
 object TestRoutes {
 
-  class MockRedisCache(ref: Ref[IO, Map[String, String]]) extends RedisCacheAlgebra[IO] {
+  class MockRedisCache(ref: Ref[IO, Map[String, UserSession]]) extends RedisCacheAlgebra[IO] {
 
     override def updateSession(userId: String, token: String): IO[Unit] =
-      ref.update(_.updated(s"auth:session:$userId", token))
+      ref.update(
+        _.updated(
+          s"auth:session:$userId",
+          UserSession(
+            userId = userId,
+            cookieValue = token,
+            email = s"$userId@example.com",
+            userType = "Dev"
+          )
+        )
+      )
 
     override def deleteSession(userId: String): IO[Long] = ???
 
     def storeSession(userId: String, token: String): IO[Unit] =
-      ref.update(_.updated(s"auth:session:$userId", token))
+      ref.update(
+        _.updated(
+          s"auth:session:$userId",
+          UserSession(
+            userId = userId,
+            cookieValue = token,
+            email = s"$userId@example.com",
+            userType = "Dev"
+          )
+        )
+      )
 
-    def getSession(userId: String): IO[Option[String]] =
+    def getSession(userId: String): IO[Option[UserSession]] =
       ref.get.map(_.get(s"auth:session:$userId"))
   }
 
-  class MockSessionCache(ref: Ref[IO, Map[String, String]]) extends SessionCacheAlgebra[IO] {
+  class MockSessionCache(ref: Ref[IO, Map[String, UserSession]]) extends SessionCacheAlgebra[IO] {
+
+    override def getSessionCookieOnly(userId: String): IO[Option[String]] = IO(Some("test-session-token"))
+
+    override def lookupSession(token: String): IO[Option[UserSession]] = ???
 
     override def storeOnlyCookie(userId: String, token: String): IO[Unit] = ???
 
     override def storeSession(userId: String, session: Option[UserSession]): IO[ValidatedNel[CacheErrors, CacheSuccess]] = ???
 
-    override def getSession(userId: String): IO[Option[String]] =
+    override def getSession(userId: String): IO[Option[UserSession]] =
       ref.get.map(_.get(s"auth:session:$userId"))
 
     override def updateSession(userId: String, session: Option[UserSession]): IO[ValidatedNel[CacheErrors, CacheSuccess]] =
       ref
-        .update(_.updated(s"auth:session:$userId", session.map(_.cookieToken).getOrElse("no-cookie-available")))
+        .update(
+          _.updated(
+            s"auth:session:$userId",
+            UserSession(
+              userId = userId,
+              cookieValue = session.map(_.cookieValue).getOrElse("no-cookie-available"),
+              email = s"$userId@example.com",
+              userType = "Dev"
+            )
+          )
+        )
         .as(Validated.valid(CacheUpdateSuccess))
 
     override def deleteSession(userId: String): IO[Long] =
@@ -84,40 +118,59 @@ object TestRoutes {
   }
 
   def questRoutes(transactor: Transactor[IO], appConfig: AppConfig): Resource[IO, HttpRoutes[IO]] = {
+
     val sessionToken = "test-session-token"
+
+    def fakeUserSession(userId: String) =
+      UserSession(
+        userId = userId,
+        cookieValue = sessionToken,
+        email = s"$userId@example.com",
+        userType = "Dev"
+      )
+
     for {
       ref <- Resource.eval(
-        Ref.of[IO, Map[String, String]](
+        Ref.of[IO, Map[String, UserSession]](
           Map(
-            s"auth:session:USER001" -> sessionToken,
-            s"auth:session:USER002" -> sessionToken,
-            s"auth:session:USER003" -> sessionToken,
-            s"auth:session:USER004" -> sessionToken,
-            s"auth:session:USER005" -> sessionToken,
-            s"auth:session:USER006" -> sessionToken
+            s"auth:session:USER001" -> fakeUserSession("USER001"),
+            s"auth:session:USER002" -> fakeUserSession("USER002"),
+            s"auth:session:USER003" -> fakeUserSession("USER003"),
+            s"auth:session:USER004" -> fakeUserSession("USER004"),
+            s"auth:session:USER005" -> fakeUserSession("USER005"),
+            s"auth:session:USER006" -> fakeUserSession("USER006")
           )
         )
       )
-      mockRedisCache = new MockRedisCache(ref)
+      mockSessionCache = new MockSessionCache(ref)
       questRepository = QuestRepository(transactor)
       questService = QuestService(questRepository)
-      questController = QuestController(questService, mockRedisCache)
+      questController = QuestController(questService, mockSessionCache)
     } yield questController.routes
   }
 
   def userDataRoutes(transactor: Transactor[IO], appConfig: AppConfig): Resource[IO, HttpRoutes[IO]] = {
 
     val sessionToken = "test-session-token"
+
+    def fakeUserSession(userId: String) =
+      UserSession(
+        userId = userId,
+        cookieValue = sessionToken,
+        email = s"$userId@example.com",
+        userType = "Dev"
+      )
+
     for {
       ref <- Resource.eval(
-        Ref.of[IO, Map[String, String]](
+        Ref.of[IO, Map[String, UserSession]](
           Map(
-            s"auth:session:USER001" -> sessionToken,
-            s"auth:session:USER002" -> sessionToken,
-            s"auth:session:USER003" -> sessionToken,
-            s"auth:session:USER004" -> sessionToken,
-            s"auth:session:USER005" -> sessionToken,
-            s"auth:session:USER006" -> sessionToken
+            s"auth:session:USER001" -> fakeUserSession("USER001"),
+            s"auth:session:USER002" -> fakeUserSession("USER002"),
+            s"auth:session:USER003" -> fakeUserSession("USER003"),
+            s"auth:session:USER004" -> fakeUserSession("USER004"),
+            s"auth:session:USER005" -> fakeUserSession("USER005"),
+            s"auth:session:USER006" -> fakeUserSession("USER006")
           )
         )
       )
@@ -131,20 +184,29 @@ object TestRoutes {
   def registrationRoutes(transactor: Transactor[IO], appConfig: AppConfig): Resource[IO, HttpRoutes[IO]] = {
 
     val sessionToken = "test-session-token"
+
+    def fakeUserSession(userId: String) =
+      UserSession(
+        userId = userId,
+        cookieValue = sessionToken,
+        email = s"$userId@example.com",
+        userType = "Dev"
+      )
+
     for {
       ref <- Resource.eval(
-        Ref.of[IO, Map[String, String]](
+        Ref.of[IO, Map[String, UserSession]](
           Map(
-            s"auth:session:USER001" -> sessionToken,
-            s"auth:session:USER002" -> sessionToken,
-            s"auth:session:USER003" -> sessionToken,
-            s"auth:session:USER004" -> sessionToken,
-            s"auth:session:USER005" -> sessionToken,
-            s"auth:session:USER006" -> sessionToken,
-            s"auth:session:USER007" -> sessionToken,
-            s"auth:session:USER008" -> sessionToken,
-            s"auth:session:USER009" -> sessionToken,
-            s"auth:session:USER010" -> sessionToken
+            s"auth:session:USER001" -> fakeUserSession("USER001"),
+            s"auth:session:USER002" -> fakeUserSession("USER002"),
+            s"auth:session:USER003" -> fakeUserSession("USER003"),
+            s"auth:session:USER004" -> fakeUserSession("USER004"),
+            s"auth:session:USER005" -> fakeUserSession("USER005"),
+            s"auth:session:USER006" -> fakeUserSession("USER006"),
+            s"auth:session:USER007" -> fakeUserSession("USER007"),
+            s"auth:session:USER008" -> fakeUserSession("USER008"),
+            s"auth:session:USER009" -> fakeUserSession("USER009"),
+            s"auth:session:USER010" -> fakeUserSession("USER010")
           )
         )
       )

@@ -5,8 +5,8 @@ import cache.RedisCacheAlgebra
 import cats.effect.*
 import com.comcast.ip4s.Host
 import com.comcast.ip4s.Port
-import configuration.BaseAppConfig
 import configuration.models.*
+import configuration.BaseAppConfig
 import controllers.TestRoutes.*
 import dev.profunktor.redis4cats.Redis
 import doobie.*
@@ -19,16 +19,17 @@ import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.implicits.*
 import org.http4s.server.Server
-import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.Logger
 import repository.DatabaseResource.postgresqlConfigResource
+import scala.concurrent.ExecutionContext
 import shared.HttpClientResource
 import shared.RedisCacheResource
+import shared.SessionCacheResource
 import shared.TransactorResource
 import weaver.GlobalResource
 import weaver.GlobalWrite
-
-import scala.concurrent.ExecutionContext
+import cache.SessionCache
 
 object ControllerSharedResource extends GlobalResource with BaseAppConfig {
 
@@ -83,10 +84,12 @@ object ControllerSharedResource extends GlobalResource with BaseAppConfig {
       ce <- executionContextResource
       xa <- transactorResource(postgresqlConfig.copy(host = postgresqlHost, port = postgresqlPort), ce)
       redis <- RedisCache.make[IO](redisHost, redisPort, appConfig)
+      sessionCache <- SessionCache.make[IO](redisHost, redisPort, appConfig)
       client <- clientResource
       _ <- serverResource(host, port, createTestRouter(xa, appConfig))
       _ <- global.putR(TransactorResource(xa))
       _ <- global.putR(HttpClientResource(client))
       _ <- global.putR(RedisCacheResource(redis))
+      _ <- global.putR(SessionCacheResource(sessionCache))
     } yield ()
 }
