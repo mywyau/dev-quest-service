@@ -7,7 +7,9 @@ import configuration.models.AppConfig
 import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts
 import middleware.Middleware.throttleMiddleware
-import org.http4s.{HttpRoutes, Method, Uri}
+import org.http4s.HttpRoutes
+import org.http4s.Method
+import org.http4s.Uri
 import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
@@ -61,19 +63,10 @@ object Main extends IOApp {
     transactor: HikariTransactor[F],
     client: Client[F],
     appConfig: AppConfig
-  ): Resource[F, HttpRoutes[F]] =
-    for {
-      baseRoutes <- Resource.pure(baseRoutes())
-      authRoutes <- Resource.pure(authRoutes(redisHost, redisPort, transactor, appConfig))
-      questsRoutes <- Resource.pure(questsRoutes(redisHost, redisPort, transactor, appConfig))
-      userDataRoutes <- Resource.pure(userDataRoutes(redisHost, redisPort, transactor, appConfig))
-      registrationRoutes <- Resource.pure(registrationRoutes(redisHost, redisPort, transactor, appConfig))
+  ): Resource[F, HttpRoutes[F]] = {
 
-      combinedRoutes = Router(
-        "/dev-quest-service" -> (baseRoutes <+> authRoutes <+> questsRoutes <+> registrationRoutes <+> userDataRoutes) 
-      )
-
-      corsRoutes = CORS.policy
+    def corsPolicy(combinedRoutes: HttpRoutes[F]) =
+      CORS.policy
         .withAllowOriginHost(
           Set(
             Origin.Host(Uri.Scheme.http, Uri.RegName("localhost"), Some(3000)),
@@ -97,15 +90,26 @@ object Main extends IOApp {
         .withAllowMethodsIn(Set(Method.GET, Method.POST, Method.PUT, Method.DELETE, Method.OPTIONS))
         .apply(combinedRoutes)
 
+    for {
+      baseRoutes <- Resource.pure(baseRoutes())
+      authRoutes <- Resource.pure(authRoutes(redisHost, redisPort, transactor, appConfig))
+      questsRoutes <- Resource.pure(questsRoutes(redisHost, redisPort, transactor, appConfig))
+      userDataRoutes <- Resource.pure(userDataRoutes(redisHost, redisPort, transactor, appConfig))
+      registrationRoutes <- Resource.pure(registrationRoutes(redisHost, redisPort, transactor, appConfig))
+
+      combinedRoutes: HttpRoutes[F] = Router(
+        "/dev-quest-service" -> (baseRoutes <+> authRoutes <+> questsRoutes <+> registrationRoutes <+> userDataRoutes)
+      )
+      corsRoutes = corsPolicy(combinedRoutes)
       routesToUse =
         if (appConfig.featureSwitches.useCors) {
           corsRoutes
         } else {
           combinedRoutes
         }
-      throttledRoutes <-
-        Resource.eval(throttleMiddleware(routesToUse))
+      throttledRoutes <- Resource.eval(throttleMiddleware(routesToUse))
     } yield throttledRoutes
+  }
 
   def createServer[F[_] : Async](
     host: Host,

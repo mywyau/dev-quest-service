@@ -49,16 +49,18 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
       .map(_.content)
 
   private def withValidSession(userId: String, token: String)(onValid: F[Response[F]]): F[Response[F]] =
-    sessionCache.getSession(userId).flatMap {
-      case Some(userSession) if userSession.cookieValue == token =>
-        onValid
-      case Some(_) =>
-        Logger[F].info("[UserDataControllerImpl][withValidSession] User session does not match request user session token value from redis.")
-        Forbidden("User session does not match request user session token value from redis.")
-      case None =>
-        Logger[F].info("[UserDataControllerImpl][withValidSession] Invalid or expired session")
-        Forbidden("Invalid or expired session")
-    }
+    Logger[F].info(s"[UserDataControllerImpl][withValidSession] UserId: $userId, token: $token") *>
+      sessionCache.getSession(userId).flatMap {
+        case Some(userSession) if userSession.cookieValue == token =>
+          Logger[F].info(s"[UserDataControllerImpl][withValidSession] User session: $userSession") *>
+            onValid
+        case Some(session) =>
+          Logger[F].info(s"[UserDataControllerImpl][withValidSession] User session does not match request user session token value from redis. $session") *>
+            Forbidden("User session does not match request user session token value from redis.")
+        case None =>
+          Logger[F].info("[UserDataControllerImpl][withValidSession] Invalid or expired session")
+          Forbidden("Invalid or expired session")
+  }
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
@@ -67,7 +69,10 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
         Ok(GetResponse("/dev-user-service/health", "I am alive").asJson)
 
     case req @ GET -> Root / "user" / "data" / userId =>
-      extractSessionToken(req) match {
+      (
+        Logger[F].info(s"[UserDataController][/user/data/$userId] GET - Attempting to retrieve user details") *>
+          Async[F].pure(extractSessionToken(req))
+      ).flatMap {
         case Some(cookieToken) =>
           withValidSession(userId, cookieToken) {
             Logger[F].info(s"[UserDataController] GET - Authenticated for userId $userId") *>
