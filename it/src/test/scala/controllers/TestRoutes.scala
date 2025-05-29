@@ -15,13 +15,14 @@ import models.auth.UserSession
 import models.cache.CacheErrors
 import models.cache.CacheSuccess
 import models.cache.CacheUpdateSuccess
-import org.http4s.server.Router
 import org.http4s.HttpRoutes
-import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.http4s.server.Router
 import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import repositories.*
-import scala.concurrent.duration.*
 import services.*
+
+import scala.concurrent.duration.*
 
 object TestRoutes {
 
@@ -170,7 +171,10 @@ object TestRoutes {
             s"auth:session:USER003" -> fakeUserSession("USER003"),
             s"auth:session:USER004" -> fakeUserSession("USER004"),
             s"auth:session:USER005" -> fakeUserSession("USER005"),
-            s"auth:session:USER006" -> fakeUserSession("USER006")
+            s"auth:session:USER006" -> fakeUserSession("USER006"),
+            s"auth:session:USER008" -> fakeUserSession("USER008"),
+            s"auth:session:USER009" -> fakeUserSession("USER009"),
+            s"auth:session:USER010" -> fakeUserSession("USER010")
           )
         )
       )

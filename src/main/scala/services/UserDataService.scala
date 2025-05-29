@@ -1,5 +1,7 @@
 package services
 
+import cats.Monad
+import cats.NonEmptyParallel
 import cats.data.Validated
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
@@ -7,23 +9,24 @@ import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
-import cats.Monad
-import cats.NonEmptyParallel
 import fs2.Stream
-import java.util.UUID
+import models.UserType
 import models.database.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
 import models.users.*
-import models.UserType
 import org.typelevel.log4cats.Logger
 import repositories.UserDataRepositoryAlgebra
+
+import java.util.UUID
 
 trait UserDataServiceAlgebra[F[_]] {
 
   def getUser(userId: String): F[Option[UserData]]
 
   def createUser(userId: String, createUserData: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def updateUserData(userId: String, updateUserData: UpdateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def updateUserType(userId: String, userType: UserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
@@ -52,6 +55,16 @@ class UserDataServiceImpl[F[_] : Concurrent : Monad : Logger](
           Logger[F].error(s"[UserDataService] Failed to create user. Errors: ${errors.toList.mkString(", ")}") *>
             Concurrent[F].pure(Invalid(errors))
       }
+
+  override def updateUserData(userId: String, updateUserData: UpdateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    userRepo.updateUserData(userId, updateUserData).flatMap {
+      case Valid(value) =>
+        Logger[F].debug(s"[UserDataService][updateUserData] Successfully updated user with ID: $userId") *>
+          Concurrent[F].pure(Valid(value))
+      case Invalid(errors) =>
+        Logger[F].error(s"[UserDataService][updateUserData] Failed to update user with ID: $userId. Errors: ${errors.toList.mkString(", ")}") *>
+          Concurrent[F].pure(Invalid(errors))
+    }
 
   override def updateUserType(userId: String, userType: UserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     userRepo.updateUserType(userId, userType).flatMap {

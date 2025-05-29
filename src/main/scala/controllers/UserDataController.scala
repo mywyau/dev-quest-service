@@ -5,12 +5,12 @@ import cache.RedisCacheAlgebra
 import cache.SessionCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
-import cats.effect.kernel.Async
 import cats.effect.Concurrent
+import cats.effect.kernel.Async
 import cats.implicits.*
 import fs2.Stream
-import io.circe.syntax.EncoderOps
 import io.circe.Json
+import io.circe.syntax.EncoderOps
 import models.database.UpdateSuccess
 import models.responses.CreatedResponse
 import models.responses.DeletedResponse
@@ -21,14 +21,15 @@ import models.users.CreateUserData
 import models.users.UpdateUserData
 import models.users.UpdateUserType
 import org.http4s.*
+import org.http4s.Challenge
 import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
-import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
-import scala.concurrent.duration.*
 import services.UserDataServiceAlgebra
+
+import scala.concurrent.duration.*
 
 trait UserDataControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -41,6 +42,7 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
     with UserDataControllerAlgebra[F] {
 
   implicit val updateUserTypeDecoder: EntityDecoder[F, UpdateUserType] = jsonOf[F, UpdateUserType]
+  implicit val updateUserDataDecoder: EntityDecoder[F, UpdateUserData] = jsonOf[F, UpdateUserData]
   implicit val createUserDataDecoder: EntityDecoder[F, CreateUserData] = jsonOf[F, CreateUserData]
 
   private def extractSessionToken(req: Request[F]): Option[String] =
@@ -60,7 +62,7 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
         case None =>
           Logger[F].info("[UserDataControllerImpl][withValidSession] Invalid or expired session")
           Forbidden("Invalid or expired session")
-  }
+      }
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
@@ -101,6 +103,26 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
                       Created(CreatedResponse(response.toString, "user details created successfully").asJson)
                   case Invalid(_) =>
                     InternalServerError(ErrorResponse(code = "Code", message = "An error occurred").asJson)
+                }
+              }
+          }
+        case None =>
+          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
+      }
+
+    case req @ PUT -> Root / "user" / "data" / "update" / userId =>
+      extractSessionToken(req) match {
+        case Some(headerToken) =>
+          withValidSession(userId, headerToken) {
+            Logger[F].info(s"[UserDataControllerImpl] PUT - Updating user with ID: $userId") *>
+              req.decode[UpdateUserData] { request =>
+                userService.updateUserData(userId, request).flatMap {
+                  case Valid(response) =>
+                    Logger[F].info(s"[UserDataControllerImpl] PUT - Successfully updated user for ID: $userId") *>
+                      Ok(UpdatedResponse(UpdateSuccess.toString, s"User $userId updated successfully").asJson)
+                  case Invalid(errors) =>
+                    Logger[F].info(s"[UserDataControllerImpl] PUT - Validation failed for user update: ${errors.toList}") *>
+                      BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
                 }
               }
           }

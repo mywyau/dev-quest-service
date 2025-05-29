@@ -7,7 +7,6 @@ import io.circe.Encoder
 import models.UserType
 
 case class UpdateUserData(
-  userId: String,
   email: String,
   firstName: Option[String],
   lastName: Option[String],

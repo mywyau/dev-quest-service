@@ -1,17 +1,16 @@
 package repositories
 
+import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
-import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
-import java.sql.Timestamp
-import java.time.LocalDateTime
+import models.UserType
 import models.database.*
 import models.database.ConstraintViolation
 import models.database.CreateSuccess
@@ -28,14 +27,18 @@ import models.database.UnexpectedResultError
 import models.database.UnknownError
 import models.database.UpdateSuccess
 import models.users.*
-import models.UserType
 import org.typelevel.log4cats.Logger
+
+import java.sql.Timestamp
+import java.time.LocalDateTime
 
 trait UserDataRepositoryAlgebra[F[_]] {
 
   def findUser(userId: String): F[Option[UserData]]
 
   def createUser(userId: String, createUserData: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def updateUserData(userId: String, updateUserData: UpdateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def updateUserType(userId: String, userType: UserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
@@ -91,6 +94,37 @@ class UserDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
           ConstraintViolation.invalidNel
         case Left(e: java.sql.SQLException) =>
           DatabaseError.invalidNel
+        case Left(ex) =>
+          UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
+        case _ =>
+          UnexpectedResultError.invalidNel
+      }
+
+  override def updateUserData(userId: String, updateUserData: UpdateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    sql"""
+      UPDATE users
+      SET
+          first_name = ${updateUserData.firstName},
+          last_name = ${updateUserData.lastName},
+          email = ${updateUserData.email},
+          user_type = ${updateUserData.userType}
+      WHERE user_id = ${userId}
+    """.update.run
+      .transact(transactor)
+      .attempt
+      .map {
+        case Right(affectedRows) if affectedRows == 1 =>
+          UpdateSuccess.validNel
+        case Right(affectedRows) if affectedRows == 0 =>
+          NotFoundError.invalidNel
+        case Left(ex: java.sql.SQLException) if ex.getSQLState == "23503" =>
+          ForeignKeyViolationError.invalidNel // Foreign key constraint violation
+        case Left(ex: java.sql.SQLException) if ex.getSQLState == "08001" =>
+          DatabaseConnectionError.invalidNel // Database connection issue
+        case Left(ex: java.sql.SQLException) if ex.getSQLState == "22001" =>
+          DataTooLongError.invalidNel // Data length exceeds column limit
+        case Left(ex: java.sql.SQLException) =>
+          SqlExecutionError(ex.getMessage).invalidNel // General SQL execution error
         case Left(ex) =>
           UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
         case _ =>
