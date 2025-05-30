@@ -36,7 +36,7 @@ trait QuestRepositoryAlgebra[F[_]] {
 
   def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def updateDevId(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
@@ -224,11 +224,12 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
           UnexpectedResultError.invalidNel
       }
 
-  override def updateDevId(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       UPDATE quests
       SET
           dev_id = ${devId},
+          status = ${Assigned},
           updated_at = ${LocalDateTime.now()}
       WHERE quest_id = ${questId}
     """.update.run

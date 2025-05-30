@@ -46,7 +46,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
   implicit val createDecoder: EntityDecoder[F, CreateQuestPartial] = jsonOf[F, CreateQuestPartial]
   implicit val updateDecoder: EntityDecoder[F, UpdateQuestPartial] = jsonOf[F, UpdateQuestPartial]
   implicit val updateQuestStatusPayloadDecoder: EntityDecoder[F, UpdateQuestStatusPayload] = jsonOf[F, UpdateQuestStatusPayload]
-  implicit val updateDevIdPayloadDecoder: EntityDecoder[F, UpdateDevIdPayload] = jsonOf[F, UpdateDevIdPayload]
+  implicit val updateDevIdPayloadDecoder: EntityDecoder[F, AcceptQuestPayload] = jsonOf[F, AcceptQuestPayload]
 
   implicit val questStatusQueryParamDecoder: QueryParamDecoder[QuestStatus] =
     QueryParamDecoder[String].emap { str =>
@@ -253,8 +253,8 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
       extractSessionToken(req) match {
         case Some(cookieToken) =>
           withValidSession(userIdFromRoute, cookieToken) {
-            req.decode[UpdateDevIdPayload] { request =>
-              questService.updateDevId(request.questId, request.devId).flatMap {
+            req.decode[AcceptQuestPayload] { request =>
+              questService.acceptQuest(request.questId, request.devId).flatMap {
                 case Valid(response) =>
                   Logger[F].info(s"[QuestControllerImpl] PUT - Successfully updated devId for quest id: ${request.devId}") *>
                     Ok(UpdatedResponse(UpdateSuccess.toString, s"updated devId: ${request.devId} successfully, for questId: ${request.questId}").asJson)

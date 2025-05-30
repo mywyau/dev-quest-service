@@ -48,7 +48,7 @@ trait QuestServiceAlgebra[F[_]] {
 
   def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def updateDevId(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
@@ -60,8 +60,8 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
   override def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = 
     questRepo.updateStatus(questId, questStatus)
 
-  override def updateDevId(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = 
-    questRepo.updateDevId(questId, devId)
+  override def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = 
+    questRepo.acceptQuest(questId, devId)
 
   override def stream(
     userId: String,
