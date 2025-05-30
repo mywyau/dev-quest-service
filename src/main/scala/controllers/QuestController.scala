@@ -57,9 +57,6 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
   object PageParam extends OptionalQueryParamDecoderMatcher[Int]("page")
   object LimitParam extends OptionalQueryParamDecoderMatcher[Int]("limit")
 
-  private def extractBearerToken(req: Request[F]): Option[String] =
-    req.headers.get[headers.Authorization].map(_.value.stripPrefix("Bearer "))
-
   private def extractSessionToken(req: Request[F]): Option[String] =
     req.cookies
       .find(_.name == "auth_session")
@@ -162,6 +159,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
                 questService
                   .stream(userIdFromRoute, status, limit, offset)
                   .map(_.asJson.noSpaces)
+                  .evalTap(json => Logger[F].info(s"[QuestController][/quest/stream/new] → $json")) // <── log every line
                   .intersperse("\n")
                   .handleErrorWith(e =>
                     Stream.eval(Logger[F].error(e)(s"[QuestController] Stream error")) >>
@@ -273,3 +271,6 @@ object QuestController {
   def apply[F[_] : Async : Concurrent](questService: QuestServiceAlgebra[F], sessionCache: SessionCacheAlgebra[F])(implicit logger: Logger[F]): QuestControllerAlgebra[F] =
     new QuestControllerImpl[F](questService, sessionCache)
 }
+
+// Fe26.2*1*56c5c8dfc86cf58855e7b98c3b99676d29accef5af956670f38bdc524fc78d83*clFC7aeGyCatQ3tgWOu1OQ*vYzcBEFU8sRePAedA6uhJUW7eWCBbeZ9QHVxbP-zUf_VVl7LWRiOGvEqesvo-da2HmMh02khzS9t84KpMfrjN46X8k-8C7JMGQSGEn0GkL_mcOd3SfEmEI3rmodYioTGaYzV7U9X5YI6a--xVRYVRO2FQOElDSA6mr_e9rwUjnNlvqkbeiqjTL5HcVU34km84F1s7-1-CFwDYtr75dJpb1rXG_8hHFRFsMVNiEJjUxeSgm-_5Ev_-hIIiMgjCVNUC4ooVLEHhYUDUA6huSmVDJB3s68jq5aSQXMPhH8GVAwIgnbg9XaQO4VczfTW0x5QF9PH2YbzGwjpg7fD22XPvqb_qYyt8tOeaLLS5IyEc14RNbH6n9rzZ5GlqTr8jzunepOJjo6ayzlIlqhsjpC4vGELtXpgqCXMTczGXB-V3P5KL8M13kW0Uom5HSWqnUUhCWUNe5_sqzJ_HCIpkHDUpw*1748635615488*9363a089e85ac1f302f11c7650511f6cb7771028baa75d05c18a5b2ca70af8a8*1n9-qqvJMNHYDSHbl1cPLasWaHjNmURcgqm_A-RzMQo~2
+// Fe26.2*1*56c5c8dfc86cf58855e7b98c3b99676d29accef5af956670f38bdc524fc78d83*clFC7aeGyCatQ3tgWOu1OQ*vYzcBEFU8sRePAedA6uhJUW7eWCBbeZ9QHVxbP-zUf_VVl7LWRiOGvEqesvo-da2HmMh02khzS9t84KpMfrjN46X8k-8C7JMGQSGEn0GkL_mcOd3SfEmEI3rmodYioTGaYzV7U9X5YI6a--xVRYVRO2FQOElDSA6mr_e9rwUjnNlvqkbeiqjTL5HcVU34km84F1s7-1-CFwDYtr75dJpb1rXG_8hHFRFsMVNiEJjUxeSgm-_5Ev_-hIIiMgjCVNUC4ooVLEHhYUDUA6huSmVDJB3s68jq5aSQXMPhH8GVAwIgnbg9XaQO4VczfTW0x5QF9PH2YbzGwjpg7fD22XPvqb_qYyt8tOeaLLS5IyEc14RNbH6n9rzZ5GlqTr8jzunepOJjo6ayzlIlqhsjpC4vGELtXpgqCXMTczGXB-V3P5KL8M13kW0Uom5HSWqnUUhCWUNe5_sqzJ_HCIpkHDUpw*1748635615488*9363a089e85ac1f302f11c7650511f6cb7771028baa75d05c18a5b2ca70af8a8*1n9-qqvJMNHYDSHbl1cPLasWaHjNmURcgqm_A-RzMQo~2

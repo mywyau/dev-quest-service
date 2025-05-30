@@ -44,6 +44,7 @@ import shared.TransactorResource
 import weaver.*
 
 import java.time.LocalDateTime
+import models.NotStarted
 
 class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
@@ -184,6 +185,53 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
       )
     }
   }
+
+  test(
+    "GET /dev-quest-service/quest/stream/new/USER007?status=NotStarted&page=1&limit=10 - streams the right quest"
+  ) { (transactorResource, log) =>
+    val xa = transactorResource._1.xa
+    val client = transactorResource._2.client
+
+    def testQuest(id:Int, userId: String, questId: String) =
+      QuestPartial(
+        userId = userId,
+        questId = questId,
+        title = s"Some Quest Title $id",
+        description = Some(s"Some Quest Description $id"),
+        status = Some(NotStarted)
+      )
+
+    val expected: List[QuestPartial] = List(
+      testQuest(5, "USER007", "QUEST014"),
+      testQuest(6, "USER007", "QUEST015")
+    )
+
+    val req = Request[IO](
+      GET,
+      uri"http://127.0.0.1:9999/dev-quest-service/quest/stream/new/USER007?status=NotStarted&page=1&limit=10"
+    ).addCookie("auth_session", "test-session-token")
+
+    client.run(req).use { resp =>
+      for {
+        bodyLines: List[String] <- resp.body
+          .through(utf8Decode)
+          .through(lines)
+          .filter(_.nonEmpty) // drop any blank trailing newline
+          .compile
+          .toList
+        // 3) parse each line as JSON → QuestPartial
+        parsed: List[QuestPartial] <- bodyLines.traverse { line =>
+          IO.fromEither(decode[QuestPartial](line).left.map(err => new Exception(s"Failed to decode line [$line]: $err")))
+        }
+      } yield (
+        expect.all(
+          resp.status == Status.Ok,
+          parsed == expected,
+        )
+      )
+    }
+  }
+
 
   test(
     "POST - /dev-quest-service/quest/create/USER006 - should generate the quest data in db table, returning Created response"
