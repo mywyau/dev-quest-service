@@ -5,33 +5,33 @@ import cache.RedisCacheAlgebra
 import cache.SessionCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
-import cats.effect.kernel.Async
 import cats.effect.Concurrent
+import cats.effect.kernel.Async
 import cats.implicits.*
 import fs2.Stream
-import io.circe.syntax.EncoderOps
 import io.circe.Json
-import models.database.UpdateSuccess
-import models.quests.CreateQuestPartial
-import models.quests.UpdateQuestPartial
-import models.responses.*
+import io.circe.syntax.EncoderOps
 import models.Completed
 import models.Failed
 import models.InProgress
-import models.InReview
 import models.NotStarted
 import models.QuestStatus
+import models.Review
 import models.Submitted
+import models.database.UpdateSuccess
+import models.quests.*
+import models.responses.*
 import org.http4s.*
+import org.http4s.Challenge
 import org.http4s.circe.*
-import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
 import org.http4s.dsl.Http4sDsl
+import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
-import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
-import scala.concurrent.duration.*
 import services.QuestServiceAlgebra
+
+import scala.concurrent.duration.*
 
 trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -45,6 +45,8 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
 
   implicit val createDecoder: EntityDecoder[F, CreateQuestPartial] = jsonOf[F, CreateQuestPartial]
   implicit val updateDecoder: EntityDecoder[F, UpdateQuestPartial] = jsonOf[F, UpdateQuestPartial]
+  implicit val updateQuestStatusPayloadDecoder: EntityDecoder[F, UpdateQuestStatusPayload] = jsonOf[F, UpdateQuestStatusPayload]
+  implicit val updateDevIdPayloadDecoder: EntityDecoder[F, UpdateDevIdPayload] = jsonOf[F, UpdateDevIdPayload]
 
   implicit val questStatusQueryParamDecoder: QueryParamDecoder[QuestStatus] =
     QueryParamDecoder[String].emap { str =>
@@ -227,7 +229,46 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
           Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
-    case req @ PUT -> Root / "quest" / "update" / userIdFromRoute / questId =>
+    case req @ PUT -> Root / "quest" / "update" / "status" / userIdFromRoute / questId =>
+      extractSessionToken(req) match {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
+            Logger[F].info(s"[QuestControllerImpl] PUT - Updating quest with ID: $questId") *>
+              req.decode[UpdateQuestStatusPayload] { request =>
+                questService.updateStatus(request.questId, request.questStatus).flatMap {
+                  case Valid(response) =>
+                    Logger[F].info(s"[QuestControllerImpl] PUT - Successfully updated quest status for quest id: $questId") *>
+                      Ok(UpdatedResponse(UpdateSuccess.toString, s"updated quest status: ${request.questStatus} successfully, for questId: ${request.questId}").asJson)
+                  case Invalid(errors) =>
+                    Logger[F].info(s"[QuestControllerImpl] PUT - Validation failed for quest update: ${errors.toList}") *>
+                      BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
+                }
+              }
+          }
+        case None =>
+          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
+      }
+
+    case req @ PUT -> Root / "quest" / "update" / "dev" / userIdFromRoute =>
+      extractSessionToken(req) match {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
+            req.decode[UpdateDevIdPayload] { request =>
+              questService.updateDevId(request.questId, request.devId).flatMap {
+                case Valid(response) =>
+                  Logger[F].info(s"[QuestControllerImpl] PUT - Successfully updated devId for quest id: ${request.devId}") *>
+                    Ok(UpdatedResponse(UpdateSuccess.toString, s"updated devId: ${request.devId} successfully, for questId: ${request.questId}").asJson)
+                case Invalid(errors) =>
+                  Logger[F].info(s"[QuestControllerImpl] PUT - Validation failed for quest update: ${errors.toList}") *>
+                    BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
+              }
+            }
+          }
+        case None =>
+          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
+      }
+
+    case req @ PUT -> Root / "quest" / "update" / "details" / userIdFromRoute / questId =>
       extractSessionToken(req) match {
         case Some(headerToken) =>
           withValidSession(userIdFromRoute, headerToken) {
@@ -246,6 +287,26 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
         case None =>
           Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
+
+    // case req @ PUT -> Root / "quest" / "update" / userIdFromRoute / questId =>
+    //   extractSessionToken(req) match {
+    //     case Some(headerToken) =>
+    //       withValidSession(userIdFromRoute, headerToken) {
+    //         Logger[F].info(s"[QuestControllerImpl] PUT - Updating quest with ID: $questId") *>
+    //           req.decode[UpdateQuestPartial] { request =>
+    //             questService.update(questId, request).flatMap {
+    //               case Valid(response) =>
+    //                 Logger[F].info(s"[QuestControllerImpl] PUT - Successfully updated quest for ID: $questId") *>
+    //                   Ok(UpdatedResponse(UpdateSuccess.toString, s"Quest $questId updated successfully").asJson)
+    //               case Invalid(errors) =>
+    //                 Logger[F].info(s"[QuestControllerImpl] PUT - Validation failed for quest update: ${errors.toList}") *>
+    //                   BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
+    //             }
+    //           }
+    //       }
+    //     case None =>
+    //       Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
+    //   }
 
     case req @ DELETE -> Root / "quest" / userIdFromRoute / questId =>
       extractSessionToken(req) match {

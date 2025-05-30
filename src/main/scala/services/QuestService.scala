@@ -1,7 +1,5 @@
 package services
 
-import cats.Monad
-import cats.NonEmptyParallel
 import cats.data.Validated
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
@@ -9,9 +7,11 @@ import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
+import cats.Monad
+import cats.NonEmptyParallel
 import fs2.Stream
-import models.NotStarted
-import models.QuestStatus
+import java.util.UUID
+import models.*
 import models.database.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
@@ -19,10 +19,10 @@ import models.quests.CreateQuest
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
+import models.NotStarted
+import models.QuestStatus
 import org.typelevel.log4cats.Logger
 import repositories.QuestRepositoryAlgebra
-
-import java.util.UUID
 
 trait QuestServiceAlgebra[F[_]] {
 
@@ -46,12 +46,22 @@ trait QuestServiceAlgebra[F[_]] {
 
   def update(questId: String, request: UpdateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
+  def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def updateDevId(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
   def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
 class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
   questRepo: QuestRepositoryAlgebra[F]
 ) extends QuestServiceAlgebra[F] {
+
+  override def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = 
+    questRepo.updateStatus(questId, questStatus)
+
+  override def updateDevId(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = 
+    questRepo.updateDevId(questId, devId)
 
   override def stream(
     userId: String,
@@ -165,7 +175,7 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
         questId = newQuestId,
         title = request.title,
         description = request.description,
-        status = Some(NotStarted)
+        status = Some(Review)
       )
 
     Logger[F].info(s"[QuestService][create] Creating a new quest for user $userId with questId $newQuestId") *>

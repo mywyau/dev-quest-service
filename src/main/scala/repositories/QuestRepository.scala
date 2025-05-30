@@ -1,22 +1,22 @@
 package repositories
 
-import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
+import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
-import models.QuestStatus
-import models.database.*
-import models.quests.*
-import org.typelevel.log4cats.Logger
-
 import java.sql.Timestamp
 import java.time.LocalDateTime
+import models.database.*
+import models.quests.*
+import models.Assigned
+import models.QuestStatus
+import org.typelevel.log4cats.Logger
 
 trait QuestRepositoryAlgebra[F[_]] {
 
@@ -33,6 +33,10 @@ trait QuestRepositoryAlgebra[F[_]] {
   def create(request: CreateQuest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def update(questId: String, request: UpdateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def updateDevId(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
@@ -169,6 +173,64 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
           description = ${request.description},
           updated_at = ${LocalDateTime.now()}
       WHERE quest_id = ${quest_id}
+    """.update.run
+      .transact(transactor)
+      .attempt
+      .map {
+        case Right(affectedRows) if affectedRows == 1 =>
+          UpdateSuccess.validNel
+        case Right(affectedRows) if affectedRows == 0 =>
+          NotFoundError.invalidNel
+        case Left(ex: java.sql.SQLException) if ex.getSQLState == "23503" =>
+          ForeignKeyViolationError.invalidNel // Foreign key constraint violation
+        case Left(ex: java.sql.SQLException) if ex.getSQLState == "08001" =>
+          DatabaseConnectionError.invalidNel // Database connection issue
+        case Left(ex: java.sql.SQLException) if ex.getSQLState == "22001" =>
+          DataTooLongError.invalidNel // Data length exceeds column limit
+        case Left(ex: java.sql.SQLException) =>
+          SqlExecutionError(ex.getMessage).invalidNel // General SQL execution error
+        case Left(ex) =>
+          UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
+        case _ =>
+          UnexpectedResultError.invalidNel
+      }
+
+  override def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    sql"""
+      UPDATE quests
+      SET
+          status = ${questStatus},
+          updated_at = ${LocalDateTime.now()}
+      WHERE quest_id = ${questId}
+    """.update.run
+      .transact(transactor)
+      .attempt
+      .map {
+        case Right(affectedRows) if affectedRows == 1 =>
+          UpdateSuccess.validNel
+        case Right(affectedRows) if affectedRows == 0 =>
+          NotFoundError.invalidNel
+        case Left(ex: java.sql.SQLException) if ex.getSQLState == "23503" =>
+          ForeignKeyViolationError.invalidNel // Foreign key constraint violation
+        case Left(ex: java.sql.SQLException) if ex.getSQLState == "08001" =>
+          DatabaseConnectionError.invalidNel // Database connection issue
+        case Left(ex: java.sql.SQLException) if ex.getSQLState == "22001" =>
+          DataTooLongError.invalidNel // Data length exceeds column limit
+        case Left(ex: java.sql.SQLException) =>
+          SqlExecutionError(ex.getMessage).invalidNel // General SQL execution error
+        case Left(ex) =>
+          UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
+        case _ =>
+          UnexpectedResultError.invalidNel
+      }
+
+  override def updateDevId(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    sql"""
+      UPDATE quests
+      SET
+          dev_id = ${devId},
+          updated_at = ${LocalDateTime.now()}
+      WHERE quest_id = ${questId}
     """.update.run
       .transact(transactor)
       .attempt
