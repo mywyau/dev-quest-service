@@ -67,19 +67,19 @@ class SessionCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int,
       result <- maybeJ match {
         case None =>
           Logger[F]
-            .info(s"[SessionCache] No session found for userId=$userId")
+            .info(s"[SessionCache][getSession] No session found for userId=$userId")
             .as(None)
         case Some(jsonStr) =>
-          Logger[F].info(s"[SessionCache] Session JSON for userId=$userId: $jsonStr") *>
+          Logger[F].info(s"[SessionCache][getSession] Session JSON for userId=$userId: $jsonStr") *>
             (
               decode[UserSession](jsonStr) match {
                 case Right(session) =>
                   Logger[F]
-                    .info(s"[SessionCache] Parsed session for userId=$userId")
+                    .info(s"[SessionCache][getSession] Parsed session for userId=$userId")
                     .as(Some(session))
                 case Left(err) =>
                   Logger[F]
-                    .error(s"[SessionCache] JSON parsing failed: $err")
+                    .error(s"[SessionCache][getSession] JSON parsing failed: $err")
                     .as(None)
               }
             )

@@ -1,5 +1,7 @@
 package services
 
+import cats.Monad
+import cats.NonEmptyParallel
 import cats.data.Validated
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
@@ -7,21 +9,30 @@ import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
-import cats.Monad
-import cats.NonEmptyParallel
 import fs2.Stream
-import java.util.UUID
+import models.NotStarted
+import models.QuestStatus
 import models.database.*
+import models.database.DatabaseErrors
+import models.database.DatabaseSuccess
 import models.quests.CreateQuest
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
-import models.NotStarted
 import org.typelevel.log4cats.Logger
 import repositories.QuestRepositoryAlgebra
-import models.database.{DatabaseErrors, DatabaseSuccess}
+
+import java.util.UUID
 
 trait QuestServiceAlgebra[F[_]] {
+
+  // streaming ND-JSON
+  def stream(
+    userId: String,
+    questStatus: QuestStatus,
+    limit: Int,
+    offset: Int
+  ): Stream[F, QuestPartial]
 
   def streamByUserId(userId: String, limit: Int, offset: Int): Stream[F, QuestPartial]
 
@@ -42,6 +53,36 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
   questRepo: QuestRepositoryAlgebra[F]
 ) extends QuestServiceAlgebra[F] {
 
+  override def stream(
+    userId: String,
+    questStatus: QuestStatus,
+    limit: Int,
+    offset: Int
+  ): Stream[F, QuestPartial] = {
+
+    // A single-value stream that just performs the “start” log
+    val headLog: Stream[F, QuestPartial] =
+      Stream
+        .eval(
+          Logger[F].info(
+            s"[QuestService][stream] Streaming quests for questStatus: $questStatus (limit=$limit, offset=$offset)"
+          )
+        )
+        .drain // drain: keep the effect, emit no element
+
+    // The actual DB stream with per-row logging
+    val dataStream: Stream[F, QuestPartial] =
+      questRepo
+        .streamByQuestStatus(userId, questStatus, limit, offset)
+        .evalTap(q =>
+          Logger[F].info(
+            s"[QuestService][stream] Fetched quest: ${q.questId}, title: ${q.title}"
+          )
+        )
+
+    headLog ++ dataStream
+  }
+
   // Log and stream quests by userId
   override def streamByUserId(
     userId: String,
@@ -54,7 +95,7 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
       Stream
         .eval(
           Logger[F].info(
-            s"[QuestService] Streaming quests for user $userId (limit=$limit, offset=$offset)"
+            s"[QuestService][streamByUserId] Streaming quests for user $userId (limit=$limit, offset=$offset)"
           )
         )
         .drain // drain: keep the effect, emit no element
@@ -65,7 +106,7 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
         .streamByUserId(userId, limit, offset)
         .evalTap(q =>
           Logger[F].info(
-            s"[QuestService] Fetched quest: ${q.questId}, title: ${q.title}"
+            s"[QuestService][streamByUserId] Fetched quest: ${q.questId}, title: ${q.title}"
           )
         )
 
@@ -83,7 +124,7 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
       Stream
         .eval(
           Logger[F].info(
-            s"[QuestService] Streaming all quests (limit=$limit, offset=$offset)"
+            s"[QuestService][streamAll] Streaming all quests (limit=$limit, offset=$offset)"
           )
         )
         .drain
@@ -94,7 +135,7 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
         .streamAll(limit, offset)
         .evalTap(q =>
           Logger[F].info(
-            s"[QuestService] Fetched quest: ${q.questId}, title: ${q.title}"
+            s"[QuestService][streamAll] Fetched quest: ${q.questId}, title: ${q.title}"
           )
         )
 
@@ -103,16 +144,16 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
 
   override def getAllQuests(userId: String): F[List[QuestPartial]] =
     questRepo.findAllByUserId(userId).flatMap { quests =>
-      Logger[F].info(s"[QuestService] Retrieved ${quests.size} quests for user $userId") *>
+      Logger[F].info(s"[QuestService][getAllQuests] Retrieved ${quests.size} quests for user $userId") *>
         Concurrent[F].pure(quests)
     }
 
   override def getByQuestId(questId: String): F[Option[QuestPartial]] =
     questRepo.findByQuestId(questId).flatMap {
       case Some(quest) =>
-        Logger[F].info(s"[QuestService] Found quest with ID: $questId") *> Concurrent[F].pure(Some(quest))
+        Logger[F].info(s"[QuestService][getByQuestId] Found quest with ID: $questId") *> Concurrent[F].pure(Some(quest))
       case None =>
-        Logger[F].info(s"[QuestService] No quest found with ID: $questId") *> Concurrent[F].pure(None)
+        Logger[F].info(s"[QuestService][getByQuestId] No quest found with ID: $questId") *> Concurrent[F].pure(None)
     }
 
   // Log quest creation
@@ -127,13 +168,13 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
         status = Some(NotStarted)
       )
 
-    Logger[F].info(s"[QuestService] Creating a new quest for user $userId with questId $newQuestId") *>
+    Logger[F].info(s"[QuestService][create] Creating a new quest for user $userId with questId $newQuestId") *>
       questRepo.create(createQuest).flatMap {
         case Valid(value) =>
-          Logger[F].info(s"[QuestService] Quest created successfully with ID: $newQuestId") *>
+          Logger[F].info(s"[QuestService][create] Quest created successfully with ID: $newQuestId") *>
             Concurrent[F].pure(Valid(value))
         case Invalid(errors) =>
-          Logger[F].error(s"[QuestService] Failed to create quest. Errors: ${errors.toList.mkString(", ")}") *>
+          Logger[F].error(s"[QuestService][create] Failed to create quest. Errors: ${errors.toList.mkString(", ")}") *>
             Concurrent[F].pure(Invalid(errors))
       }
   }
@@ -152,10 +193,10 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
   override def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     questRepo.delete(questId).flatMap {
       case Valid(value) =>
-        Logger[F].info(s"[QuestService] Successfully deleted quest with ID: $questId") *>
+        Logger[F].info(s"[QuestService][delete] Successfully deleted quest with ID: $questId") *>
           Concurrent[F].pure(Valid(value))
       case Invalid(errors) =>
-        Logger[F].error(s"[QuestService] Failed to delete quest with ID: $questId. Errors: ${errors.toList.mkString(", ")}") *>
+        Logger[F].error(s"[QuestService][delete] Failed to delete quest with ID: $questId. Errors: ${errors.toList.mkString(", ")}") *>
           Concurrent[F].pure(Invalid(errors))
     }
 }

@@ -9,7 +9,8 @@ case object InReview extends QuestStatus
 case object NotStarted extends QuestStatus
 case object InProgress extends QuestStatus
 case object Completed extends QuestStatus
-
+case object Failed extends QuestStatus
+case object Submitted extends QuestStatus
 
 object QuestStatus {
 
@@ -19,6 +20,7 @@ object QuestStatus {
       case "NotStarted" => NotStarted
       case "InProgress" => InProgress
       case "Completed" => Completed
+      case "Failed" => Failed
       case _ => throw new Exception(s"Unknown QuestStatus type: $str")
     }
 
@@ -28,6 +30,8 @@ object QuestStatus {
       case NotStarted => "NotStarted"
       case InProgress => "InProgress"
       case Completed => "Completed"
+      case Failed => "Failed"
+      case Submitted => "Submitted"
     }
 
   implicit val QuestStatusDecoder: Decoder[QuestStatus] =
@@ -36,6 +40,8 @@ object QuestStatus {
       case "NotStarted" => Right(NotStarted)
       case "InProgress" => Right(InProgress)
       case "Completed" => Right(Completed)
+      case "Failed" => Right(Failed)
+      case "Submitted" => Right(Submitted)
       case other => Left(s"Invalid QuestStatus: $other")
     }
 }

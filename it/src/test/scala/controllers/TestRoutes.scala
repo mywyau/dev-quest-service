@@ -139,7 +139,8 @@ object TestRoutes {
             s"auth:session:USER003" -> fakeUserSession("USER003"),
             s"auth:session:USER004" -> fakeUserSession("USER004"),
             s"auth:session:USER005" -> fakeUserSession("USER005"),
-            s"auth:session:USER006" -> fakeUserSession("USER006")
+            s"auth:session:USER006" -> fakeUserSession("USER006"),
+            s"auth:session:USER007" -> fakeUserSession("USER007"),
           )
         )
       )

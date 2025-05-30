@@ -15,8 +15,16 @@ import models.database.UpdateSuccess
 import models.quests.CreateQuestPartial
 import models.quests.UpdateQuestPartial
 import models.responses.*
+import models.Completed
+import models.Failed
+import models.InProgress
+import models.InReview
+import models.NotStarted
+import models.QuestStatus
+import models.Submitted
 import org.http4s.*
 import org.http4s.circe.*
+import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
@@ -38,8 +46,16 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
   implicit val createDecoder: EntityDecoder[F, CreateQuestPartial] = jsonOf[F, CreateQuestPartial]
   implicit val updateDecoder: EntityDecoder[F, UpdateQuestPartial] = jsonOf[F, UpdateQuestPartial]
 
-  private def extractBearerToken(req: Request[F]): Option[String] =
-    req.headers.get[headers.Authorization].map(_.value.stripPrefix("Bearer "))
+  implicit val questStatusQueryParamDecoder: QueryParamDecoder[QuestStatus] =
+    QueryParamDecoder[String].emap { str =>
+      Either
+        .catchNonFatal(QuestStatus.fromString(str))
+        .leftMap(t => ParseFailure("Invalid status", t.getMessage))
+    }
+
+  object StatusParam extends OptionalQueryParamDecoderMatcher[QuestStatus]("status")
+  object PageParam extends OptionalQueryParamDecoderMatcher[Int]("page")
+  object LimitParam extends OptionalQueryParamDecoderMatcher[Int]("limit")
 
   private def extractSessionToken(req: Request[F]): Option[String] =
     req.cookies
@@ -121,6 +137,40 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
         case None =>
           Logger[F].info("[QuestController] Unauthorized request to /quest/stream") *>
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
+      }
+
+    // 2) Match the query‐param pattern, *not* a literal `?status=…`
+    case req @ GET -> Root / "quest" / "stream" / "new" / userIdFromRoute :?
+        StatusParam(mStatus) +&
+        PageParam(mPage) +&
+        LimitParam(mLimit) =>
+      val status: QuestStatus = mStatus.getOrElse(InProgress) // default if absent
+      val page = mPage.getOrElse(1)
+      val limit = mLimit.getOrElse(10)
+      val offset = (page - 1) * limit
+
+      extractSessionToken(req) match {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
+            Logger[F].info(
+              s"[QuestController] Streaming status=$status, page=$page, limit=$limit"
+            ) *>
+              Ok(
+                questService
+                  .stream(userIdFromRoute, status, limit, offset)
+                  .map(_.asJson.noSpaces)
+                  .evalTap(json => Logger[F].info(s"[QuestController][/quest/stream/new] → $json")) // <── log every line
+                  .intersperse("\n")
+                  .handleErrorWith(e =>
+                    Stream.eval(Logger[F].error(e)(s"[QuestController] Stream error")) >>
+                      Stream.empty
+                  )
+                  .onFinalize(Logger[F].info("[QuestController] Stream completed").void)
+              )
+          }
+        case None =>
+          Logger[F].warn("[QuestController] Missing auth cookie") *>
+            Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
     // TODO: change this to return a list of paginated quests
@@ -221,3 +271,6 @@ object QuestController {
   def apply[F[_] : Async : Concurrent](questService: QuestServiceAlgebra[F], sessionCache: SessionCacheAlgebra[F])(implicit logger: Logger[F]): QuestControllerAlgebra[F] =
     new QuestControllerImpl[F](questService, sessionCache)
 }
+
+// Fe26.2*1*56c5c8dfc86cf58855e7b98c3b99676d29accef5af956670f38bdc524fc78d83*clFC7aeGyCatQ3tgWOu1OQ*vYzcBEFU8sRePAedA6uhJUW7eWCBbeZ9QHVxbP-zUf_VVl7LWRiOGvEqesvo-da2HmMh02khzS9t84KpMfrjN46X8k-8C7JMGQSGEn0GkL_mcOd3SfEmEI3rmodYioTGaYzV7U9X5YI6a--xVRYVRO2FQOElDSA6mr_e9rwUjnNlvqkbeiqjTL5HcVU34km84F1s7-1-CFwDYtr75dJpb1rXG_8hHFRFsMVNiEJjUxeSgm-_5Ev_-hIIiMgjCVNUC4ooVLEHhYUDUA6huSmVDJB3s68jq5aSQXMPhH8GVAwIgnbg9XaQO4VczfTW0x5QF9PH2YbzGwjpg7fD22XPvqb_qYyt8tOeaLLS5IyEc14RNbH6n9rzZ5GlqTr8jzunepOJjo6ayzlIlqhsjpC4vGELtXpgqCXMTczGXB-V3P5KL8M13kW0Uom5HSWqnUUhCWUNe5_sqzJ_HCIpkHDUpw*1748635615488*9363a089e85ac1f302f11c7650511f6cb7771028baa75d05c18a5b2ca70af8a8*1n9-qqvJMNHYDSHbl1cPLasWaHjNmURcgqm_A-RzMQo~2
+// Fe26.2*1*56c5c8dfc86cf58855e7b98c3b99676d29accef5af956670f38bdc524fc78d83*clFC7aeGyCatQ3tgWOu1OQ*vYzcBEFU8sRePAedA6uhJUW7eWCBbeZ9QHVxbP-zUf_VVl7LWRiOGvEqesvo-da2HmMh02khzS9t84KpMfrjN46X8k-8C7JMGQSGEn0GkL_mcOd3SfEmEI3rmodYioTGaYzV7U9X5YI6a--xVRYVRO2FQOElDSA6mr_e9rwUjnNlvqkbeiqjTL5HcVU34km84F1s7-1-CFwDYtr75dJpb1rXG_8hHFRFsMVNiEJjUxeSgm-_5Ev_-hIIiMgjCVNUC4ooVLEHhYUDUA6huSmVDJB3s68jq5aSQXMPhH8GVAwIgnbg9XaQO4VczfTW0x5QF9PH2YbzGwjpg7fD22XPvqb_qYyt8tOeaLLS5IyEc14RNbH6n9rzZ5GlqTr8jzunepOJjo6ayzlIlqhsjpC4vGELtXpgqCXMTczGXB-V3P5KL8M13kW0Uom5HSWqnUUhCWUNe5_sqzJ_HCIpkHDUpw*1748635615488*9363a089e85ac1f302f11c7650511f6cb7771028baa75d05c18a5b2ca70af8a8*1n9-qqvJMNHYDSHbl1cPLasWaHjNmURcgqm_A-RzMQo~2
