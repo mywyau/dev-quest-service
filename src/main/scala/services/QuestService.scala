@@ -1,5 +1,7 @@
 package services
 
+import cats.Monad
+import cats.NonEmptyParallel
 import cats.data.Validated
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
@@ -7,21 +9,30 @@ import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
-import cats.Monad
-import cats.NonEmptyParallel
 import fs2.Stream
-import java.util.UUID
+import models.NotStarted
+import models.QuestStatus
 import models.database.*
+import models.database.DatabaseErrors
+import models.database.DatabaseSuccess
 import models.quests.CreateQuest
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
-import models.NotStarted
 import org.typelevel.log4cats.Logger
 import repositories.QuestRepositoryAlgebra
-import models.database.{DatabaseErrors, DatabaseSuccess}
+
+import java.util.UUID
 
 trait QuestServiceAlgebra[F[_]] {
+
+  // streaming ND-JSON
+  def stream(
+    userId: String,
+    questStatus: QuestStatus,
+    limit: Int,
+    offset: Int
+  ): Stream[F, QuestPartial]
 
   def streamByUserId(userId: String, limit: Int, offset: Int): Stream[F, QuestPartial]
 
@@ -41,6 +52,36 @@ trait QuestServiceAlgebra[F[_]] {
 class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
   questRepo: QuestRepositoryAlgebra[F]
 ) extends QuestServiceAlgebra[F] {
+
+  override def stream(
+    userId: String,
+    questStatus: QuestStatus,
+    limit: Int,
+    offset: Int
+  ): Stream[F, QuestPartial] = {
+
+    // A single-value stream that just performs the “start” log
+    val headLog: Stream[F, QuestPartial] =
+      Stream
+        .eval(
+          Logger[F].info(
+            s"[QuestService] Streaming quests for questStatus: $questStatus (limit=$limit, offset=$offset)"
+          )
+        )
+        .drain // drain: keep the effect, emit no element
+
+    // The actual DB stream with per-row logging
+    val dataStream: Stream[F, QuestPartial] =
+      questRepo
+        .streamByQuestStatus(userId, questStatus, limit, offset)
+        .evalTap(q =>
+          Logger[F].info(
+            s"[QuestService] Fetched quest: ${q.questId}, title: ${q.title}"
+          )
+        )
+
+    headLog ++ dataStream
+  }
 
   // Log and stream quests by userId
   override def streamByUserId(

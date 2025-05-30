@@ -15,8 +15,16 @@ import models.database.UpdateSuccess
 import models.quests.CreateQuestPartial
 import models.quests.UpdateQuestPartial
 import models.responses.*
+import models.Completed
+import models.Failed
+import models.InProgress
+import models.InReview
+import models.NotStarted
+import models.QuestStatus
+import models.Submitted
 import org.http4s.*
 import org.http4s.circe.*
+import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
@@ -37,6 +45,17 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
 
   implicit val createDecoder: EntityDecoder[F, CreateQuestPartial] = jsonOf[F, CreateQuestPartial]
   implicit val updateDecoder: EntityDecoder[F, UpdateQuestPartial] = jsonOf[F, UpdateQuestPartial]
+
+  implicit val questStatusQueryParamDecoder: QueryParamDecoder[QuestStatus] =
+    QueryParamDecoder[String].emap { str =>
+      Either
+        .catchNonFatal(QuestStatus.fromString(str))
+        .leftMap(t => ParseFailure("Invalid status", t.getMessage))
+    }
+
+  object StatusParam extends OptionalQueryParamDecoderMatcher[QuestStatus]("status")
+  object PageParam extends OptionalQueryParamDecoderMatcher[Int]("page")
+  object LimitParam extends OptionalQueryParamDecoderMatcher[Int]("limit")
 
   private def extractBearerToken(req: Request[F]): Option[String] =
     req.headers.get[headers.Authorization].map(_.value.stripPrefix("Bearer "))
@@ -121,6 +140,39 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
         case None =>
           Logger[F].info("[QuestController] Unauthorized request to /quest/stream") *>
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
+      }
+
+    // 2) Match the query‐param pattern, *not* a literal `?status=…`
+    case req @ GET -> Root / "quest" / "stream" / "new" / userIdFromRoute :?
+        StatusParam(mStatus) +&
+        PageParam(mPage) +&
+        LimitParam(mLimit) =>
+      val status: QuestStatus = mStatus.getOrElse(InProgress) // default if absent
+      val page = mPage.getOrElse(1)
+      val limit = mLimit.getOrElse(10)
+      val offset = (page - 1) * limit
+
+      extractSessionToken(req) match {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
+            Logger[F].info(
+              s"[QuestController] Streaming status=$status, page=$page, limit=$limit"
+            ) *>
+              Ok(
+                questService
+                  .stream(userIdFromRoute, status, limit, offset)
+                  .map(_.asJson.noSpaces)
+                  .intersperse("\n")
+                  .handleErrorWith(e =>
+                    Stream.eval(Logger[F].error(e)(s"[QuestController] Stream error")) >>
+                      Stream.empty
+                  )
+                  .onFinalize(Logger[F].info("[QuestController] Stream completed").void)
+              )
+          }
+        case None =>
+          Logger[F].warn("[QuestController] Missing auth cookie") *>
+            Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
     // TODO: change this to return a list of paginated quests

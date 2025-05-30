@@ -1,13 +1,20 @@
 package controllers.quest
 
 import cats.effect.*
-import controllers.fragments.QuestControllerFragments.*
+import cats.effect.IO
+import cats.implicits.*
 import controllers.ControllerISpecBase
+import controllers.fragments.QuestControllerFragments.*
 import doobie.implicits.*
 import doobie.util.transactor.Transactor
-import io.circe.syntax.*
+import fs2.Stream
+import fs2.text.lines
+import fs2.text.utf8Decode
 import io.circe.Json
-import java.time.LocalDateTime
+import io.circe.parser.decode
+import io.circe.syntax.*
+import models.Completed
+import models.InProgress
 import models.auth.UserSession
 import models.database.*
 import models.database.CreateSuccess
@@ -19,19 +26,24 @@ import models.quests.UpdateQuestPartial
 import models.responses.CreatedResponse
 import models.responses.DeletedResponse
 import models.responses.UpdatedResponse
-import models.Completed
-import models.InProgress
 import org.http4s.*
+import org.http4s.Method.*
+import org.http4s.Method.GET
+import org.http4s.Request
+import org.http4s.Status
+import org.http4s.Uri
 import org.http4s.circe.*
 import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
+import org.http4s.client.Client
 import org.http4s.implicits.*
-import org.http4s.Method.*
 import org.typelevel.ci.CIStringSyntax
-import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import shared.HttpClientResource
 import shared.TransactorResource
 import weaver.*
+
+import java.time.LocalDateTime
 
 class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
@@ -124,6 +136,52 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
           body == expectedQuest
         )
       }
+    }
+  }
+
+  test(
+    "GET /dev-quest-service/quest/stream/new/USER007?status=InProgress&page=1&limit=10 - streams the right quest"
+  ) { (transactorResource, log) =>
+    val xa = transactorResource._1.xa
+    val client = transactorResource._2.client
+
+    def testQuest(id:Int, userId: String, questId: String) =
+      QuestPartial(
+        userId = userId,
+        questId = questId,
+        title = s"Some Quest Title $id",
+        description = Some(s"Some Quest Description $id"),
+        status = Some(InProgress)
+      )
+
+    val expected: List[QuestPartial] = List(
+      testQuest(1, "USER007", "QUEST010"),
+      testQuest(2, "USER007", "QUEST011")
+    )
+
+    val req = Request[IO](
+      GET,
+      uri"http://127.0.0.1:9999/dev-quest-service/quest/stream/new/USER007?status=InProgress&page=1&limit=10"
+    ).addCookie("auth_session", "test-session-token")
+
+    client.run(req).use { resp =>
+      for {
+        bodyLines: List[String] <- resp.body
+          .through(utf8Decode)
+          .through(lines)
+          .filter(_.nonEmpty) // drop any blank trailing newline
+          .compile
+          .toList
+        // 3) parse each line as JSON → QuestPartial
+        parsed: List[QuestPartial] <- bodyLines.traverse { line =>
+          IO.fromEither(decode[QuestPartial](line).left.map(err => new Exception(s"Failed to decode line [$line]: $err")))
+        }
+      } yield (
+        expect.all(
+          resp.status == Status.Ok,
+          parsed == expected,
+        )
+      )
     }
   }
 

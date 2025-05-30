@@ -1,23 +1,26 @@
 package repositories
 
+import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
-import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
-import java.sql.Timestamp
-import java.time.LocalDateTime
+import models.QuestStatus
 import models.database.*
 import models.quests.*
-import models.QuestStatus
 import org.typelevel.log4cats.Logger
 
+import java.sql.Timestamp
+import java.time.LocalDateTime
+
 trait QuestRepositoryAlgebra[F[_]] {
+
+  def streamByQuestStatus(userId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial]
 
   def streamByUserId(userId: String, limit: Int, offset: Int): Stream[F, QuestPartial]
 
@@ -42,6 +45,24 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
 
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
+
+  override def streamByQuestStatus(userId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial] = {
+    val queryStream: Stream[F, QuestPartial] =
+      sql"""
+        SELECT user_id, quest_id, title, description, status
+        FROM quests
+        WHERE status = $questStatus 
+          AND user_id = $userId  
+        ORDER BY created_at DESC
+        LIMIT $limit OFFSET $offset
+      """
+        .query[QuestPartial]
+        .stream
+        .transact(transactor)
+        .evalTap(q => Logger[F].info(s"[QuestRepository][streamByQuestStatus] Fetched quest: ${q.questId}"))
+
+    Stream.eval(Logger[F].info(s"[QuestRepository][streamByQuestStatus] Streaming quests (questStatus=$questStatus, limit=$limit, offset=$offset)")) >> queryStream
+  }
 
   override def streamByUserId(userId: String, limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
