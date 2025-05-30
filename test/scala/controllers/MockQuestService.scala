@@ -22,8 +22,12 @@ import cats.effect.IO
 import cats.effect.Ref
 import cache.RedisCacheAlgebra
 import models.auth.UserSession
+import models.QuestStatus
 
 class MockQuestService(userQuestData: Map[String, QuestPartial]) extends QuestServiceAlgebra[IO] {
+
+
+  override def stream(userId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
 
   override def streamAll(limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
 

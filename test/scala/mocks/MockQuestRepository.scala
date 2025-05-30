@@ -8,10 +8,13 @@ import models.database.*
 import models.quests.*
 import repositories.QuestRepositoryAlgebra
 import models.database.{CreateSuccess, DatabaseErrors, DatabaseSuccess}
+import models.QuestStatus
 
 case class MockQuestRepository(
   existingQuest: Map[String, QuestPartial] = Map.empty
 ) extends QuestRepositoryAlgebra[IO] {
+
+  override def streamByQuestStatus(userId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
 
   override def streamAll(limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
 
