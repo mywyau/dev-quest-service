@@ -249,7 +249,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
           Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
-    case req @ PUT -> Root / "quest" / "update" / "dev" / userIdFromRoute =>
+    case req @ PUT -> Root / "quest" / "accept" / "quest" / userIdFromRoute =>
       extractSessionToken(req) match {
         case Some(cookieToken) =>
           withValidSession(userIdFromRoute, cookieToken) {
@@ -288,26 +288,6 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
           Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
-    // case req @ PUT -> Root / "quest" / "update" / userIdFromRoute / questId =>
-    //   extractSessionToken(req) match {
-    //     case Some(headerToken) =>
-    //       withValidSession(userIdFromRoute, headerToken) {
-    //         Logger[F].info(s"[QuestControllerImpl] PUT - Updating quest with ID: $questId") *>
-    //           req.decode[UpdateQuestPartial] { request =>
-    //             questService.update(questId, request).flatMap {
-    //               case Valid(response) =>
-    //                 Logger[F].info(s"[QuestControllerImpl] PUT - Successfully updated quest for ID: $questId") *>
-    //                   Ok(UpdatedResponse(UpdateSuccess.toString, s"Quest $questId updated successfully").asJson)
-    //               case Invalid(errors) =>
-    //                 Logger[F].info(s"[QuestControllerImpl] PUT - Validation failed for quest update: ${errors.toList}") *>
-    //                   BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
-    //             }
-    //           }
-    //       }
-    //     case None =>
-    //       Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
-    //   }
-
     case req @ DELETE -> Root / "quest" / userIdFromRoute / questId =>
       extractSessionToken(req) match {
         case Some(headerToken) =>
@@ -332,6 +312,3 @@ object QuestController {
   def apply[F[_] : Async : Concurrent](questService: QuestServiceAlgebra[F], sessionCache: SessionCacheAlgebra[F])(implicit logger: Logger[F]): QuestControllerAlgebra[F] =
     new QuestControllerImpl[F](questService, sessionCache)
 }
-
-// Fe26.2*1*56c5c8dfc86cf58855e7b98c3b99676d29accef5af956670f38bdc524fc78d83*clFC7aeGyCatQ3tgWOu1OQ*vYzcBEFU8sRePAedA6uhJUW7eWCBbeZ9QHVxbP-zUf_VVl7LWRiOGvEqesvo-da2HmMh02khzS9t84KpMfrjN46X8k-8C7JMGQSGEn0GkL_mcOd3SfEmEI3rmodYioTGaYzV7U9X5YI6a--xVRYVRO2FQOElDSA6mr_e9rwUjnNlvqkbeiqjTL5HcVU34km84F1s7-1-CFwDYtr75dJpb1rXG_8hHFRFsMVNiEJjUxeSgm-_5Ev_-hIIiMgjCVNUC4ooVLEHhYUDUA6huSmVDJB3s68jq5aSQXMPhH8GVAwIgnbg9XaQO4VczfTW0x5QF9PH2YbzGwjpg7fD22XPvqb_qYyt8tOeaLLS5IyEc14RNbH6n9rzZ5GlqTr8jzunepOJjo6ayzlIlqhsjpC4vGELtXpgqCXMTczGXB-V3P5KL8M13kW0Uom5HSWqnUUhCWUNe5_sqzJ_HCIpkHDUpw*1748635615488*9363a089e85ac1f302f11c7650511f6cb7771028baa75d05c18a5b2ca70af8a8*1n9-qqvJMNHYDSHbl1cPLasWaHjNmURcgqm_A-RzMQo~2
-// Fe26.2*1*56c5c8dfc86cf58855e7b98c3b99676d29accef5af956670f38bdc524fc78d83*clFC7aeGyCatQ3tgWOu1OQ*vYzcBEFU8sRePAedA6uhJUW7eWCBbeZ9QHVxbP-zUf_VVl7LWRiOGvEqesvo-da2HmMh02khzS9t84KpMfrjN46X8k-8C7JMGQSGEn0GkL_mcOd3SfEmEI3rmodYioTGaYzV7U9X5YI6a--xVRYVRO2FQOElDSA6mr_e9rwUjnNlvqkbeiqjTL5HcVU34km84F1s7-1-CFwDYtr75dJpb1rXG_8hHFRFsMVNiEJjUxeSgm-_5Ev_-hIIiMgjCVNUC4ooVLEHhYUDUA6huSmVDJB3s68jq5aSQXMPhH8GVAwIgnbg9XaQO4VczfTW0x5QF9PH2YbzGwjpg7fD22XPvqb_qYyt8tOeaLLS5IyEc14RNbH6n9rzZ5GlqTr8jzunepOJjo6ayzlIlqhsjpC4vGELtXpgqCXMTczGXB-V3P5KL8M13kW0Uom5HSWqnUUhCWUNe5_sqzJ_HCIpkHDUpw*1748635615488*9363a089e85ac1f302f11c7650511f6cb7771028baa75d05c18a5b2ca70af8a8*1n9-qqvJMNHYDSHbl1cPLasWaHjNmURcgqm_A-RzMQo~2

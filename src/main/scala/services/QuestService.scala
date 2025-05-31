@@ -28,21 +28,21 @@ trait QuestServiceAlgebra[F[_]] {
 
   // streaming ND-JSON
   def stream(
-    userId: String,
+    clientId: String,
     questStatus: QuestStatus,
     limit: Int,
     offset: Int
   ): Stream[F, QuestPartial]
 
-  def streamByUserId(userId: String, limit: Int, offset: Int): Stream[F, QuestPartial]
+  def streamByUserId(clientId: String, limit: Int, offset: Int): Stream[F, QuestPartial]
 
   def streamAll(limit: Int, offset: Int): Stream[F, QuestPartial]
 
-  def getAllQuests(userId: String): F[List[QuestPartial]]
+  def getAllQuests(clientId: String): F[List[QuestPartial]]
 
   def getByQuestId(questId: String): F[Option[QuestPartial]]
 
-  def create(request: CreateQuestPartial, userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def create(request: CreateQuestPartial, clientId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def update(questId: String, request: UpdateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
@@ -64,7 +64,7 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
     questRepo.acceptQuest(questId, devId)
 
   override def stream(
-    userId: String,
+    clientId: String,
     questStatus: QuestStatus,
     limit: Int,
     offset: Int
@@ -83,19 +83,19 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
     // The actual DB stream with per-row logging
     val dataStream: Stream[F, QuestPartial] =
       questRepo
-        .streamByQuestStatus(userId, questStatus, limit, offset)
-        .evalTap(q =>
+        .streamByQuestStatus(clientId, questStatus, limit, offset)
+        .evalTap(quest =>
           Logger[F].info(
-            s"[QuestService][stream] Fetched quest: ${q.questId}, title: ${q.title}"
+            s"[QuestService][stream] Fetched quest: ${quest.questId}, title: ${quest.title}"
           )
         )
 
     headLog ++ dataStream
   }
 
-  // Log and stream quests by userId
+  // Log and stream quests by clientId
   override def streamByUserId(
-    userId: String,
+    clientId: String,
     limit: Int,
     offset: Int
   ): Stream[F, QuestPartial] = {
@@ -105,7 +105,7 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
       Stream
         .eval(
           Logger[F].info(
-            s"[QuestService][streamByUserId] Streaming quests for user $userId (limit=$limit, offset=$offset)"
+            s"[QuestService][streamByUserId] Streaming quests for user $clientId (limit=$limit, offset=$offset)"
           )
         )
         .drain // drain: keep the effect, emit no element
@@ -113,7 +113,7 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
     // The actual DB stream with per-row logging
     val dataStream: Stream[F, QuestPartial] =
       questRepo
-        .streamByUserId(userId, limit, offset)
+        .streamByUserId(clientId, limit, offset)
         .evalTap(q =>
           Logger[F].info(
             s"[QuestService][streamByUserId] Fetched quest: ${q.questId}, title: ${q.title}"
@@ -123,7 +123,7 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
     headLog ++ dataStream
   }
 
-  // Log and stream quests by userId
+  // Log and stream quests by clientId
   override def streamAll(
     limit: Int,
     offset: Int
@@ -152,9 +152,9 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
     headLog ++ dataStream
   }
 
-  override def getAllQuests(userId: String): F[List[QuestPartial]] =
-    questRepo.findAllByUserId(userId).flatMap { quests =>
-      Logger[F].info(s"[QuestService][getAllQuests] Retrieved ${quests.size} quests for user $userId") *>
+  override def getAllQuests(clientId: String): F[List[QuestPartial]] =
+    questRepo.findAllByUserId(clientId).flatMap { quests =>
+      Logger[F].info(s"[QuestService][getAllQuests] Retrieved ${quests.size} quests for user $clientId") *>
         Concurrent[F].pure(quests)
     }
 
@@ -167,18 +167,18 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
     }
 
   // Log quest creation
-  override def create(request: CreateQuestPartial, userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+  override def create(request: CreateQuestPartial, clientId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
     val newQuestId = s"quest-${UUID.randomUUID().toString}"
     val createQuest =
       CreateQuest(
-        userId = userId,
+        clientId = clientId,
         questId = newQuestId,
         title = request.title,
         description = request.description,
-        status = Some(Review)
+        status = Some(Open)
       )
 
-    Logger[F].info(s"[QuestService][create] Creating a new quest for user $userId with questId $newQuestId") *>
+    Logger[F].info(s"[QuestService][create] Creating a new quest for user $clientId with questId $newQuestId") *>
       questRepo.create(createQuest).flatMap {
         case Valid(value) =>
           Logger[F].info(s"[QuestService][create] Quest created successfully with ID: $newQuestId") *>

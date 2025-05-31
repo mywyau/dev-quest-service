@@ -8,7 +8,7 @@ import java.time.LocalDateTime
 import models.QuestStatus
 
 case class CreateQuest(
-  userId: String,
+  clientId: String,
   questId: String,
   title: String,
   description: Option[String],

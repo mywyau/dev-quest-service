@@ -7,8 +7,8 @@ import io.circe.Encoder
 import models.QuestStatus
 
 case class AcceptQuestPayload(
-  questId: String,
-  devId: String
+  devId: String,
+  questId: String
 )
 
 object AcceptQuestPayload {

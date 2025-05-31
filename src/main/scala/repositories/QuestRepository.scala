@@ -20,13 +20,13 @@ import org.typelevel.log4cats.Logger
 
 trait QuestRepositoryAlgebra[F[_]] {
 
-  def streamByQuestStatus(userId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial]
+  def streamByQuestStatus(clientId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial]
 
-  def streamByUserId(userId: String, limit: Int, offset: Int): Stream[F, QuestPartial]
+  def streamByUserId(clientId: String, limit: Int, offset: Int): Stream[F, QuestPartial]
 
   def streamAll(limit: Int, offset: Int): Stream[F, QuestPartial]
 
-  def findAllByUserId(userId: String): F[List[QuestPartial]]
+  def findAllByUserId(clientId: String): F[List[QuestPartial]]
 
   def findByQuestId(questId: String): F[Option[QuestPartial]]
 
@@ -40,7 +40,7 @@ trait QuestRepositoryAlgebra[F[_]] {
 
   def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def deleteAllByUserId(userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def deleteAllByUserId(clientId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
 class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends QuestRepositoryAlgebra[F] {
@@ -50,13 +50,13 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
 
-  override def streamByQuestStatus(userId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial] = {
+  override def streamByQuestStatus(clientId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
       sql"""
-        SELECT user_id, quest_id, title, description, status
+        SELECT client_id, quest_id, title, description, status
         FROM quests
         WHERE status = $questStatus 
-          AND user_id = $userId  
+          AND client_id = $clientId  
         ORDER BY created_at DESC
         LIMIT $limit OFFSET $offset
       """
@@ -68,12 +68,12 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
     Stream.eval(Logger[F].info(s"[QuestRepository][streamByQuestStatus] Streaming quests (questStatus=$questStatus, limit=$limit, offset=$offset)")) >> queryStream
   }
 
-  override def streamByUserId(userId: String, limit: Int, offset: Int): Stream[F, QuestPartial] = {
+  override def streamByUserId(clientId: String, limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
       sql"""
-        SELECT user_id, quest_id, title, description, status
+        SELECT client_id, quest_id, title, description, status
         FROM quests
-        WHERE user_id = $userId
+        WHERE client_id = $clientId
         ORDER BY created_at DESC
         LIMIT $limit OFFSET $offset
       """
@@ -82,13 +82,13 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
         .transact(transactor)
         .evalTap(q => Logger[F].info(s"[QuestRepository] Fetched quest: ${q.questId}"))
 
-    Stream.eval(Logger[F].info(s"[QuestRepository] Streaming quests (userId=$userId, limit=$limit, offset=$offset)")) >> queryStream
+    Stream.eval(Logger[F].info(s"[QuestRepository] Streaming quests (clientId=$clientId, limit=$limit, offset=$offset)")) >> queryStream
   }
 
   override def streamAll(limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
       sql"""
-        SELECT user_id, quest_id, title, description, status
+        SELECT client_id, quest_id, title, description, status
         FROM quests
         ORDER BY created_at DESC
         LIMIT $limit OFFSET $offset
@@ -101,17 +101,17 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
     Stream.eval(Logger[F].info(s"[QuestRepository] Streaming quests (limit=$limit, offset=$offset)")) >> queryStream
   }
 
-  override def findAllByUserId(userId: String): F[List[QuestPartial]] = {
+  override def findAllByUserId(clientId: String): F[List[QuestPartial]] = {
     val findQuery: F[List[QuestPartial]] =
       sql"""
          SELECT 
-            user_id,
+            client_id,
             quest_id,
             title,
             description,
             status
          FROM quests
-         WHERE user_id = $userId
+         WHERE client_id = $clientId
        """.query[QuestPartial].to[List].transact(transactor)
 
     findQuery
@@ -121,7 +121,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
     val findQuery: F[Option[QuestPartial]] =
       sql"""
          SELECT 
-            user_id,
+            client_id,
             quest_id,
             title,
             description,
@@ -136,14 +136,14 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   override def create(request: CreateQuest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       INSERT INTO quests (
-         user_id,
+         client_id,
          quest_id,
          title,
          description,
          status
       )
       VALUES (
-        ${request.userId},
+        ${request.clientId},
         ${request.questId},
         ${request.title},
         ${request.description},
@@ -279,11 +279,11 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
     }
   }
 
-  override def deleteAllByUserId(userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+  override def deleteAllByUserId(clientId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
     val deleteQuery: Update0 =
       sql"""
          DELETE FROM quests
-         WHERE user_id = $userId
+         WHERE client_id = $clientId
        """.update
 
     deleteQuery.run.transact(transactor).attempt.map {
