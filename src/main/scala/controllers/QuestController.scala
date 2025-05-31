@@ -5,33 +5,33 @@ import cache.RedisCacheAlgebra
 import cache.SessionCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
-import cats.effect.kernel.Async
 import cats.effect.Concurrent
+import cats.effect.kernel.Async
 import cats.implicits.*
 import fs2.Stream
-import io.circe.syntax.EncoderOps
 import io.circe.Json
-import models.database.UpdateSuccess
-import models.quests.CreateQuestPartial
-import models.quests.UpdateQuestPartial
-import models.responses.*
+import io.circe.syntax.EncoderOps
 import models.Completed
 import models.Failed
 import models.InProgress
-import models.InReview
 import models.NotStarted
 import models.QuestStatus
+import models.Review
 import models.Submitted
+import models.database.UpdateSuccess
+import models.quests.*
+import models.responses.*
 import org.http4s.*
+import org.http4s.Challenge
 import org.http4s.circe.*
-import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
 import org.http4s.dsl.Http4sDsl
+import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
-import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
-import scala.concurrent.duration.*
 import services.QuestServiceAlgebra
+
+import scala.concurrent.duration.*
 
 trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -45,6 +45,8 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
 
   implicit val createDecoder: EntityDecoder[F, CreateQuestPartial] = jsonOf[F, CreateQuestPartial]
   implicit val updateDecoder: EntityDecoder[F, UpdateQuestPartial] = jsonOf[F, UpdateQuestPartial]
+  implicit val updateQuestStatusPayloadDecoder: EntityDecoder[F, UpdateQuestStatusPayload] = jsonOf[F, UpdateQuestStatusPayload]
+  implicit val updateDevIdPayloadDecoder: EntityDecoder[F, AcceptQuestPayload] = jsonOf[F, AcceptQuestPayload]
 
   implicit val questStatusQueryParamDecoder: QueryParamDecoder[QuestStatus] =
     QueryParamDecoder[String].emap { str =>
@@ -227,7 +229,46 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
           Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
-    case req @ PUT -> Root / "quest" / "update" / userIdFromRoute / questId =>
+    case req @ PUT -> Root / "quest" / "update" / "status" / userIdFromRoute / questId =>
+      extractSessionToken(req) match {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
+            Logger[F].info(s"[QuestControllerImpl] PUT - Updating quest with ID: $questId") *>
+              req.decode[UpdateQuestStatusPayload] { request =>
+                questService.updateStatus(request.questId, request.questStatus).flatMap {
+                  case Valid(response) =>
+                    Logger[F].info(s"[QuestControllerImpl] PUT - Successfully updated quest status for quest id: $questId") *>
+                      Ok(UpdatedResponse(UpdateSuccess.toString, s"updated quest status: ${request.questStatus} successfully, for questId: ${request.questId}").asJson)
+                  case Invalid(errors) =>
+                    Logger[F].info(s"[QuestControllerImpl] PUT - Validation failed for quest update: ${errors.toList}") *>
+                      BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
+                }
+              }
+          }
+        case None =>
+          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
+      }
+
+    case req @ PUT -> Root / "quest" / "accept" / "quest" / userIdFromRoute =>
+      extractSessionToken(req) match {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
+            req.decode[AcceptQuestPayload] { request =>
+              questService.acceptQuest(request.questId, request.devId).flatMap {
+                case Valid(response) =>
+                  Logger[F].info(s"[QuestControllerImpl] PUT - Successfully updated devId for quest id: ${request.devId}") *>
+                    Ok(UpdatedResponse(UpdateSuccess.toString, s"updated devId: ${request.devId} successfully, for questId: ${request.questId}").asJson)
+                case Invalid(errors) =>
+                  Logger[F].info(s"[QuestControllerImpl] PUT - Validation failed for quest update: ${errors.toList}") *>
+                    BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
+              }
+            }
+          }
+        case None =>
+          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
+      }
+
+    case req @ PUT -> Root / "quest" / "update" / "details" / userIdFromRoute / questId =>
       extractSessionToken(req) match {
         case Some(headerToken) =>
           withValidSession(userIdFromRoute, headerToken) {
@@ -271,6 +312,3 @@ object QuestController {
   def apply[F[_] : Async : Concurrent](questService: QuestServiceAlgebra[F], sessionCache: SessionCacheAlgebra[F])(implicit logger: Logger[F]): QuestControllerAlgebra[F] =
     new QuestControllerImpl[F](questService, sessionCache)
 }
-
-// Fe26.2*1*56c5c8dfc86cf58855e7b98c3b99676d29accef5af956670f38bdc524fc78d83*clFC7aeGyCatQ3tgWOu1OQ*vYzcBEFU8sRePAedA6uhJUW7eWCBbeZ9QHVxbP-zUf_VVl7LWRiOGvEqesvo-da2HmMh02khzS9t84KpMfrjN46X8k-8C7JMGQSGEn0GkL_mcOd3SfEmEI3rmodYioTGaYzV7U9X5YI6a--xVRYVRO2FQOElDSA6mr_e9rwUjnNlvqkbeiqjTL5HcVU34km84F1s7-1-CFwDYtr75dJpb1rXG_8hHFRFsMVNiEJjUxeSgm-_5Ev_-hIIiMgjCVNUC4ooVLEHhYUDUA6huSmVDJB3s68jq5aSQXMPhH8GVAwIgnbg9XaQO4VczfTW0x5QF9PH2YbzGwjpg7fD22XPvqb_qYyt8tOeaLLS5IyEc14RNbH6n9rzZ5GlqTr8jzunepOJjo6ayzlIlqhsjpC4vGELtXpgqCXMTczGXB-V3P5KL8M13kW0Uom5HSWqnUUhCWUNe5_sqzJ_HCIpkHDUpw*1748635615488*9363a089e85ac1f302f11c7650511f6cb7771028baa75d05c18a5b2ca70af8a8*1n9-qqvJMNHYDSHbl1cPLasWaHjNmURcgqm_A-RzMQo~2
-// Fe26.2*1*56c5c8dfc86cf58855e7b98c3b99676d29accef5af956670f38bdc524fc78d83*clFC7aeGyCatQ3tgWOu1OQ*vYzcBEFU8sRePAedA6uhJUW7eWCBbeZ9QHVxbP-zUf_VVl7LWRiOGvEqesvo-da2HmMh02khzS9t84KpMfrjN46X8k-8C7JMGQSGEn0GkL_mcOd3SfEmEI3rmodYioTGaYzV7U9X5YI6a--xVRYVRO2FQOElDSA6mr_e9rwUjnNlvqkbeiqjTL5HcVU34km84F1s7-1-CFwDYtr75dJpb1rXG_8hHFRFsMVNiEJjUxeSgm-_5Ev_-hIIiMgjCVNUC4ooVLEHhYUDUA6huSmVDJB3s68jq5aSQXMPhH8GVAwIgnbg9XaQO4VczfTW0x5QF9PH2YbzGwjpg7fD22XPvqb_qYyt8tOeaLLS5IyEc14RNbH6n9rzZ5GlqTr8jzunepOJjo6ayzlIlqhsjpC4vGELtXpgqCXMTczGXB-V3P5KL8M13kW0Uom5HSWqnUUhCWUNe5_sqzJ_HCIpkHDUpw*1748635615488*9363a089e85ac1f302f11c7650511f6cb7771028baa75d05c18a5b2ca70af8a8*1n9-qqvJMNHYDSHbl1cPLasWaHjNmURcgqm_A-RzMQo~2
