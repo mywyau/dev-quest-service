@@ -85,8 +85,8 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
 
     case req @ GET -> Root / "quest" / "stream" / userIdFromRoute =>
       extractSessionToken(req) match {
-        case Some(headerToken) =>
-          withValidSession(userIdFromRoute, headerToken) {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
             val page = req.params.get("page").flatMap(_.toIntOption).getOrElse(1)
             val limit = req.params.get("limit").flatMap(_.toIntOption).getOrElse(10)
             val offset = (page - 1) * limit
@@ -178,8 +178,8 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
     // TODO: change this to return a list of paginated quests
     case req @ GET -> Root / "quest" / "all" / userIdFromRoute =>
       extractSessionToken(req) match {
-        case Some(headerToken) =>
-          withValidSession(userIdFromRoute, headerToken) {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
             Logger[F].info(s"[QuestController] GET - Authenticated for userId $userIdFromRoute") *>
               questService.getAllQuests(userIdFromRoute).flatMap {
                 case Nil => BadRequest(ErrorResponse("NO_QUEST", "No quests found").asJson)
@@ -194,26 +194,26 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
 
     case req @ GET -> Root / "quest" / userIdFromRoute / questId =>
       extractSessionToken(req) match {
-        case Some(headerToken) =>
-          withValidSession(userIdFromRoute, headerToken) {
-            Logger[F].info(s"[QuestController] GET - Authenticated for userId $userIdFromRoute") *>
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
+            Logger[F].info(s"[QuestController][/quest/userId/questId] GET - Authenticated for userId $userIdFromRoute") *>
               questService.getByQuestId(questId).flatMap {
                 case Some(quest) =>
-                  Logger[F].info(s"[QuestController] GET - Found quest ${quest.questId.toString()}") *>
+                  Logger[F].info(s"[QuestController][/quest/userId/questId] GET - Found quest ${quest.questId.toString()}") *>
                     Ok(quest.asJson)
                 case None =>
                   BadRequest(ErrorResponse("NO_QUEST", "No quest found").asJson)
               }
           }
         case None =>
-          Logger[F].info(s"[QuestController] GET - Unauthorised") *>
+          Logger[F].info(s"[QuestController][/quest/userId/questId] GET - Unauthorised") *>
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
     case req @ POST -> Root / "quest" / "create" / userIdFromRoute =>
       extractSessionToken(req) match {
-        case Some(headerToken) =>
-          withValidSession(userIdFromRoute, headerToken) {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
             Logger[F].info(s"[QuestControllerImpl] POST - Creating quest") *>
               req.decode[CreateQuestPartial] { request =>
                 questService.create(request, userIdFromRoute).flatMap {
@@ -270,8 +270,8 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
 
     case req @ PUT -> Root / "quest" / "update" / "details" / userIdFromRoute / questId =>
       extractSessionToken(req) match {
-        case Some(headerToken) =>
-          withValidSession(userIdFromRoute, headerToken) {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
             Logger[F].info(s"[QuestControllerImpl] PUT - Updating quest with ID: $questId") *>
               req.decode[UpdateQuestPartial] { request =>
                 questService.update(questId, request).flatMap {
@@ -290,8 +290,8 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
 
     case req @ DELETE -> Root / "quest" / userIdFromRoute / questId =>
       extractSessionToken(req) match {
-        case Some(headerToken) =>
-          withValidSession(userIdFromRoute, headerToken) {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
             Logger[F].info(s"[QuestControllerImpl] DELETE - Attempting to delete quest") *>
               questService.delete(questId).flatMap {
                 case Valid(response) =>

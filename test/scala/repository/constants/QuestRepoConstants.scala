@@ -12,15 +12,16 @@ import repositories.QuestRepositoryAlgebra
 
 object QuestRepoConstants {
 
-  def testCreateQuestPartial(userId: String, questId: String): CreateQuestPartial =
+  def testCreateQuestPartial(clientId: String, questId: String): CreateQuestPartial =
     CreateQuestPartial(
       title = "",
       description = Some("")
     )
 
-  def testQuestPartial(userId: String, questId: String): QuestPartial =
+  def testQuestPartial(clientId: String, devId: Option[String], questId: String): QuestPartial =
     QuestPartial(
-      userId = userId,
+      clientId = clientId,
+      devId = devId,
       questId = questId,
       title = "",
       description = Some(""),

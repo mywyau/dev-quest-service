@@ -8,6 +8,8 @@ import doobie.*
 import doobie.implicits.*
 import java.time.LocalDateTime
 import models.database.*
+import models.database.DeleteSuccess
+import models.database.UpdateSuccess
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
@@ -21,7 +23,6 @@ import testData.TestConstants.*
 import weaver.GlobalRead
 import weaver.IOSuite
 import weaver.ResourceTag
-import models.database.{DeleteSuccess, UpdateSuccess}
 
 class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryISpecBase {
   type Res = QuestRepositoryImpl[IO]
@@ -33,7 +34,7 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         insertQuestData.update.run.transact(transactor.xa).void
     )
 
-  def testQuestRequest(userId: String, businessId: String): CreateQuestPartial =
+  def testQuestRequest(clientId: String, businessId: String): CreateQuestPartial =
     CreateQuestPartial(
       title = "Implement User Authentication",
       description = Some("Set up Auth0 integration and secure routes using JWT tokens.")
@@ -53,8 +54,9 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
 
     val expectedResult =
       QuestPartial(
-        userId = "USER001",
+        clientId = "USER001",
         questId = "QUEST001",
+        devId = Some("DEV001"),
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         status = Some(InProgress)
@@ -69,8 +71,9 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
 
     val expectedResult =
       QuestPartial(
-        userId = "USER001",
+        clientId = "USER001",
         questId = "QUEST001",
+        devId = Some("DEV001"),
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         status = Some(InProgress)
@@ -100,8 +103,9 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
 
     val expectedResult =
       QuestPartial(
-        userId = "USER003",
+        clientId = "USER003",
         questId = questId,
+        devId = Some("DEV003"),
         title = "Refactor API Layer",
         description = Some("Migrate from custom HTTP clients to use http4s and apply middleware."),
         status = Some(InProgress)
