@@ -5,14 +5,20 @@ import cats.data.ValidatedNel
 import cats.effect.IO
 import fs2.Stream
 import models.database.*
+import models.database.CreateSuccess
+import models.database.DatabaseErrors
+import models.database.DatabaseSuccess
 import models.quests.*
-import repositories.QuestRepositoryAlgebra
-import models.database.{CreateSuccess, DatabaseErrors, DatabaseSuccess}
 import models.QuestStatus
+import repositories.QuestRepositoryAlgebra
 
 case class MockQuestRepository(
   existingQuest: Map[String, QuestPartial] = Map.empty
 ) extends QuestRepositoryAlgebra[IO] {
+
+  override def updateStatus(questId: String, questStatus: QuestStatus): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+
+  override def acceptQuest(questId: String, devId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
   override def streamByQuestStatus(userId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
 

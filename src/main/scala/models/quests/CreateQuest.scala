@@ -1,15 +1,16 @@
 package models.quests
 
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.generic.semiauto.deriveEncoder
 import io.circe.Decoder
 import io.circe.Encoder
-import java.time.LocalDateTime
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
 import models.QuestStatus
 
+import java.time.LocalDateTime
+
 case class CreateQuest(
-  userId: String,
   questId: String,
+  clientId: String,
   title: String,
   description: Option[String],
   status: Option[QuestStatus]

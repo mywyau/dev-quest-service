@@ -15,6 +15,7 @@ import io.circe.parser.decode
 import io.circe.syntax.*
 import models.Completed
 import models.InProgress
+import models.NotStarted
 import models.auth.UserSession
 import models.database.*
 import models.database.CreateSuccess
@@ -44,7 +45,6 @@ import shared.TransactorResource
 import weaver.*
 
 import java.time.LocalDateTime
-import models.NotStarted
 
 class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
@@ -56,17 +56,18 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
       _ <- Resource.eval(
         createQuestTable.update.run.transact(transactor.xa).void *>
           resetQuestTable.update.run.transact(transactor.xa).void *>
-          insertQuestData.update.run.transact(transactor.xa).void
+          insertQuestData.update.run.transact(transactor.xa).void *>
+          insertQuestDataNoDevId.update.run.transact(transactor.xa).void
       )
       client <- global.getOrFailR[HttpClientResource]()
     } yield (transactor, client)
 
   val sessionToken = "test-session-token"
 
-  def fakeUserSession(userId: String) =
+  def fakeUserSession(clientId: String) =
     UserSession(
       userId = "USER001",
-      sessionToken,
+      cookieValue = sessionToken,
       email = "fakeEmail@gmail.com",
       userType = "Dev"
     )
@@ -81,9 +82,10 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
 
     val sessionToken = "test-session-token"
 
-    def testQuest(userId: String, questId: String): QuestPartial =
+    def testQuest(clientId: String, questId: String, devId:Option[String]): QuestPartial =
       QuestPartial(
-        userId = userId,
+        clientId = clientId,
+        devId = devId,
         questId = questId,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
@@ -94,13 +96,14 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
       Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/quest/all/USER001")
         .addCookie("auth_session", sessionToken)
 
-    val expectedQuest = testQuest("USER001", "QUEST001")
+    val expectedQuest = testQuest("USER001", "QUEST001", Some("DEV001"))
+    val expectedQuest2 = testQuest("USER001", "QUEST016", None)
 
     client.run(request).use { response =>
       response.as[List[QuestPartial]].map { body =>
         expect.all(
           response.status == Status.Ok,
-          body == List(expectedQuest)
+          body == List(expectedQuest, expectedQuest2)
         )
       }
     }
@@ -113,9 +116,10 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
     val transactor = transactorResource._1.xa
     val client = transactorResource._2.client
 
-    def testQuest(userId: String, questId: String): QuestPartial =
+    def testQuest(clientId: String, questId: String, devId:Option[String]): QuestPartial =
       QuestPartial(
-        userId = userId,
+        clientId = clientId,
+        devId = devId,
         questId = questId,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
@@ -128,7 +132,42 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
       Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/quest/USER001/QUEST001")
         .addCookie("auth_session", sessionToken)
 
-    val expectedQuest = testQuest("USER001", "QUEST001")
+    val expectedQuest = testQuest("USER001", "QUEST001", Some("DEV001"))
+
+    client.run(request).use { response =>
+      response.as[QuestPartial].map { body =>
+        expect.all(
+          response.status == Status.Ok,
+          body == expectedQuest
+        )
+      }
+    }
+  }
+
+  test(
+    "GET - /dev-quest-service/quest/USER001/QUEST016 - should find the quest data for given quest id, returning OK and the correct quest json body"
+  ) { (transactorResource, log) =>
+
+    val transactor = transactorResource._1.xa
+    val client = transactorResource._2.client
+
+    def testQuest(clientId: String, questId: String): QuestPartial =
+      QuestPartial(
+        questId = questId,
+        clientId = clientId,
+        devId = None,
+        title = "Implement User Authentication",
+        description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+        status = Some(InProgress)
+      )
+
+    val sessionToken = "test-session-token"
+
+    val request =
+      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/quest/USER001/QUEST016")
+        .addCookie("auth_session", sessionToken)
+
+    val expectedQuest = testQuest("USER001", "QUEST016")
 
     client.run(request).use { response =>
       response.as[QuestPartial].map { body =>
@@ -146,18 +185,19 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
     val xa = transactorResource._1.xa
     val client = transactorResource._2.client
 
-    def testQuest(id:Int, userId: String, questId: String) =
+    def testQuest(id:Int, clientId: String, questId: String, devId:Option[String]) =
       QuestPartial(
-        userId = userId,
+        clientId = clientId,
         questId = questId,
+        devId = devId,
         title = s"Some Quest Title $id",
         description = Some(s"Some Quest Description $id"),
         status = Some(InProgress)
       )
 
     val expected: List[QuestPartial] = List(
-      testQuest(1, "USER007", "QUEST010"),
-      testQuest(2, "USER007", "QUEST011")
+      testQuest(1, "USER007", "QUEST010", Some("DEV006")),
+      testQuest(2, "USER007", "QUEST011", Some("DEV007"))
     )
 
     val req = Request[IO](
@@ -192,9 +232,10 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
     val xa = transactorResource._1.xa
     val client = transactorResource._2.client
 
-    def testQuest(id:Int, userId: String, questId: String) =
+    def testQuest(id:Int, clientId: String, questId: String, devId:Option[String]) =
       QuestPartial(
-        userId = userId,
+        clientId = clientId,
+        devId = devId,
         questId = questId,
         title = s"Some Quest Title $id",
         description = Some(s"Some Quest Description $id"),
@@ -202,8 +243,8 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
       )
 
     val expected: List[QuestPartial] = List(
-      testQuest(5, "USER007", "QUEST014"),
-      testQuest(6, "USER007", "QUEST015")
+      testQuest(5, "USER007", "QUEST014", Some("DEV010")),
+      testQuest(6, "USER007", "QUEST015", Some("DEV011"))
     )
 
     val req = Request[IO](
@@ -242,7 +283,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
 
     val sessionToken = "test-session-token"
 
-    def testCreateQuest(userId: String, questId: String): CreateQuestPartial =
+    def testCreateQuest(clientId: String, questId: String): CreateQuestPartial =
       CreateQuestPartial(
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens.")
@@ -268,7 +309,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
   }
 
   test(
-    "PUT - /dev-quest-service/quest/USER004/QUEST004 - " +
+    "PUT - /dev-quest-service/quest/update/details/USER004/QUEST004 - " +
       "should update the quest data for given quest_id, returning Updated response"
   ) { (transactorResource, log) =>
 
@@ -284,7 +325,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
       )
 
     val request =
-      Request[IO](PUT, uri"http://127.0.0.1:9999/dev-quest-service/quest/update/USER004/QUEST004")
+      Request[IO](PUT, uri"http://127.0.0.1:9999/dev-quest-service/quest/update/details/USER004/QUEST004")
         .addCookie("auth_session", sessionToken)
         .withEntity(updateRequest.asJson)
 

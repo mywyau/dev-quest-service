@@ -17,7 +17,7 @@ object QuestServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
   test(".getByQuestId() - when there is an existing quest details given a businessId should return the correct address details - Right(address)") {
 
-    val existingQuestForUser = testQuest(userId1, questId1)
+    val existingQuestForUser = testQuest(userId1, Some(devId1), questId1)
 
     val mockQuestRepository = new MockQuestRepository(Map(businessId1 -> existingQuestForUser))
     val service = new QuestServiceImpl[IO](mockQuestRepository)

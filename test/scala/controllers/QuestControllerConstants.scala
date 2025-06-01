@@ -8,7 +8,8 @@ object QuestControllerConstants {
 
   val sampleQuest1: QuestPartial =
     QuestPartial(
-      userId = "user_1",
+      clientId = "user_1",
+      devId = Some("dev_1"),
       questId = "quest1",
       title = "business1",
       description = Some(""),
