@@ -1,26 +1,30 @@
 package repositories
 
+import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
-import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
-import java.sql.Timestamp
-import java.time.LocalDateTime
+import models.Assigned
+import models.NotStarted
+import models.QuestStatus
 import models.database.*
 import models.quests.*
-import models.Assigned
-import models.QuestStatus
 import org.typelevel.log4cats.Logger
+
+import java.sql.Timestamp
+import java.time.LocalDateTime
 
 trait QuestRepositoryAlgebra[F[_]] {
 
   def streamByQuestStatus(clientId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial]
+
+  def streamByQuestStatusDev(devId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial]
 
   def streamByUserId(clientId: String, limit: Int, offset: Int): Stream[F, QuestPartial]
 
@@ -66,6 +70,24 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
         .evalTap(q => Logger[F].info(s"[QuestRepository][streamByQuestStatus] Fetched quest: ${q.questId}"))
 
     Stream.eval(Logger[F].info(s"[QuestRepository][streamByQuestStatus] Streaming quests (questStatus=$questStatus, limit=$limit, offset=$offset)")) >> queryStream
+  }
+
+  override def streamByQuestStatusDev(devId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial] = {
+    val queryStream: Stream[F, QuestPartial] =
+      sql"""
+        SELECT quest_id, client_id, dev_id, title, description, status
+        FROM quests
+        WHERE status = $questStatus 
+          AND dev_id = $devId  
+        ORDER BY created_at DESC
+        LIMIT $limit OFFSET $offset
+      """
+        .query[QuestPartial]
+        .stream
+        .transact(transactor)
+        .evalTap(q => Logger[F].info(s"[QuestRepository][streamByQuestStatus] Fetched quest: ${q.questId}"))
+
+    Stream.eval(Logger[F].info(s"[QuestRepository][streamByQuestStatusDev] Streaming quests (questStatus=$questStatus, limit=$limit, offset=$offset)")) >> queryStream
   }
 
   override def streamByUserId(clientId: String, limit: Int, offset: Int): Stream[F, QuestPartial] = {
@@ -217,8 +239,8 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
       UPDATE quests
       SET
           dev_id = ${devId},
-          status = ${Assigned},
-          updated_at = ${LocalDateTime.now()}
+          status = ${NotStarted.toString()},
+          updated_at = NOW()
       WHERE quest_id = ${questId}
     """.update.run
       .transact(transactor)

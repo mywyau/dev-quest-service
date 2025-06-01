@@ -27,8 +27,16 @@ import repositories.QuestRepositoryAlgebra
 trait QuestServiceAlgebra[F[_]] {
 
   // streaming ND-JSON
-  def stream(
+  def streamClient(
     clientId: String,
+    questStatus: QuestStatus,
+    limit: Int,
+    offset: Int
+  ): Stream[F, QuestPartial]
+
+  // streaming ND-JSON Dev
+  def streamDev(
+    devId: String,
     questStatus: QuestStatus,
     limit: Int,
     offset: Int
@@ -57,13 +65,13 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
   questRepo: QuestRepositoryAlgebra[F]
 ) extends QuestServiceAlgebra[F] {
 
-  override def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = 
+  override def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     questRepo.updateStatus(questId, questStatus)
 
-  override def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = 
+  override def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     questRepo.acceptQuest(questId, devId)
 
-  override def stream(
+  override def streamClient(
     clientId: String,
     questStatus: QuestStatus,
     limit: Int,
@@ -84,6 +92,36 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
     val dataStream: Stream[F, QuestPartial] =
       questRepo
         .streamByQuestStatus(clientId, questStatus, limit, offset)
+        .evalTap(quest =>
+          Logger[F].info(
+            s"[QuestService][stream] Fetched quest: ${quest.questId}, title: ${quest.title}"
+          )
+        )
+
+    headLog ++ dataStream
+  }
+
+  override def streamDev(
+    devId: String,
+    questStatus: QuestStatus,
+    limit: Int,
+    offset: Int
+  ): Stream[F, QuestPartial] = {
+
+    // A single-value stream that just performs the “start” log
+    val headLog: Stream[F, QuestPartial] =
+      Stream
+        .eval(
+          Logger[F].info(
+            s"[QuestService][stream] Streaming quests for questStatus: $questStatus (limit=$limit, offset=$offset)"
+          )
+        )
+        .drain // drain: keep the effect, emit no element
+
+    // The actual DB stream with per-row logging
+    val dataStream: Stream[F, QuestPartial] =
+      questRepo
+        .streamByQuestStatusDev(devId, questStatus, limit, offset)
         .evalTap(quest =>
           Logger[F].info(
             s"[QuestService][stream] Fetched quest: ${quest.questId}, title: ${quest.title}"

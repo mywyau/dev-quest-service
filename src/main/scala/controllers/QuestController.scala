@@ -5,12 +5,15 @@ import cache.RedisCacheAlgebra
 import cache.SessionCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
-import cats.effect.Concurrent
 import cats.effect.kernel.Async
+import cats.effect.Concurrent
 import cats.implicits.*
 import fs2.Stream
-import io.circe.Json
 import io.circe.syntax.EncoderOps
+import io.circe.Json
+import models.database.UpdateSuccess
+import models.quests.*
+import models.responses.*
 import models.Completed
 import models.Failed
 import models.InProgress
@@ -18,20 +21,16 @@ import models.NotStarted
 import models.QuestStatus
 import models.Review
 import models.Submitted
-import models.database.UpdateSuccess
-import models.quests.*
-import models.responses.*
 import org.http4s.*
-import org.http4s.Challenge
 import org.http4s.circe.*
-import org.http4s.dsl.Http4sDsl
 import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
+import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
+import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
-import services.QuestServiceAlgebra
-
 import scala.concurrent.duration.*
+import services.QuestServiceAlgebra
 
 trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -142,7 +141,41 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
       }
 
     // 2) Match the query‐param pattern, *not* a literal `?status=…`
-    case req @ GET -> Root / "quest" / "stream" / "new" / userIdFromRoute :?
+    case req @ GET -> Root / "quest" / "stream" / "dev" / "new" / devIdFromRoute :?
+        StatusParam(mStatus) +&
+        PageParam(mPage) +&
+        LimitParam(mLimit) =>
+      val status: QuestStatus = mStatus.getOrElse(InProgress) // default if absent
+      val page = mPage.getOrElse(1)
+      val limit = mLimit.getOrElse(10)
+      val offset = (page - 1) * limit
+
+      extractSessionToken(req) match {
+        case Some(cookieToken) =>
+          withValidSession(devIdFromRoute, cookieToken) {
+            Logger[F].info(
+              s"[QuestController] Streaming status=$status, page=$page, limit=$limit"
+            ) *>
+              Ok(
+                questService
+                  .streamDev(devIdFromRoute, status, limit, offset)
+                  .map(_.asJson.noSpaces)
+                  .evalTap(json => Logger[F].info(s"[QuestController][/quest/stream/dev/new] → $json")) // <── log every line
+                  .intersperse("\n")
+                  .handleErrorWith(e =>
+                    Stream.eval(Logger[F].error(e)(s"[QuestController] Stream error")) >>
+                      Stream.empty
+                  )
+                  .onFinalize(Logger[F].info("[QuestController] Stream completed").void)
+              )
+          }
+        case None =>
+          Logger[F].warn("[QuestController] Missing auth cookie") *>
+            Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
+      }
+
+    // 2) Match the query‐param pattern, *not* a literal `?status=…`
+    case req @ GET -> Root / "quest" / "stream" / "client" / "new" / userIdFromRoute :?
         StatusParam(mStatus) +&
         PageParam(mPage) +&
         LimitParam(mLimit) =>
@@ -159,7 +192,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
             ) *>
               Ok(
                 questService
-                  .stream(userIdFromRoute, status, limit, offset)
+                  .streamClient(userIdFromRoute, status, limit, offset)
                   .map(_.asJson.noSpaces)
                   .evalTap(json => Logger[F].info(s"[QuestController][/quest/stream/new] → $json")) // <── log every line
                   .intersperse("\n")
