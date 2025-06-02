@@ -66,7 +66,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
   private def withValidSession(userId: String, token: String)(onValid: F[Response[F]]): F[Response[F]] =
     sessionCache.getSession(userId).flatMap {
       case Some(userSessionJson) if userSessionJson.cookieValue == token =>
-        Logger[F].info("[QuestControllerImpl][withValidSession] Found valid session for userdId:") *>
+        Logger[F].info("[QuestControllerImpl][withValidSession] Found valid session for userId:") *>
           onValid
       case Some(_) =>
         Logger[F].info("[QuestControllerImpl][withValidSession] User session does not match requested user session token value from redis.")
@@ -266,12 +266,12 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
       extractSessionToken(req) match {
         case Some(cookieToken) =>
           withValidSession(userIdFromRoute, cookieToken) {
-            Logger[F].info(s"[QuestControllerImpl] PUT - Updating quest with ID: $questId") *>
+            Logger[F].info(s"[QuestControllerImpl] PUT - Updating quest status with ID: $questId") *>
               req.decode[UpdateQuestStatusPayload] { request =>
-                questService.updateStatus(request.questId, request.questStatus).flatMap {
+                questService.updateStatus(questId, request.questStatus).flatMap {
                   case Valid(response) =>
                     Logger[F].info(s"[QuestControllerImpl] PUT - Successfully updated quest status for quest id: $questId") *>
-                      Ok(UpdatedResponse(UpdateSuccess.toString, s"updated quest status: ${request.questStatus} successfully, for questId: ${request.questId}").asJson)
+                      Ok(UpdatedResponse(UpdateSuccess.toString, s"updated quest status: ${request.questStatus} successfully, for questId: ${questId}").asJson)
                   case Invalid(errors) =>
                     Logger[F].info(s"[QuestControllerImpl] PUT - Validation failed for quest update: ${errors.toList}") *>
                       BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)

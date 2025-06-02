@@ -7,7 +7,6 @@ import io.circe.Encoder
 import models.QuestStatus
 
 case class UpdateQuestStatusPayload(
-  questId: String,
   questStatus: QuestStatus
 )
 

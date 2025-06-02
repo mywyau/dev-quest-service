@@ -19,6 +19,7 @@ import org.typelevel.log4cats.Logger
 
 import java.sql.Timestamp
 import java.time.LocalDateTime
+import models.Open
 
 trait QuestRepositoryAlgebra[F[_]] {
 
@@ -112,6 +113,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
       sql"""
         SELECT quest_id, client_id, dev_id, title, description, status
         FROM quests
+        WHERE status = ${Open.toString()}
         ORDER BY created_at DESC
         LIMIT $limit OFFSET $offset
       """
@@ -210,7 +212,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
       UPDATE quests
       SET
           status = ${questStatus},
-          updated_at = ${LocalDateTime.now()}
+          updated_at = NOW()
       WHERE quest_id = ${questId}
     """.update.run
       .transact(transactor)
