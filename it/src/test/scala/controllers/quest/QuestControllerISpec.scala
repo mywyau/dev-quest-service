@@ -180,7 +180,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
   }
 
   test(
-    "GET /dev-quest-service/quest/stream/new/USER007?status=InProgress&page=1&limit=10 - streams the right quest"
+    "GET /dev-quest-service/quest/stream/client/new/USER007?status=InProgress&page=1&limit=10 - streams the right quest"
   ) { (transactorResource, log) =>
     val xa = transactorResource._1.xa
     val client = transactorResource._2.client
@@ -202,7 +202,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
 
     val req = Request[IO](
       GET,
-      uri"http://127.0.0.1:9999/dev-quest-service/quest/stream/new/USER007?status=InProgress&page=1&limit=10"
+      uri"http://127.0.0.1:9999/dev-quest-service/quest/stream/client/new/USER007?status=InProgress&page=1&limit=10"
     ).addCookie("auth_session", "test-session-token")
 
     client.run(req).use { resp =>
@@ -227,7 +227,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
   }
 
   test(
-    "GET /dev-quest-service/quest/stream/new/USER007?status=NotStarted&page=1&limit=10 - streams the right quest"
+    "GET /dev-quest-service/quest/stream/client/new/USER007?status=NotStarted&page=1&limit=10 - streams the right quest"
   ) { (transactorResource, log) =>
     val xa = transactorResource._1.xa
     val client = transactorResource._2.client
@@ -249,7 +249,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
 
     val req = Request[IO](
       GET,
-      uri"http://127.0.0.1:9999/dev-quest-service/quest/stream/new/USER007?status=NotStarted&page=1&limit=10"
+      uri"http://127.0.0.1:9999/dev-quest-service/quest/stream/client/new/USER007?status=NotStarted&page=1&limit=10"
     ).addCookie("auth_session", "test-session-token")
 
     client.run(req).use { resp =>
