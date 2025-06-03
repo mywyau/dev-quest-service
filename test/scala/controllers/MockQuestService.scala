@@ -26,11 +26,13 @@ import models.QuestStatus
 
 class MockQuestService(userQuestData: Map[String, QuestPartial]) extends QuestServiceAlgebra[IO] {
 
+  override def streamClient(clientId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
+
+  override def streamDev(devId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
+
   override def updateStatus(questId: String, questStatus: QuestStatus): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
   override def acceptQuest(questId: String, devId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
-
-  override def stream(userId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
 
   override def streamAll(limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
 
