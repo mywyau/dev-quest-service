@@ -37,6 +37,8 @@ object AppConfigConstants {
 
   val s3Config =
     S3Config(
+      awsRegion = "us-east-1",
+      uploadsBucketName = "dev-submissions",
       dockerName = "localstack",
       host = "localhost",
       port = 4566
@@ -75,6 +77,8 @@ object AppConfigConstants {
 
   val itS3Config =
     S3Config(
+      awsRegion = "us-east-1",
+      uploadsBucketName = "dev-submissions",
       dockerName = "localstack",
       host = "localhost",
       port = 4566

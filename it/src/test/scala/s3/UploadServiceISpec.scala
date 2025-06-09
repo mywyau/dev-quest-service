@@ -19,12 +19,15 @@ import java.time.Duration
 import configuration.models.AppConfig
 import cats.effect.kernel.Resource
 import configuration.BaseAppConfig
+import services.s3.UploadServiceImpl
+import services.s3.S3PresignerAlgebra
+import services.s3.S3ClientAlgebra
 
 object UploadServiceISpec extends SimpleIOSuite with BaseAppConfig {
 
   val region = Region.US_EAST_1
   val bucket = "test-bucket"
-  val endpoint =  "http://localhost:4566"
+  val endpoint =  "http://localstack:4566"
 
   val s3Client: S3AsyncClient = S3AsyncClient.builder()
     .endpointOverride(URI.create(endpoint))
@@ -95,4 +98,5 @@ object UploadServiceISpec extends SimpleIOSuite with BaseAppConfig {
         presigned.renderString.contains(key)
     )
   }
+  
 }

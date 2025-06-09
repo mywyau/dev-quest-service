@@ -11,8 +11,12 @@ import doobie.hikari.HikariTransactor
 import org.http4s.HttpRoutes
 import org.typelevel.log4cats.Logger
 import repositories.*
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.s3.S3AsyncClient
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
+import services.s3.{LiveS3Client, LiveS3Presigner, UploadServiceImpl}
 import services.*
-import services.QuestService
 
 object Routes {
 
@@ -50,7 +54,7 @@ object Routes {
 
     val sessionCache = new SessionCacheImpl(redisHost, redisPort, appConfig)
     val sessionService = SessionService(userDataRepository, sessionCache)
-    
+
     val userDataController = UserDataController(userDataService, sessionCache)
 
     userDataController.routes
@@ -85,5 +89,34 @@ object Routes {
     val questController = QuestController(questService, sessionCache)
 
     questController.routes
+  }
+
+  def uploadRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](
+    appConfig: AppConfig
+  ): HttpRoutes[F] = {
+
+    // Create the AWS SDK clients
+    val s3Client = S3AsyncClient
+      .builder()
+      .region(Region.of(appConfig.localConfig.awsS3Config.awsRegion))
+      .credentialsProvider(DefaultCredentialsProvider.create())
+      .build()
+
+    val presigner = S3Presigner
+      .builder()
+      .region(Region.of(appConfig.localConfig.awsS3Config.awsRegion))
+      .credentialsProvider(DefaultCredentialsProvider.create())
+      .build()
+
+    // Inject them into your algebras
+    val liveS3Client = new LiveS3Client[F](s3Client)
+    val liveS3Presigner = new LiveS3Presigner[F](presigner)
+
+    // Make sure the real bucket name is passed from config
+    val uploadService = new UploadServiceImpl[F](appConfig.localConfig.awsS3Config.uploadsBucketName, liveS3Client, liveS3Presigner)
+
+    val uploadController = new UploadController[F](uploadService)
+
+    uploadController.routes
   }
 }

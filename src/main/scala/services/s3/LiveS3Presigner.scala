@@ -1,4 +1,4 @@
-package services
+package services.s3
 
 import cats.effect.*
 import cats.syntax.all.*
@@ -15,29 +15,6 @@ import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
 
-trait S3ClientAlgebra[F[_]] {
-  def putObject(bucket: String, key: String, content: Array[Byte]): F[Unit]
-}
-
-class LiveS3Client[F[_] : Async](client: S3AsyncClient) extends S3ClientAlgebra[F] {
-  override def putObject(bucket: String, key: String, content: Array[Byte]): F[Unit] = {
-    val request = PutObjectRequest
-      .builder()
-      .bucket(bucket)
-      .key(key)
-      .contentLength(content.length.toLong)
-      .contentType("application/octet-stream")
-      .build()
-
-    val body = AsyncRequestBody.fromBytes(content)
-
-    Async[F]
-      .fromCompletableFuture(Async[F].delay {
-        client.putObject(request, body)
-      })
-      .void
-  }
-}
 
 trait S3PresignerAlgebra[F[_]] {
 
@@ -77,33 +54,4 @@ class LiveS3Presigner[F[_] : Sync](presigner: S3Presigner) extends S3PresignerAl
       val presigned = presigner.presignPutObject(presignRequest)
       Uri.unsafeFromString(presigned.url().toString)
     }
-}
-
-trait UploadServiceAlgebra[F[_]] {
-
-  def upload(key: String, data: Stream[F, Byte]): F[Unit]
-
-  def generatePresignedUrl(key: String): F[Uri]
-
-  def generatePresignedUploadUrl(key: String): F[Uri]
-
-}
-
-class UploadServiceImpl[F[_] : Async](
-  bucket: String,
-  client: S3ClientAlgebra[F],
-  presigner: S3PresignerAlgebra[F]
-) extends UploadServiceAlgebra[F] {
-
-  override def upload(key: String, data: Stream[F, Byte]): F[Unit] =
-    for {
-      bytes <- data.compile.to(Array)
-      _ <- client.putObject(bucket, key, bytes) // Uses the algebra
-    } yield ()
-
-  override def generatePresignedUrl(key: String): F[Uri] =
-    presigner.presignGetUrl(bucket, key, Duration.ofMinutes(15)) // Uses the algebra
-
-  override def generatePresignedUploadUrl(key: String): F[Uri] = // ✅ new
-    presigner.presignPutUrl(bucket, key, Duration.ofMinutes(15))
 }

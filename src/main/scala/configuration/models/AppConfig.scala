@@ -12,6 +12,8 @@ case class FeatureSwitches(
 ) derives ConfigReader
 
 case class S3Config(
+  awsRegion: String,
+  uploadsBucketName: String,
   dockerName: String,
   host: String,
   port: Int
