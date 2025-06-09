@@ -61,6 +61,7 @@ jobs:
       DB_NAME: dev_quest_test_db
 
     services:
+      
       postgres:
         image: postgres:14
         env:

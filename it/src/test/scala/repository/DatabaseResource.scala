@@ -28,7 +28,7 @@ object DatabaseResource extends GlobalResource with BaseAppConfig {
 
   def sharedResources(global: GlobalWrite): Resource[IO, Unit] =
     for {
-      appConfig <- configResource
+      appConfig <- appConfigResource
       postgresqlConfig <- postgresqlConfigResource(appConfig)
       postgresqlHost <- Resource.eval {
         IO.pure(sys.env.getOrElse("DB_HOST", postgresqlConfig.host))

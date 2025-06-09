@@ -9,7 +9,7 @@ trait BaseAppConfig {
 
   val configReader: ConfigReaderAlgebra[IO] = ConfigReader[IO]
 
-  def configResource: Resource[IO, AppConfig] =
+  def appConfigResource: Resource[IO, AppConfig] =
     Resource.eval(
       configReader.loadAppConfig
         .handleErrorWith { e =>

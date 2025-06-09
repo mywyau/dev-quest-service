@@ -15,7 +15,6 @@ import shared.TransactorResource
 import weaver.*
 
 class BaseControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
-
   type Res = (TransactorResource, HttpClientResource)
   def sharedResource: Resource[IO, Res] =
     for {
