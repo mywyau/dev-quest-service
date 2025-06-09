@@ -129,3 +129,22 @@ We can use httpie instead of curl to trigger our endpoints.
 ```
 sbt docker:publishLocal
 ```
+
+### Make s3 test bucket for it tests
+aws --endpoint-url=http://localhost:4566 s3 mb s3://test-bucket
+aws --endpoint-url=http://localhost:4566 s3 ls
+
+---
+
+### Inspect local stack bucket contents from testing
+
+aws --endpoint-url=http://localhost:4566 s3 cp s3://test-bucket/integration-test/hello.txt - | cat
+
+aws --endpoint-url=http://localhost:4566 s3api get-object \
+  --bucket test-bucket \
+  --key integration-test/hello.txt \
+  output.txt
+
+cat output.txt
+
+---

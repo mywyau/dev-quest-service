@@ -70,7 +70,7 @@ object CacheSharedResource extends GlobalResource with BaseAppConfig {
 
   def sharedResources(global: GlobalWrite): Resource[IO, Unit] =
     for {
-      appConfig <- configResource
+      appConfig <- appConfigResource
       appRedisConfig <- redisConfigResource(appConfig)
       redisHost <- Resource.eval {
         IO.pure(sys.env.getOrElse("REDIS_HOST", appRedisConfig.host))

@@ -2,9 +2,9 @@ package controllers
 
 import cache.RedisCache
 import cache.RedisCacheAlgebra
-import cats.effect.*
 import com.comcast.ip4s.Host
 import com.comcast.ip4s.Port
+import cats.effect.*
 import configuration.models.*
 import configuration.BaseAppConfig
 import controllers.TestRoutes.*
@@ -64,7 +64,7 @@ object ControllerSharedResource extends GlobalResource with BaseAppConfig {
 
   def sharedResources(global: GlobalWrite): Resource[IO, Unit] =
     for {
-      appConfig <- configResource
+      appConfig <- appConfigResource
       host <- hostResource(appConfig)
       port <- portResource(appConfig)
       postgresqlConfig <- postgresqlConfigResource(appConfig)

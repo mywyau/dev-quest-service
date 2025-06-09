@@ -8,7 +8,8 @@ object AppConfigConstants {
     FeatureSwitches(
       useDockerHost = false,
       localTesting = false,
-      useCors = false
+      useCors = false,
+      useHttpsLocalstack = false
     )
 
   val appServerConfig =
@@ -34,11 +35,19 @@ object AppConfigConstants {
       port = 6379
     )
 
+  val s3Config =
+    S3Config(
+      dockerName = "localstack",
+      host = "localhost",
+      port = 4566
+    )
+
   val localConfig =
     LocalConfig(
       serverConfig = appServerConfig,
       postgresqlConfig = containerPostgreSqlConfig,
-      redisConfig = redisConfig
+      redisConfig = redisConfig,
+      awsS3Config = s3Config
     )
 
   val itSpecServerConfig =
@@ -64,11 +73,19 @@ object AppConfigConstants {
       port = 6380
     )
 
+  val itS3Config =
+    S3Config(
+      dockerName = "localstack",
+      host = "localhost",
+      port = 4566
+    )
+
   val integrationSpecConfig =
     IntegrationSpecConfig(
       serverConfig = itSpecServerConfig,
       postgresqlConfig = itPostgresqlConfig,
-      redisConfig = itRedisConfig
+      redisConfig = itRedisConfig,
+      awsS3Config = itS3Config
     )
 
   val appConfig =
