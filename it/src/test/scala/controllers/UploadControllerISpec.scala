@@ -1,106 +1,90 @@
-// package controllers
+package controllers.user
 
-// package controllers
+import cats.effect.*
+import controllers.fragments.UserDataControllerFragments.*
+import controllers.ControllerISpecBase
+import doobie.implicits.*
+import doobie.util.transactor.Transactor
+import fs2.Stream
+import io.circe.syntax.*
+import io.circe.Json
+import java.nio.charset.StandardCharsets
+import java.time.LocalDateTime
+import models.*
+import models.database.*
+import models.database.CreateSuccess
+import models.database.DeleteSuccess
+import models.database.UpdateSuccess
+import models.responses.*
+import models.users.*
+import org.http4s.*
+import org.http4s.circe.*
+import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
+import org.http4s.headers.`Content-Disposition`
+import org.http4s.headers.`Content-Type`
+import org.http4s.implicits.*
+import org.http4s.multipart.Multipart
+import org.http4s.multipart.Part
+import org.http4s.Method.*
+import org.typelevel.ci.CIStringSyntax
+import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import repository.fragments.UserRepoFragments.createUserTable
+import shared.HttpClientResource
+import shared.TransactorResource
+import weaver.*
+import org.typelevel.ci._
 
-// import cats.effect.IO
-// import weaver.SimpleIOSuite
-// import org.http4s._
-// import org.http4s.implicits._
-// import org.http4s.multipart._
-// import org.http4s.circe._
-// import fs2.Stream
-// import io.circe.Json
-// import services.UploadServiceAlgebra
-// import java.util.UUID
-// import org.http4s.client.dsl.io._
-// import org.http4s.dsl.io._
-// import scala.collection.mutable
-// import org.http4s.headers.`Content-Type`
-// import org.http4s.MediaType
 
-// object UploadRoutesSpec extends SimpleIOSuite {
+class UploadControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
-//   // Dummy implementation of the UploadService
-//   class DummyUploadService extends UploadServiceAlgebra[IO] {
-//     val uploads = mutable.Buffer.empty[(String, Array[Byte])]
-//     override def upload(key: String, data: Stream[IO, Byte]): IO[Unit] =
-//       data.compile.to(Array).map(bytes => uploads.append((key, bytes)))
+  type Res = (TransactorResource, HttpClientResource)
 
-//     override def generatePresignedUrl(key: String): IO[Uri] =
-//       IO.pure(Uri.unsafeFromString(s"https://fake-s3.com/download/$key"))
+  def sharedResource: Resource[IO, Res] =
+    for {
+      transactor <- global.getOrFailR[TransactorResource]()
+      client <- global.getOrFailR[HttpClientResource]()
+    } yield (transactor, client)
 
-//     override def generatePresignedUploadUrl(key: String): IO[Uri] =
-//       IO.pure(Uri.unsafeFromString(s"https://fake-s3.com/upload/$key"))
-//   }
+  test(
+    "POST - /dev-quest-service/upload - should allow the user to upload a valid file"
+  ) { (sharedResources, log) =>
 
-//   test("upload valid file returns 200 and saves upload") {
-//     val dummyService = new DummyUploadService
-//     val routes = new UploadRoutes[IO](dummyService).routes.orNotFound
+    val client = sharedResources._2.client
 
-//     val content = "print('Hello')"
-//     val fileName = "test.scala"
-//     val filePart = Part.formData[IO](
-//       name = "file",
-//       filename = fileName,
-//       entity = Stream.emits(content.getBytes).covary[IO],
-//       headers = Headers(`Content-Type`(MediaType.text.plain))
-//     )
+    // // Create the file part (must be named "file" to match your logic)
+    // // File content as stream
+    // Simulated file content
+    val fileContent = "This is a test file"
+    val fileStream = Stream.emits(fileContent.getBytes(StandardCharsets.UTF_8)).covary[IO]
 
-//     val multipart = Multipart[IO](Vector(filePart))
-//     val req = Request[IO](Method.POST, uri"/upload")
-//       .withEntity(multipart)
-//       .withHeaders(multipart.headers)
+    // Create the file part
+    val filePart = Part[IO](
+      headers = Headers(
+        `Content-Disposition`("form-data", Map(ci"name" -> "file", ci"filename" -> "test.txt")),
+        `Content-Type`(MediaType.text.plain)
+      ),
+      body = fileStream
+    )
 
-//     for {
-//       res <- routes.run(req)
-//       body <- res.as[Json]
-//     } yield expect.all(
-//       res.status == Status.Ok,
-//       body.hcursor.get[String]("key").isRight,
-//       dummyService.uploads.nonEmpty,
-//       new String(dummyService.uploads.head._2) == content
-//     )
-//   }
+    val multipart = Multipart[IO](Vector(filePart))
 
-//   test("upload with invalid extension returns 400") {
-//     val dummyService = new DummyUploadService
-//     val routes = new UploadRoutes[IO](dummyService).routes.orNotFound
+    val request = Request[IO](
+      method = POST,
+      uri = uri"http://127.0.0.1:9999/dev-quest-service/upload",
+      headers = multipart.headers
+    ).withEntity(multipart)
 
-//     val filePart = Part.formData[IO](
-//       name = "file",
-//       filename = "bad.exe",
-//       entity = Stream.emits("malware".getBytes).covary[IO],
-//       headers = Headers(`Content-Type`(MediaType.application.binary))
-//     )
+    client.run(request).use { response =>
+      response.as[Json].map { body =>
+        val keyOpt = body.hcursor.downField("key").as[String]
 
-//     val multipart = Multipart[IO](Vector(filePart))
-//     val req = Request[IO](Method.POST, uri"/upload")
-//       .withEntity(multipart)
-//       .withHeaders(multipart.headers)
+        expect.all(
+          response.status == Status.Ok,
+          keyOpt.exists(_.startsWith("uploads/"))
+        )
+      }
+    }
+  }
 
-//     for {
-//       res <- routes.run(req)
-//       body <- res.as[Json]
-//     } yield expect.all(
-//       res.status == Status.BadRequest,
-//       body.hcursor.get[String]("error").contains("Invalid file type")
-//     )
-//   }
-
-//   test("presigned upload URL route returns URL") {
-//     val dummyService = new DummyUploadService
-//     val routes = new UploadRoutes[IO](dummyService).routes.orNotFound
-
-//     val json = Json.obj("key" -> Json.fromString("upload/test.txt"))
-//     val req = Request[IO](Method.POST, uri"/s3/presign-upload")
-//       .withEntity(json)
-
-//     for {
-//       res <- routes.run(req)
-//       body <- res.as[Json]
-//     } yield expect.all(
-//       res.status == Status.Ok,
-//       body.hcursor.get[String]("url").exists(_.contains("fake-s3.com/upload"))
-//     )
-//   }
-// }
+}

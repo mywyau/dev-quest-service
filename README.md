@@ -148,3 +148,16 @@ aws --endpoint-url=http://localhost:4566 s3api get-object \
 cat output.txt
 
 ---
+
+```
+aws --endpoint-url=http://localhost:4566 s3 ls s3://test-bucket/uploads/         
+```
+
+```
+aws --endpoint-url=http://localhost:4566 s3api get-object \
+  --bucket test-bucket \
+  --key uploads/<UUID>-test.txt \
+  output.txt
+
+cat output.txt
+```

@@ -15,16 +15,54 @@ import models.auth.UserSession
 import models.cache.CacheErrors
 import models.cache.CacheSuccess
 import models.cache.CacheUpdateSuccess
-import org.http4s.HttpRoutes
 import org.http4s.server.Router
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.http4s.HttpRoutes
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import repositories.*
+// import scala.concurrent.duration.*
 import services.*
-
-import scala.concurrent.duration.*
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.s3.S3AsyncClient
+import java.net.URI
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import org.http4s.Uri
+import java.time.Duration
+import services.s3.LiveS3Client
+import services.s3.UploadServiceImpl
+import services.s3.S3PresignerAlgebra
+import services.s3.S3ClientAlgebra
 
 object TestRoutes {
+
+  val region = Region.US_EAST_1
+  val bucket = "test-bucket"
+  val endpoint =  "http://localstack:4566"
+
+  val s3Client: S3AsyncClient = S3AsyncClient.builder()
+    .endpointOverride(URI.create(endpoint))
+    .credentialsProvider(
+      StaticCredentialsProvider.create(
+        software.amazon.awssdk.auth.credentials.AwsBasicCredentials.create("test", "test")
+      )
+    )
+    .region(region)
+    .forcePathStyle(true) // ✅ This fixes the DNS issue
+    .build()
+
+  val presigner: S3Presigner = S3Presigner.builder()
+    .endpointOverride(URI.create(endpoint))
+    .credentialsProvider(
+      StaticCredentialsProvider.create(
+        software.amazon.awssdk.auth.credentials.AwsBasicCredentials.create("test", "test")
+      )
+    )
+    .region(region)
+    // .forcePathStyle(true) // ✅ This fixes the DNS issue
+    .build()
 
   class MockRedisCache(ref: Ref[IO, Map[String, UserSession]]) extends RedisCacheAlgebra[IO] {
 
@@ -140,7 +178,7 @@ object TestRoutes {
             s"auth:session:USER004" -> fakeUserSession("USER004"),
             s"auth:session:USER005" -> fakeUserSession("USER005"),
             s"auth:session:USER006" -> fakeUserSession("USER006"),
-            s"auth:session:USER007" -> fakeUserSession("USER007"),
+            s"auth:session:USER007" -> fakeUserSession("USER007")
           )
         )
       )
@@ -222,6 +260,75 @@ object TestRoutes {
     } yield registrationController.routes
   }
 
+  def uploadRoutes(appConfig: AppConfig): Resource[IO, HttpRoutes[IO]] = {
+
+    val sessionToken = "test-session-token"
+
+    def fakeUserSession(userId: String) =
+      UserSession(
+        userId = userId,
+        cookieValue = sessionToken,
+        email = s"$userId@example.com",
+        userType = "Dev"
+      )
+
+    for {
+      ref <- Resource.eval(
+        Ref.of[IO, Map[String, UserSession]](
+          Map(
+            s"auth:session:USER001" -> fakeUserSession("USER001"),
+            s"auth:session:USER002" -> fakeUserSession("USER002"),
+            s"auth:session:USER003" -> fakeUserSession("USER003"),
+            s"auth:session:USER004" -> fakeUserSession("USER004"),
+            s"auth:session:USER005" -> fakeUserSession("USER005"),
+            s"auth:session:USER006" -> fakeUserSession("USER006"),
+            s"auth:session:USER007" -> fakeUserSession("USER007"),
+            s"auth:session:USER008" -> fakeUserSession("USER008"),
+            s"auth:session:USER009" -> fakeUserSession("USER009"),
+            s"auth:session:USER010" -> fakeUserSession("USER010")
+          )
+        )
+      )
+      mockSessionCache = new MockSessionCache(ref)
+
+      liveS3Client = new LiveS3Client[IO](s3Client)
+      uploadServiceImpl = new UploadServiceImpl(
+        bucket,
+        new S3ClientAlgebra[IO] {
+              def putObject(bucket: String, key: String, bytes: Array[Byte]): IO[Unit] = IO.fromCompletableFuture(IO {
+                val request = PutObjectRequest.builder()
+                  .bucket(bucket)
+                  .key(key)
+                  .build()
+                s3Client.putObject(request, software.amazon.awssdk.core.async.AsyncRequestBody.fromBytes(bytes))
+              }).void
+        },
+        new S3PresignerAlgebra[IO] {
+            def presignGetUrl(bucket: String, key: String, expiresIn: Duration): IO[Uri] = IO {
+              val req = GetObjectRequest.builder().bucket(bucket).key(key).build()
+              val presign = software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
+                .builder()
+                .getObjectRequest(req)
+                .signatureDuration(expiresIn)
+                .build()
+              Uri.unsafeFromString(presigner.presignGetObject(presign).url().toString)
+            }
+
+            def presignPutUrl(bucket: String, key: String, expiresIn: Duration): IO[Uri] = IO {
+              val req = PutObjectRequest.builder().bucket(bucket).key(key).build()
+              val presign = software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest
+                .builder()
+                .putObjectRequest(req)
+                .signatureDuration(expiresIn)
+                .build()
+              Uri.unsafeFromString(presigner.presignPutObject(presign).url().toString)
+            }
+    }
+      )
+      uploadController = UploadController(uploadServiceImpl)
+    } yield uploadController.routes
+  }
+
   def createTestRouter(transactor: Transactor[IO], appConfig: AppConfig): Resource[IO, HttpRoutes[IO]] = {
 
     val redisHost = sys.env.getOrElse("REDIS_HOST", appConfig.integrationSpecConfig._3.host)
@@ -231,13 +338,15 @@ object TestRoutes {
       registrationRoutes <- registrationRoutes(transactor, appConfig)
       userDataRoutes <- userDataRoutes(transactor, appConfig)
       questRoute <- questRoutes(transactor, appConfig)
+      uploadRoutes <- uploadRoutes(appConfig)
     } yield Router(
       "/dev-quest-service" -> (
         baseRoutes() <+>
           authRoutes(redisHost, redisPort, transactor, appConfig) <+>
           questRoute <+>
           userDataRoutes <+>
-          registrationRoutes
+          registrationRoutes <+>
+          uploadRoutes
       )
     )
   }

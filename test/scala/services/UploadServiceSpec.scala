@@ -1,9 +1,9 @@
 import cats.effect.IO
 import fs2.Stream
 import org.http4s.Uri
-import services.S3ClientAlgebra
-import services.S3PresignerAlgebra
-import services.UploadServiceImpl
+import services.s3.S3ClientAlgebra
+import services.s3.S3PresignerAlgebra
+import services.s3.UploadServiceImpl
 import weaver.SimpleIOSuite
 
 import java.time.Duration

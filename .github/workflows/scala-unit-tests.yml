@@ -17,14 +17,14 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
-          java-version: 11 # Specify the Java version required for your project
+          java-version: 11
           distribution: "adopt"
 
       - name: Set up Scala and sbt
         uses: olafurpg/setup-scala@v14
         with:
           java-version: "11"
-          sbt-version: "1.10.7" # Specify the sbt version you want to use
+          sbt-version: "1.10.7"
 
       - name: Cache SBT
         uses: actions/cache@v3
@@ -60,8 +60,14 @@ jobs:
       DB_PASSWORD: turnip
       DB_NAME: dev_quest_test_db
 
+      # LocalStack environment variables
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+      LOCALSTACK_HOST: localstack
+      AWS_ENDPOINT_URL: http://localstack:4566
+
     services:
-      
       postgres:
         image: postgres:14
         env:
@@ -81,6 +87,23 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
+      # Add LocalStack service
+      localstack:
+        image: localstack/localstack:latest
+        env:
+          SERVICES: "s3" # Specify the AWS services you need
+          DEBUG: "1"
+          DOCKER_HOST: "unix:///var/run/docker.sock"
+          DEFAULT_REGION: "us-east-1"
+          DATA_DIR: "/tmp/localstack/data"
+        ports:
+          - "4566:4566" # LocalStack default port
+        # healthcheck:
+        #   test: ["CMD-SHELL", "curl -f http://localhost:4566/health || exit 1"]
+        #   interval: 10s
+        #   timeout: 5s
+        #   retries: 5
 
     steps:
       - name: Checkout code
@@ -148,6 +171,22 @@ jobs:
         run: |
           psql -h postgres -p 5432 -U dev_quest_test_user -d postgres -c "DROP DATABASE IF EXISTS dev_quest_test_db;"
           psql -h postgres -p 5432 -U dev_quest_test_user -d postgres -c "CREATE DATABASE dev_quest_test_db;"
+
+      - name: Install AWS CLI v2 (no sudo)
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+          unzip /tmp/awscliv2.zip -d /tmp
+          /tmp/aws/install -i /tmp/aws-cli -b /tmp/aws-bin
+        shell: bash
+
+      - name: Add AWS CLI to PATH
+        run: echo "/tmp/aws-bin" >> $GITHUB_PATH
+
+      - name: Create S3 bucket “test-bucket”
+        run: |
+          aws --endpoint-url=${AWS_ENDPOINT_URL} \
+              s3api create-bucket \
+              --bucket test-bucket   
 
       - name: Run Integration Tests
         run: sbt it/test
