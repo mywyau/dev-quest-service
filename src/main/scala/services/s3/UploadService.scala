@@ -3,47 +3,43 @@ package services.s3
 import cats.effect.*
 import cats.syntax.all.*
 import fs2.*
-import org.http4s.Uri
-import software.amazon.awssdk.core.async.AsyncRequestBody
-import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.model.*
-import software.amazon.awssdk.services.s3.presigner.S3Presigner
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
-
-import java.net.URI
-import java.nio.ByteBuffer
 import java.time.Duration
-import java.time.Instant
+import org.http4s.Uri
+import org.typelevel.log4cats.Logger
+import software.amazon.awssdk.services.s3.model.*
 
 trait UploadServiceAlgebra[F[_]] {
-
-  def upload(key: String, data: Stream[F, Byte]): F[Unit]
-
+  def upload(key: String, contentType: String, data: Stream[F, Byte]): F[Unit]
   def generatePresignedUrl(key: String): F[Uri]
-
   def generatePresignedUploadUrl(key: String): F[Uri]
-
 }
 
-class UploadServiceImpl[F[_] : Async](
+class UploadServiceImpl[F[_] : Async : Logger](
   bucket: String,
   client: S3ClientAlgebra[F],
   presigner: S3PresignerAlgebra[F]
 ) extends UploadServiceAlgebra[F] {
 
-// Uploads the file directly to S3:
-  override def upload(key: String, data: Stream[F, Byte]): F[Unit] =
+  override def upload(key: String, contentType: String, data: Stream[F, Byte]): F[Unit] =
     for {
+      _ <- Logger[F].info(s"[UploadService] Preparing to upload file to bucket: $bucket, key: $key")
       bytes <- data.compile.to(Array)
-      _ <- client.putObject(bucket, key, bytes) // Uses the algebra
+      _ <- Logger[F].info(s"[UploadService] Byte array compiled with size: ${bytes.length}")
+      _ <- client.putObject(bucket, key, contentType, bytes)
+      _ <- Logger[F].info(s"[UploadService] Upload complete to key: $key")
     } yield ()
 
-// Allows a client to download the file directly from S3 via a time-limited URL
-// Useful for letting the frontend download without needing auth headers
   override def generatePresignedUrl(key: String): F[Uri] =
-    presigner.presignGetUrl(bucket, key, Duration.ofMinutes(15)) // Uses the algebra
+    for {
+      _ <- Logger[F].info(s"[UploadService] Generating presigned GET URL for key: $key")
+      uri <- presigner.presignGetUrl(bucket, key, Duration.ofMinutes(15))
+      _ <- Logger[F].info(s"[UploadService] Generated presigned GET URL: $uri")
+    } yield uri
 
-  // Allows the frontend to upload directly to S3 without proxying through your backend
   override def generatePresignedUploadUrl(key: String): F[Uri] =
-    presigner.presignPutUrl(bucket, key, Duration.ofMinutes(15))
+    for {
+      _ <- Logger[F].info(s"[UploadService] Generating presigned PUT URL for key: $key")
+      uri <- presigner.presignPutUrl(bucket, key, Duration.ofMinutes(15))
+      _ <- Logger[F].info(s"[UploadService] Generated presigned PUT URL: $uri")
+    } yield uri
 }

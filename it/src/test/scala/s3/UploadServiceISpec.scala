@@ -16,20 +16,20 @@ import weaver.SimpleIOSuite
 
 import java.net.URI
 import java.time.Duration
-import configuration.models.AppConfig
-import cats.effect.kernel.Resource
-import configuration.BaseAppConfig
 import services.s3.UploadServiceImpl
-import services.s3.S3PresignerAlgebra
 import services.s3.S3ClientAlgebra
+import services.s3.S3PresignerAlgebra
+import configuration.BaseAppConfig
 
-object UploadServiceISpec extends SimpleIOSuite with BaseAppConfig {
+object UploadServiceISpec extends SimpleIOSuite with AwsS3ISpecBase with BaseAppConfig {
 
   val region = Region.US_EAST_1
   val bucket = "test-bucket"
-  val endpoint =  "http://localstack:4566"
+  val endpoint = "http://localstack:4566"
+  // val endpoint = "http://localhost:4566"
 
-  val s3Client: S3AsyncClient = S3AsyncClient.builder()
+  val s3Client: S3AsyncClient =
+     S3AsyncClient.builder()
     .endpointOverride(URI.create(endpoint))
     .credentialsProvider(
       StaticCredentialsProvider.create(
@@ -40,7 +40,8 @@ object UploadServiceISpec extends SimpleIOSuite with BaseAppConfig {
     .forcePathStyle(true) // ✅ This fixes the DNS issue
     .build()
 
-  val presigner: S3Presigner = S3Presigner.builder()
+  val presigner: S3Presigner = 
+    S3Presigner.builder()
     .endpointOverride(URI.create(endpoint))
     .credentialsProvider(
       StaticCredentialsProvider.create(
@@ -51,36 +52,37 @@ object UploadServiceISpec extends SimpleIOSuite with BaseAppConfig {
     // .forcePathStyle(true) // ✅ This fixes the DNS issue
     .build()
 
-  val uploadService = new UploadServiceImpl[IO](
-    bucket,
-    new S3ClientAlgebra[IO] {
-      def putObject(bucket: String, key: String, bytes: Array[Byte]): IO[Unit] = IO.fromCompletableFuture(IO {
-        val request = PutObjectRequest.builder()
-          .bucket(bucket)
-          .key(key)
-          .build()
-        s3Client.putObject(request, software.amazon.awssdk.core.async.AsyncRequestBody.fromBytes(bytes))
+  val uploadService =
+     UploadServiceImpl[IO](
+      bucket = bucket,
+      client = new S3ClientAlgebra[IO] {
+        def putObject(bucket: String, key: String, bytes: Array[Byte]): IO[Unit] = IO.fromCompletableFuture(IO {
+          val request = PutObjectRequest.builder()
+            .bucket(bucket)
+            .key(key)
+            .build()
+          s3Client.putObject(request, software.amazon.awssdk.core.async.AsyncRequestBody.fromBytes(bytes))
       }).void
     },
-    new S3PresignerAlgebra[IO] {
-      def presignGetUrl(bucket: String, key: String, expiresIn: Duration): IO[Uri] = IO {
-        val req = GetObjectRequest.builder().bucket(bucket).key(key).build()
-        val presign = software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
-          .builder()
-          .getObjectRequest(req)
-          .signatureDuration(expiresIn)
-          .build()
-        Uri.unsafeFromString(presigner.presignGetObject(presign).url().toString)
-      }
+    presigner = new S3PresignerAlgebra[IO] {
+        def presignGetUrl(bucket: String, key: String, expiresIn: Duration): IO[Uri] = IO {
+          val req = GetObjectRequest.builder().bucket(bucket).key(key).build()
+          val presign = software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
+            .builder()
+            .getObjectRequest(req)
+            .signatureDuration(expiresIn)
+            .build()
+          Uri.unsafeFromString(presigner.presignGetObject(presign).url().toString)
+        }
 
-      def presignPutUrl(bucket: String, key: String, expiresIn: Duration): IO[Uri] = IO {
-        val req = PutObjectRequest.builder().bucket(bucket).key(key).build()
-        val presign = software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest
-          .builder()
-          .putObjectRequest(req)
-          .signatureDuration(expiresIn)
-          .build()
-        Uri.unsafeFromString(presigner.presignPutObject(presign).url().toString)
+        def presignPutUrl(bucket: String, key: String, expiresIn: Duration): IO[Uri] = IO {
+          val req = PutObjectRequest.builder().bucket(bucket).key(key).build()
+          val presign = software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest
+            .builder()
+            .putObjectRequest(req)
+            .signatureDuration(expiresIn)
+            .build()
+          Uri.unsafeFromString(presigner.presignPutObject(presign).url().toString)
       }
     }
   )

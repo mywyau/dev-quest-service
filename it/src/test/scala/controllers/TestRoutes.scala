@@ -41,6 +41,7 @@ object TestRoutes {
   val region = Region.US_EAST_1
   val bucket = "test-bucket"
   val endpoint =  "http://localstack:4566"
+  // val endpoint =  "http://localhost:4566"
 
   val s3Client: S3AsyncClient = S3AsyncClient.builder()
     .endpointOverride(URI.create(endpoint))
@@ -260,7 +261,7 @@ object TestRoutes {
     } yield registrationController.routes
   }
 
-  def uploadRoutes(appConfig: AppConfig): Resource[IO, HttpRoutes[IO]] = {
+  def uploadRoutes(transactor: Transactor[IO], appConfig: AppConfig): Resource[IO, HttpRoutes[IO]] = {
 
     val sessionToken = "test-session-token"
 
@@ -325,7 +326,9 @@ object TestRoutes {
             }
     }
       )
-      uploadController = UploadController(uploadServiceImpl)
+      devSubmissionRepository = DevSubmissionRepository(transactor, appConfig)
+      devSubmissionService = DevSubmissionService(devSubmissionRepository)
+      uploadController = UploadController(uploadServiceImpl, devSubmissionService, appConfig)
     } yield uploadController.routes
   }
 
@@ -338,7 +341,7 @@ object TestRoutes {
       registrationRoutes <- registrationRoutes(transactor, appConfig)
       userDataRoutes <- userDataRoutes(transactor, appConfig)
       questRoute <- questRoutes(transactor, appConfig)
-      uploadRoutes <- uploadRoutes(appConfig)
+      uploadRoutes <- uploadRoutes(transactor, appConfig)
     } yield Router(
       "/dev-quest-service" -> (
         baseRoutes() <+>

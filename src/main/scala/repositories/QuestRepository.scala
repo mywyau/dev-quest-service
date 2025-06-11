@@ -12,6 +12,7 @@ import doobie.util.transactor.Transactor
 import fs2.Stream
 import models.Assigned
 import models.NotStarted
+import models.Open
 import models.QuestStatus
 import models.database.*
 import models.quests.*
@@ -19,9 +20,10 @@ import org.typelevel.log4cats.Logger
 
 import java.sql.Timestamp
 import java.time.LocalDateTime
-import models.Open
 
 trait QuestRepositoryAlgebra[F[_]] {
+
+  def countActiveQuests(devId: String): F[Int]
 
   def streamByQuestStatus(clientId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial]
 
@@ -54,6 +56,12 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
 
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
+
+  override def countActiveQuests(devId: String): F[Int] =
+    sql"""
+          SELECT COUNT(*) FROM quests
+          WHERE dev_id = $devId AND status IN ('NotStarted', 'InProgress', 'PendingReview')
+        """.query[Int].unique.transact(transactor)
 
   override def streamByQuestStatus(clientId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =

@@ -1,6 +1,8 @@
 import cats.effect.IO
 import fs2.Stream
 import org.http4s.Uri
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import services.s3.S3ClientAlgebra
 import services.s3.S3PresignerAlgebra
 import services.s3.UploadServiceImpl
@@ -10,8 +12,10 @@ import java.time.Duration
 
 object UploadServiceSpec extends SimpleIOSuite {
 
+  implicit val testLogger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
+
   class MockS3Client extends S3ClientAlgebra[IO] {
-    
+
     var uploaded: Option[(String, String, Array[Byte])] = None
 
     override def putObject(bucket: String, key: String, content: Array[Byte]): IO[Unit] =

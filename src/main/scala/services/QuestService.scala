@@ -68,8 +68,19 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
   override def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     questRepo.updateStatus(questId, questStatus)
 
-  override def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
-    questRepo.acceptQuest(questId, devId)
+  override def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+
+    val MAX_ACTIVE_QUESTS = 5
+    
+    for {
+      activeCount <- questRepo.countActiveQuests(devId)
+      result <-
+        if (activeCount >= MAX_ACTIVE_QUESTS)
+          TooManyActiveQuestsError.invalidNel[DatabaseSuccess].pure[F]
+        else
+          questRepo.acceptQuest(questId, devId) // your existing method
+    } yield result
+  }
 
   override def streamClient(
     clientId: String,

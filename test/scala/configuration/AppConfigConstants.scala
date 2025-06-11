@@ -38,10 +38,15 @@ object AppConfigConstants {
   val s3Config =
     S3Config(
       awsRegion = "us-east-1",
-      uploadsBucketName = "dev-submissions",
+      bucketName = "dev-submissions",
       dockerName = "localstack",
       host = "localhost",
       port = 4566
+    )
+
+  val devSubmissionConfig =
+    DevSubmissionConfig(
+      expiryDays = 730
     )
 
   val localConfig =
@@ -78,7 +83,7 @@ object AppConfigConstants {
   val itS3Config =
     S3Config(
       awsRegion = "us-east-1",
-      uploadsBucketName = "dev-submissions",
+      bucketName = "dev-submissions",
       dockerName = "localstack",
       host = "localhost",
       port = 4566
@@ -95,6 +100,7 @@ object AppConfigConstants {
   val appConfig =
     AppConfig(
       featureSwitches = featureSwitches,
+      devSubmission = devSubmissionConfig,
       localConfig = localConfig,
       integrationSpecConfig = integrationSpecConfig
     )
