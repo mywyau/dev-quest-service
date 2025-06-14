@@ -56,7 +56,7 @@ object UploadServiceISpec extends SimpleIOSuite with AwsS3ISpecBase with BaseApp
      UploadServiceImpl[IO](
       bucket = bucket,
       client = new S3ClientAlgebra[IO] {
-        def putObject(bucket: String, key: String, bytes: Array[Byte]): IO[Unit] = IO.fromCompletableFuture(IO {
+        def putObject(bucket: String, key: String, contentType: String,  bytes: Array[Byte]): IO[Unit] = IO.fromCompletableFuture(IO {
           val request = PutObjectRequest.builder()
             .bucket(bucket)
             .key(key)
@@ -90,10 +90,11 @@ object UploadServiceISpec extends SimpleIOSuite with AwsS3ISpecBase with BaseApp
   test("upload and verify via presigned URL") {
     
     val key = "integration-test/hello.txt"
+    val contentType = "application/octet-stream"
     val data = "Hello, integration test!".getBytes()
 
     for {
-      _ <- uploadService.upload(key, Stream.emits(data).covary[IO])
+      _ <- uploadService.upload(key, contentType, Stream.emits(data).covary[IO])
       presigned <- uploadService.generatePresignedUrl(key)
       // Optional: fetch content via HTTP client to verify
     } yield expect(

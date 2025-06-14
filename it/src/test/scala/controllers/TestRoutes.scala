@@ -20,7 +20,6 @@ import org.http4s.HttpRoutes
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import repositories.*
-// import scala.concurrent.duration.*
 import services.*
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
@@ -296,7 +295,7 @@ object TestRoutes {
       uploadServiceImpl = new UploadServiceImpl(
         bucket,
         new S3ClientAlgebra[IO] {
-              def putObject(bucket: String, key: String, bytes: Array[Byte]): IO[Unit] = IO.fromCompletableFuture(IO {
+              def putObject(bucket: String, key: String, contentType: String, bytes: Array[Byte]): IO[Unit] = IO.fromCompletableFuture(IO {
                 val request = PutObjectRequest.builder()
                   .bucket(bucket)
                   .key(key)

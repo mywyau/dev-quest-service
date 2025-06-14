@@ -16,6 +16,8 @@ case class MockQuestRepository(
   existingQuest: Map[String, QuestPartial] = Map.empty
 ) extends QuestRepositoryAlgebra[IO] {
 
+  override def countActiveQuests(devId: String): IO[Int] = ???
+
   override def streamByQuestStatusDev(devId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
 
   override def updateStatus(questId: String, questStatus: QuestStatus): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
