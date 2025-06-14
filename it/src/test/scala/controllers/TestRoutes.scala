@@ -20,7 +20,6 @@ import org.http4s.HttpRoutes
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import repositories.*
-// import scala.concurrent.duration.*
 import services.*
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
@@ -41,6 +40,7 @@ object TestRoutes {
   val region = Region.US_EAST_1
   val bucket = "test-bucket"
   val endpoint =  "http://localstack:4566"
+  // val endpoint =  "http://localhost:4566"
 
   val s3Client: S3AsyncClient = S3AsyncClient.builder()
     .endpointOverride(URI.create(endpoint))
@@ -260,7 +260,7 @@ object TestRoutes {
     } yield registrationController.routes
   }
 
-  def uploadRoutes(appConfig: AppConfig): Resource[IO, HttpRoutes[IO]] = {
+  def uploadRoutes(transactor: Transactor[IO], appConfig: AppConfig): Resource[IO, HttpRoutes[IO]] = {
 
     val sessionToken = "test-session-token"
 
@@ -295,7 +295,7 @@ object TestRoutes {
       uploadServiceImpl = new UploadServiceImpl(
         bucket,
         new S3ClientAlgebra[IO] {
-              def putObject(bucket: String, key: String, bytes: Array[Byte]): IO[Unit] = IO.fromCompletableFuture(IO {
+              def putObject(bucket: String, key: String, contentType: String, bytes: Array[Byte]): IO[Unit] = IO.fromCompletableFuture(IO {
                 val request = PutObjectRequest.builder()
                   .bucket(bucket)
                   .key(key)
@@ -325,7 +325,9 @@ object TestRoutes {
             }
     }
       )
-      uploadController = UploadController(uploadServiceImpl)
+      devSubmissionRepository = DevSubmissionRepository(transactor, appConfig)
+      devSubmissionService = DevSubmissionService(devSubmissionRepository)
+      uploadController = UploadController(uploadServiceImpl, devSubmissionService, appConfig)
     } yield uploadController.routes
   }
 
@@ -338,7 +340,7 @@ object TestRoutes {
       registrationRoutes <- registrationRoutes(transactor, appConfig)
       userDataRoutes <- userDataRoutes(transactor, appConfig)
       questRoute <- questRoutes(transactor, appConfig)
-      uploadRoutes <- uploadRoutes(appConfig)
+      uploadRoutes <- uploadRoutes(transactor, appConfig)
     } yield Router(
       "/dev-quest-service" -> (
         baseRoutes() <+>

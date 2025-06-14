@@ -3,6 +3,7 @@ package configuration.models
 import cats.kernel.Eq
 import pureconfig.generic.derivation.*
 import pureconfig.ConfigReader
+import java.time.Duration
 
 case class FeatureSwitches(
   useDockerHost: Boolean,
@@ -11,9 +12,13 @@ case class FeatureSwitches(
   useHttpsLocalstack: Boolean
 ) derives ConfigReader
 
+case class DevSubmissionConfig(
+  expiryDays: Int
+)
+
 case class S3Config(
   awsRegion: String,
-  uploadsBucketName: String,
+  bucketName: String,
   dockerName: String,
   host: String,
   port: Int
@@ -55,6 +60,7 @@ case class IntegrationSpecConfig(
 
 case class AppConfig(
   featureSwitches: FeatureSwitches,
+  devSubmission: DevSubmissionConfig,
   localConfig: LocalConfig,
   integrationSpecConfig: IntegrationSpecConfig
 ) derives ConfigReader

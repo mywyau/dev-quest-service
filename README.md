@@ -25,7 +25,6 @@ Then (this can be ran whenever):
 docker run --name redis-test-container -p 6380:6379 -d redis
 ```
 
-
 #### Run redis-server on port 6379:
 
 ```
@@ -131,7 +130,9 @@ sbt docker:publishLocal
 ```
 
 ### Make s3 test bucket for it tests
+
 aws --endpoint-url=http://localhost:4566 s3 mb s3://test-bucket
+aws --endpoint-url=http://localhost:4566 s3 mb s3://dev-submissions
 aws --endpoint-url=http://localhost:4566 s3 ls
 
 ---
@@ -141,16 +142,16 @@ aws --endpoint-url=http://localhost:4566 s3 ls
 aws --endpoint-url=http://localhost:4566 s3 cp s3://test-bucket/integration-test/hello.txt - | cat
 
 aws --endpoint-url=http://localhost:4566 s3api get-object \
-  --bucket test-bucket \
-  --key integration-test/hello.txt \
-  output.txt
+ --bucket test-bucket \
+ --key integration-test/hello.txt \
+ output.txt
 
 cat output.txt
 
 ---
 
 ```
-aws --endpoint-url=http://localhost:4566 s3 ls s3://test-bucket/uploads/         
+aws --endpoint-url=http://localhost:4566 s3 ls s3://test-bucket/uploads/
 ```
 
 ```
@@ -160,4 +161,72 @@ aws --endpoint-url=http://localhost:4566 s3api get-object \
   output.txt
 
 cat output.txt
+```
+
+http -f POST http://localhost:8080/dev-quest-service/upload file@./src/main/scala/controllers/UploadController.scala
+
+aws --endpoint-url=http://localhost:4566 s3 ls s3://dev-submissions/uploads/
+
+aws --endpoint-url=http://localhost:4566 s3api get-object \
+ --bucket dev-submissions \
+ --key uploads/ed677064-ac83-4bf5-9885-e834df6c80bc-UploadController.scala \
+ output.txt
+
+cat output.txt
+
+### some useful http commands to testing and reminding
+
+```
+http --download "http://localhost:4566/dev-submissions/uploads/ed677064-ac83-4bf5-9885-e834df6c80bc-UploadController.scala?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20250611T174401Z&X-Amz-SignedHeaders=host&X-Amz-Credential=AKIA46ZDE3YHIZ4M2JBR%2F20250611%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=900&X-Amz-Signature=0abf1491fa2c893969b0e37c8c68f221ef1dd98a7d90285f8ab713dcecd99d1f"
+http POST http://localhost:8080/dev-quest-service/s3/presign-download key="uploads/ed677064-ac83-4bf5-9885-e834df6c80bc-UploadController.scala"
+http POST http://localhost:8080/dev-quest-service/s3/presign-download key="uploads/ed677064-ac83-4bf5-9885-e834df6c80bc-UploadController.scala"
+http -f POST http://localhost:8080/dev-quest-service/upload file@./src/main/scala/controllers/UploadController.scala
+```
+
+
+ uploads/b508ce06-258e-4d0b-b314-0671cbd6c982-DevQuestBackendAuthController.test.ts
+
+
+### Download example
+
+```
+http POST http://localhost:8080/dev-quest-service/s3/presign-download key=uploads/b508ce06-258e-4d0b-b314-0671cbd6c982-DevQuestBackendAuthController.test.ts
+```
+
+
+http --download GET "http://localhost:4566/dev-submissions/uploads/b508ce06-258e-4d0b-b314-0671cbd6c982-DevQuestBackendAuthController.test.ts?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20250612T151211Z&X-Amz-SignedHeaders=host&X-Amz-Credential=AKIA46ZDE3YHIZ4M2JBR%2F20250612%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=900&X-Amz-Signature=40b039fb31d064e800a8280d25693d1acfdb1a45be613ba40d3b50fb46fcfd67"
+
+
+### 
+
+#### Request to get signed download url
+
+```
+ http POST http://localhost:8080/dev-quest-service/s3/presign-download key=uploads/b508ce06-258e-4d0b-b314-0671cbd6c982-DevQuestBackendAuthController.test.ts
+```
+
+#### response for useful signed download url
+```
+HTTP/1.1 200 OK
+Connection: keep-alive
+Content-Length: 396
+Content-Type: application/json
+Date: Thu, 12 Jun 2025 15:12:11 GMT
+Vary: Origin
+
+{
+    "url": "http://localhost:4566/dev-submissions/uploads/b508ce06-258e-4d0b-b314-0671cbd6c982-DevQuestBackendAuthController.test.ts?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20250612T151211Z&X-Amz-SignedHeaders=host&X-Amz-Credential=AKIA46ZDE3YHIZ4M2JBR%2F20250612%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=900&X-Amz-Signature=40b039fb31d064e800a8280d25693d1acfdb1a45be613ba40d3b50fb46fcfd67"
+}
+```
+
+### Download the file using signed url example
+
+```
+http --download GET  "http://localhost:4566/dev-submissions/uploads/b508ce06-258e-4d0b-b314-0671cbd6c982-DevQuestBackendAuthController.test.ts?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20250612T151211Z&X-Amz-SignedHeaders=host&X-Amz-Credential=AKIA46ZDE3YHIZ4M2JBR%2F20250612%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=900&X-Amz-Signature=40b039fb31d064e800a8280d25693d1acfdb1a45be613ba40d3b50fb46fcfd67"
+```
+
+
+
+```
+aws --endpoint-url=http://localhost:4566 s3 rm s3://dev-submissions --recursive
 ```

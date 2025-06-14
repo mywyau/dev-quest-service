@@ -7,7 +7,7 @@ lazy val root = (project in file("."))
     name := "dev-quest-service",
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
     Compile / run / fork := true,
-    scalaSource := baseDirectory.value / "src" / "main" / "scala",
+    // scalaSource := baseDirectory.value / "src" / "main" / "scala",
     Compile / unmanagedSourceDirectories += baseDirectory.value / "src" / "main" / "scala",
     Test / scalaSource := baseDirectory.value / "test" / "scala",
 
@@ -24,7 +24,7 @@ lazy val it = (project in file("it"))
     libraryDependencies ++= AppDependencies.integrationTest,
     fork := true,
     parallelExecution := true,
-    scalaSource := baseDirectory.value / "src" / "test" / "scala",
+    // scalaSource := baseDirectory.value / "src" / "test" / "scala",
     Test / unmanagedSourceDirectories += baseDirectory.value / "src" / "test" / "scala"
   )
 

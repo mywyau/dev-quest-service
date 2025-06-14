@@ -40,5 +40,6 @@ object S3SharedResources extends GlobalResource with BaseAppConfig {
     for {
       appConfig <- appConfigResource
       ce <- executionContextResource
+      _ <- global.putR(appConfig) // Store config for later use
     } yield ()
 }

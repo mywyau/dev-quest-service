@@ -52,9 +52,9 @@ class UploadControllerISpec(global: GlobalRead) extends IOSuite with ControllerI
 
     val client = sharedResources._2.client
 
-    // // Create the file part (must be named "file" to match your logic)
-    // // File content as stream
-    // Simulated file content
+    // - Create the file part (must be named "file" to match your logic)
+    // - File content as stream
+    // - Simulated file content
     val fileContent = "This is a test file"
     val fileStream = Stream.emits(fileContent.getBytes(StandardCharsets.UTF_8)).covary[IO]
 
@@ -71,7 +71,7 @@ class UploadControllerISpec(global: GlobalRead) extends IOSuite with ControllerI
 
     val request = Request[IO](
       method = POST,
-      uri = uri"http://127.0.0.1:9999/dev-quest-service/upload",
+      uri = uri"http://127.0.0.1:9999/dev-quest-service/v1/upload",
       headers = multipart.headers
     ).withEntity(multipart)
 

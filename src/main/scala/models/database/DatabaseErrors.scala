@@ -4,6 +4,8 @@ import models.database.DatabaseErrors
 
 trait DatabaseErrors
 
+case object TooManyActiveQuestsError extends DatabaseErrors
+
 case class UpdateNotFound(message: String) extends DatabaseErrors
 
 case class UpdateFailure(reason: String) extends DatabaseErrors
