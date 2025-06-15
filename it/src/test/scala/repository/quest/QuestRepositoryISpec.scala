@@ -14,6 +14,7 @@ import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
 import models.Completed
+import models.Demon
 import models.InProgress
 import repositories.QuestRepositoryImpl
 import repository.fragments.QuestRepoFragments.*
@@ -36,8 +37,10 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
 
   def testQuestRequest(clientId: String, businessId: String): CreateQuestPartial =
     CreateQuestPartial(
+      rank = Demon,
       title = "Implement User Authentication",
-      description = Some("Set up Auth0 integration and secure routes using JWT tokens.")
+      description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+      acceptanceCriteria = "Set up Auth0 integration and secure routes using JWT tokens."
     )
 
   def sharedResource: Resource[IO, QuestRepositoryImpl[IO]] = {
@@ -57,8 +60,10 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         clientId = "USER001",
         questId = "QUEST001",
         devId = Some("DEV001"),
+        rank = Demon,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+        acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress)
       )
 
@@ -74,8 +79,10 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         clientId = "USER001",
         questId = "QUEST001",
         devId = Some("DEV001"),
+        rank = Demon,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+        acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress)
       )
 
@@ -88,8 +95,10 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
 
     val updateRequest =
       UpdateQuestPartial(
+        rank = Demon,
         title = "Implement User Authentication",
-        description = Some("Set up Auth0 integration and secure routes using JWT tokens.")
+        description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+        acceptanceCriteria = Some("Set up Auth0 integration and secure routes using JWT tokens.")
       )
 
     for {
@@ -106,8 +115,10 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         clientId = "USER003",
         questId = questId,
         devId = Some("DEV003"),
+        rank = Demon,
         title = "Refactor API Layer",
         description = Some("Migrate from custom HTTP clients to use http4s and apply middleware."),
+        acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress)
       )
 

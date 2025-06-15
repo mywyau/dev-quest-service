@@ -9,13 +9,16 @@ import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.InProgress
 import repositories.QuestRepositoryAlgebra
+import models.Iron
 
 object QuestRepoConstants {
 
   def testCreateQuestPartial(clientId: String, questId: String): CreateQuestPartial =
     CreateQuestPartial(
+      rank = Iron,
       title = "",
-      description = Some("")
+      description = Some(""),
+      acceptanceCriteria = ""
     )
 
   def testQuestPartial(clientId: String, devId: Option[String], questId: String): QuestPartial =
@@ -24,7 +27,9 @@ object QuestRepoConstants {
       devId = devId,
       questId = questId,
       title = "",
+      rank = Iron,
       description = Some(""),
+      acceptanceCriteria = Some(""),
       status = Some(InProgress)
     )
 
