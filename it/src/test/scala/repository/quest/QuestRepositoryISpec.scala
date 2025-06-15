@@ -63,7 +63,7 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         rank = Demon,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
-        acceptanceCriteria = Some("Migrate from custom HTTP clients to use http4s and apply middleware."),
+        acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress)
       )
 
@@ -82,7 +82,7 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         rank = Demon,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
-        acceptanceCriteria = Some("Migrate from custom HTTP clients to use http4s and apply middleware."),
+        acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress)
       )
 
@@ -118,7 +118,7 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         rank = Demon,
         title = "Refactor API Layer",
         description = Some("Migrate from custom HTTP clients to use http4s and apply middleware."),
-        acceptanceCriteria = Some("Migrate from custom HTTP clients to use http4s and apply middleware."),
+        acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress)
       )
 

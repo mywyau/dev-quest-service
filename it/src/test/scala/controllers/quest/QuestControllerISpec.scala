@@ -88,10 +88,10 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         clientId = clientId,
         devId = devId,
         questId = questId,
-                rank = Demon,
+        rank = Demon,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
-        acceptanceCriteria = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+        acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress)
       )
 
@@ -124,11 +124,10 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         clientId = clientId,
         devId = devId,
         questId = questId,
-                rank = Demon,
-
+        rank = Demon,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
-        acceptanceCriteria = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+        acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress)
       )
 
@@ -162,11 +161,10 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         questId = questId,
         clientId = clientId,
         devId = None,
-                rank = Demon,
-
+        rank = Demon,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
-        acceptanceCriteria = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+        acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress)
       )
 
@@ -199,10 +197,10 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         clientId = clientId,
         questId = questId,
         devId = devId,
-                rank = Demon,
+        rank = Demon,
         title = s"Some Quest Title $id",
         description = Some(s"Some Quest Description $id"),
-        acceptanceCriteria = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+        acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress)
       )
 
@@ -251,7 +249,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
                 rank = Demon,
         title = s"Some Quest Title $id",
         description = Some(s"Some Quest Description $id"),
-        acceptanceCriteria = Some("Set up Auth0 integration and secure routes using JWT tokens."),
+        acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(NotStarted)
       )
 
@@ -296,20 +294,20 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
 
     val sessionToken = "test-session-token"
 
-    def testCreateQuest(clientId: String, questId: String): CreateQuestPartial =
+    def testCreateQuest(): CreateQuestPartial =
       CreateQuestPartial(
         rank = Demon,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
-        acceptanceCriteria = "Set up Auth0 integration and secure routes using JWT tokens."
+        acceptanceCriteria = "Some acceptance criteria"
       )
 
-    val businessAddressRequest: Json = testCreateQuest("user_id_6", "quest_id_6").asJson
+    val createRequest: Json = testCreateQuest().asJson
 
     val request =
       Request[IO](POST, uri"http://127.0.0.1:9999/dev-quest-service/quest/create/USER006")
         .addCookie("auth_session", sessionToken)
-        .withEntity(businessAddressRequest)
+        .withEntity(createRequest)
 
     val expectedBody = CreatedResponse(CreateSuccess.toString, "quest details created successfully")
 
