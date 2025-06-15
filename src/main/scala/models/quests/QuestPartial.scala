@@ -15,6 +15,7 @@ case class QuestPartial(
   rank: Rank,
   title: String,
   description: Option[String],
+  acceptanceCriteria: Option[String],
   status: Option[QuestStatus]
 )
 
