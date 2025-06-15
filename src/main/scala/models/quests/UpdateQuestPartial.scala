@@ -7,7 +7,8 @@ import io.circe.generic.semiauto.deriveEncoder
 
 case class UpdateQuestPartial(
   title: String,
-  description: Option[String]
+  description: Option[String],
+  acceptanceCriteria: Option[String]
 )
 
 object UpdateQuestPartial {
