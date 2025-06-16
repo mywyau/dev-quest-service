@@ -3,14 +3,15 @@ package services.s3
 import cats.effect.*
 import cats.syntax.all.*
 import fs2.*
-import java.time.Duration
 import org.http4s.Uri
 import org.typelevel.log4cats.Logger
 import software.amazon.awssdk.services.s3.model.*
 
+import java.time.Duration
+
 trait UploadServiceAlgebra[F[_]] {
   def upload(key: String, contentType: String, data: Stream[F, Byte]): F[Unit]
-  def generatePresignedUrl(key: String): F[Uri]
+  def generatePresignedUrl(key: String, fileName: String): F[Uri]
   def generatePresignedUploadUrl(key: String): F[Uri]
 }
 
@@ -29,10 +30,10 @@ class UploadServiceImpl[F[_] : Async : Logger](
       _ <- Logger[F].info(s"[UploadService] Upload complete to key: $key")
     } yield ()
 
-  override def generatePresignedUrl(key: String): F[Uri] =
+  override def generatePresignedUrl(key: String, fileName: String): F[Uri] =
     for {
       _ <- Logger[F].info(s"[UploadService] Generating presigned GET URL for key: $key")
-      uri <- presigner.presignGetUrl(bucket, key, Duration.ofMinutes(15))
+      uri <- presigner.presignGetUrl(bucket, key, fileName, Duration.ofMinutes(15))
       _ <- Logger[F].info(s"[UploadService] Generated presigned GET URL: $uri")
     } yield uri
 

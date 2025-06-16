@@ -1,9 +1,9 @@
 package repositories
 
+import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
-import cats.Monad
 import configuration.models.AppConfig
 import doobie.*
 import doobie.implicits.*
@@ -11,19 +11,22 @@ import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
+import models.Open
+import models.database.*
+import models.quests.*
+import models.uploads.DevSubmissionMetadata
+import org.typelevel.log4cats.Logger
+
 import java.sql.Timestamp
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
-import models.database.*
-import models.quests.*
-import models.uploads.DevSubmissionMetadata
-import models.Open
-import org.typelevel.log4cats.Logger
 
 trait DevSubmissionRepositoryAlgebra[F[_]] {
 
-  def getFileMetaData(questId: String):  F[List[DevSubmissionMetadata]]
+  def getFileMetaData(s3ObjectKey: String): F[Option[DevSubmissionMetadata]]
+
+  def getAllFileMetaData(questId: String): F[List[DevSubmissionMetadata]]
 
   def createFileMetaData(devSubmissionMetadata: DevSubmissionMetadata): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
@@ -33,7 +36,25 @@ class DevSubmissionRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor
   implicit val localDateTimeMeta: Meta[LocalDateTime] = Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
   implicit val instantTimeMeta: Meta[Instant] = Meta[Timestamp].imap(_.toInstant())(Timestamp.from)
 
-  override def getFileMetaData(questId: String): F[List[DevSubmissionMetadata]] = 
+  override def getFileMetaData(s3ObjectKey: String): F[Option[DevSubmissionMetadata]] =
+    val findQuery: F[Option[DevSubmissionMetadata]] =
+      sql"""
+         SELECT 
+            client_id,
+            dev_id,
+            quest_id,
+            file_name,
+            file_type,
+            file_size,
+            s3_object_key,
+            bucket_name
+         FROM dev_submissions
+         WHERE s3_object_key = $s3ObjectKey
+       """.query[DevSubmissionMetadata].option.transact(transactor)
+
+    findQuery
+
+  override def getAllFileMetaData(questId: String): F[List[DevSubmissionMetadata]] =
     val findQuery: F[List[DevSubmissionMetadata]] =
       sql"""
          SELECT 

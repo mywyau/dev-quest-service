@@ -304,8 +304,14 @@ object TestRoutes {
               }).void
         },
         new S3PresignerAlgebra[IO] {
-            def presignGetUrl(bucket: String, key: String, expiresIn: Duration): IO[Uri] = IO {
-              val req = GetObjectRequest.builder().bucket(bucket).key(key).build()
+            def presignGetUrl(bucket: String, key: String, fileName: String, expiresIn: Duration): IO[Uri] = IO {
+              val req = 
+                GetObjectRequest
+                .builder()
+                .bucket(bucket)
+                .key(key)
+                .responseContentDisposition(s"""attachment; filename="$fileName"""")
+                .build()
               val presign = software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
                 .builder()
                 .getObjectRequest(req)
