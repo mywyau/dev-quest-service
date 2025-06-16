@@ -65,7 +65,7 @@ class UploadController[F[_] : Async : Logger](
     case GET -> Root / "dev" / "submission" / "file" / "metadata" / questId =>
       for {
         _ <- Logger[F].info(s"[UploadController] GET - Fetching file metadata for questId: $questId")
-        metadataList <- devSubmissionService.getFileMetaData(questId)
+        metadataList <- devSubmissionService.getAllFileMetaData(questId)
         response <-
           if (metadataList.nonEmpty)
             Ok(metadataList.asJson)
@@ -169,8 +169,9 @@ class UploadController[F[_] : Async : Logger](
     case req @ POST -> Root / "s3" / "presign-download" =>
       for {
         json <- req.as[Json]
-        key <- Async[F].fromEither(json.hcursor.get[String]("key").leftMap(e => new Exception(e.message)))
-        url <- uploadService.generatePresignedUrl(key)
+        s3ObjectKey <- Async[F].fromEither(json.hcursor.get[String]("key").leftMap(e => new Exception(e.message)))
+        metaData <- devSubmissionService.getFileMetaData(s3ObjectKey)
+        url <- uploadService.generatePresignedUrl(s3ObjectKey, metaData.map(_.fileName).getOrElse("download"))
         res <- Ok(Json.obj("url" -> Json.fromString(url.renderString)))
       } yield res
   }

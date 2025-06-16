@@ -18,18 +18,20 @@ import java.time.Instant
 
 trait S3PresignerAlgebra[F[_]] {
 
-  def presignGetUrl(bucket: String, key: String, expiresIn: Duration): F[Uri]
+  def presignGetUrl(bucket: String, key: String, filename: String, expiresIn: Duration): F[Uri]
 
   def presignPutUrl(bucket: String, key: String, expiresIn: Duration): F[Uri]
 
 }
 
 class LiveS3Presigner[F[_] : Sync](presigner: S3Presigner) extends S3PresignerAlgebra[F] {
-  override def presignGetUrl(bucket: String, key: String, expiresIn: Duration): F[Uri] = Sync[F].delay {
+  override def presignGetUrl(bucket: String, key: String, filename: String, expiresIn: Duration): F[Uri] = Sync[F].delay {
     val getRequest = GetObjectRequest
       .builder()
       .bucket(bucket)
       .key(key)
+      // .responseContentDisposition(s"""attachment; filename="${key.split("/").lastOption.getOrElse("download")}"""") // Or pass filename in
+      .responseContentDisposition(s"""attachment; filename="$filename"""")
       .build()
 
     val presignRequest = GetObjectPresignRequest
