@@ -23,7 +23,7 @@ object UploadServiceSpec extends SimpleIOSuite {
 
   class MockPresigner extends S3PresignerAlgebra[IO] {
 
-    override def presignGetUrl(bucket: String, key: String, expiresIn: Duration): IO[Uri] =
+    override def presignGetUrl(bucket: String, key: String, fileName: String, expiresIn: Duration): IO[Uri] =
       IO.pure(Uri.unsafeFromString(s"https://mock-s3/$bucket/$key"))
 
     override def presignPutUrl(bucket: String, key: String, expiresIn: Duration): IO[Uri] = ???
@@ -55,8 +55,8 @@ object UploadServiceSpec extends SimpleIOSuite {
     val presigner = new MockPresigner
     val service = new UploadServiceImpl[IO]("test-bucket", s3, presigner)
 
-    service.generatePresignedUrl("foo.txt").map { uri =>
-      expect.eql(uri.renderString, "https://mock-s3/test-bucket/foo.txt")
+    service.generatePresignedUrl("some-aws-s3-key", "foo.txt").map { uri =>
+      expect.eql(uri.renderString, "https://mock-s3/test-bucket/some-aws-s3-key")
     }
   }
 }
