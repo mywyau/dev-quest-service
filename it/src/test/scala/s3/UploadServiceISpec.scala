@@ -65,8 +65,16 @@ object UploadServiceISpec extends SimpleIOSuite with AwsS3ISpecBase with BaseApp
       }).void
     },
     presigner = new S3PresignerAlgebra[IO] {
-        def presignGetUrl(bucket: String, key: String, expiresIn: Duration): IO[Uri] = IO {
-          val req = GetObjectRequest.builder().bucket(bucket).key(key).build()
+        def presignGetUrl(bucket: String, key: String, fileName: String, expiresIn: Duration): IO[Uri] = IO {
+
+          val req = 
+            GetObjectRequest
+            .builder()
+            .bucket(bucket)
+            .key(key)
+            .responseContentDisposition(s"""attachment; filename="$fileName"""")
+            .build()
+
           val presign = software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
             .builder()
             .getObjectRequest(req)
@@ -89,13 +97,14 @@ object UploadServiceISpec extends SimpleIOSuite with AwsS3ISpecBase with BaseApp
 
   test("upload and verify via presigned URL") {
     
+    val fileName = "hello.txt"
     val key = "integration-test/hello.txt"
     val contentType = "application/octet-stream"
     val data = "Hello, integration test!".getBytes()
 
     for {
       _ <- uploadService.upload(key, contentType, Stream.emits(data).covary[IO])
-      presigned <- uploadService.generatePresignedUrl(key)
+      presigned <- uploadService.generatePresignedUrl(key, fileName)
       // Optional: fetch content via HTTP client to verify
     } yield expect(
         presigned.renderString.contains(key)
