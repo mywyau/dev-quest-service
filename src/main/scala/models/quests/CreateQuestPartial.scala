@@ -1,15 +1,18 @@
 package models.quests
 
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.generic.semiauto.deriveEncoder
 import io.circe.Decoder
 import io.circe.Encoder
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
+import models.Rank
+
 import java.time.LocalDateTime
-import models.QuestStatus
 
 case class CreateQuestPartial(
+  rank: Rank,
   title: String,
-  description: Option[String]
+  description: Option[String],
+  acceptanceCriteria: String
 )
 
 object CreateQuestPartial {

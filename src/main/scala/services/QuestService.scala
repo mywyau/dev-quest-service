@@ -222,8 +222,10 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
       CreateQuest(
         clientId = clientId,
         questId = newQuestId,
+        rank = request.rank,
         title = request.title,
         description = request.description,
+        acceptanceCriteria = request.acceptanceCriteria,
         status = Some(Open)
       )
 

@@ -7,12 +7,15 @@ import io.circe.generic.semiauto.deriveEncoder
 import models.QuestStatus
 
 import java.time.LocalDateTime
+import models.Rank
 
 case class CreateQuest(
   questId: String,
   clientId: String,
+  rank: Rank,
   title: String,
   description: Option[String],
+  acceptanceCriteria: String,
   status: Option[QuestStatus]
 )
 
