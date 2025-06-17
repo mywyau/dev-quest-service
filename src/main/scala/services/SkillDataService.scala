@@ -1,5 +1,7 @@
 package services
 
+import cats.Monad
+import cats.NonEmptyParallel
 import cats.data.Validated
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
@@ -7,23 +9,24 @@ import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
-import cats.Monad
-import cats.NonEmptyParallel
 import fs2.Stream
-import java.util.UUID
+import models.UserType
 import models.database.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
 import models.skills.Skill
 import models.skills.SkillData
 import models.users.*
-import models.UserType
 import org.typelevel.log4cats.Logger
 import repositories.SkillDataRepositoryAlgebra
+
+import java.util.UUID
 
 trait SkillDataServiceAlgebra[F[_]] {
 
   def getSkillData(devId: String, skill: Skill): F[Option[SkillData]]
+
+  def getHiscoreSkillData(skill: Skill): F[List[SkillData]]
 
 }
 
@@ -34,12 +37,15 @@ class SkillDataServiceImpl[F[_] : Concurrent : Monad : Logger](
   override def getSkillData(devId: String, skill: Skill): F[Option[SkillData]] =
     skillRepo.getSkillData(devId, skill).flatMap {
       case Some(skill) =>
-        Logger[F].info(s"[SkillDataService] Found reviewing skill data for user with devId: $devId") *>
+        Logger[F].info(s"[SkillDataService][getSkillData] Found skill data: $skill for user with devId: $devId") *>
           Concurrent[F].pure(Some(skill))
       case None =>
-        Logger[F].info(s"[SkillDataService] No reviewing skill data found for user with devId: $devId") *>
+        Logger[F].info(s"[SkillDataServicegetSkillData No skill data: $skill - found for user with devId: $devId") *>
           Concurrent[F].pure(None)
     }
+
+  override def getHiscoreSkillData(skill: Skill): F[List[SkillData]] =
+    skillRepo.getHiscoreSkillData(skill).map(_.sortBy(_.xp)(Ordering[BigDecimal].reverse))
 
 }
 

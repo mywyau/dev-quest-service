@@ -9,6 +9,8 @@ case object Python extends Language
 case object Java extends Language
 case object Rust extends Language
 case object Typescript extends Language
+case object Scala extends Language
+case object Sql extends Language
 
 object Language {
 
@@ -18,6 +20,8 @@ object Language {
       case "Java" => Java
       case "Rust" => Rust
       case "Typescript" => Typescript
+      case "Scala" => Typescript
+      case "Sql" => Sql
       case _ => throw new Exception(s"Unknown Language type: $str")
     }
 
@@ -27,6 +31,8 @@ object Language {
       case Java => "Java"
       case Rust => "Rust"
       case Typescript => "Typescript"
+      case Scala => "Scala"
+      case Sql => "Sql"
     }
 
   implicit val languageDecoder: Decoder[Language] =
@@ -35,6 +41,8 @@ object Language {
       case "Java" => Right(Java)
       case "Rust" => Right(Rust)
       case "Typescript" => Right(Typescript)
+      case "Scala" => Right(Scala)
+      case "Sql" => Right(Sql)
       case other => Left(s"Invalid Language: $other")
     }
 }

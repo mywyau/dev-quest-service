@@ -8,6 +8,7 @@ import models.skills.Skill
 
 case class SkillData(
   devId: String,
+  username: String,
   skill: Skill,
   level: Int,
   xp: BigDecimal

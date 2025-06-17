@@ -21,30 +21,34 @@ import models.UserType
 import org.typelevel.log4cats.Logger
 import repositories.LanguageRepositoryAlgebra
 
-trait LanguageDataServiceAlgebra[F[_]] {
+trait LanguageServiceAlgebra[F[_]] {
 
-  def getLanguageData(devId: String, language: Language): F[Option[LanguageData]]
+  def getLanguage(devId: String, language: Language): F[Option[LanguageData]]
 
+  def getHiscoreLanguage(language: Language): F[List[LanguageData]]
 }
 
-class LanguageDataServiceImpl[F[_] : Concurrent : Monad : Logger](
+class LanguageServiceImpl[F[_] : Concurrent : Monad : Logger](
   languageRepo: LanguageRepositoryAlgebra[F]
-) extends LanguageDataServiceAlgebra[F] {
+) extends LanguageServiceAlgebra[F] {
 
-  override def getLanguageData(devId: String, language: Language): F[Option[LanguageData]] =
+  override def getLanguage(devId: String, language: Language): F[Option[LanguageData]] =
     languageRepo.getLanguage(devId, language).flatMap {
       case Some(langauge) =>
-        Logger[F].info(s"[LanguageDataService] Found $language language data for user with devId: $devId") *>
+        Logger[F].info(s"[LanguageService] Found $language language data for user with devId: $devId") *>
           Concurrent[F].pure(Some(langauge))
       case None =>
-        Logger[F].info(s"[LanguageDataService] No $language language data found for user with devId: $devId") *>
+        Logger[F].info(s"[LanguageService] No $language language data found for user with devId: $devId") *>
           Concurrent[F].pure(None)
     }
 
+  override def getHiscoreLanguage(language: Language): F[List[LanguageData]] =
+    languageRepo.getHiscoreLanguageData(language).map(_.sortBy(_.xp)(Ordering[BigDecimal].reverse))
+
 }
 
-object LanguageDataService {
+object LanguageService {
 
-  def apply[F[_] : Concurrent : NonEmptyParallel : Logger](languageRepo: LanguageRepositoryAlgebra[F]): LanguageDataServiceAlgebra[F] =
-    new LanguageDataServiceImpl[F](languageRepo)
+  def apply[F[_] : Concurrent : NonEmptyParallel : Logger](languageRepo: LanguageRepositoryAlgebra[F]): LanguageServiceAlgebra[F] =
+    new LanguageServiceImpl[F](languageRepo)
 }

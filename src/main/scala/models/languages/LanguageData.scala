@@ -8,6 +8,7 @@ import models.languages.Language
 
 case class LanguageData(
   devId: String,
+  username: String,
   language: Language,
   level: Int,
   xp: BigDecimal

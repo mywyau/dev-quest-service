@@ -1,15 +1,17 @@
 package repositories
 
-import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
+import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
+import java.sql.Timestamp
+import java.time.LocalDateTime
 import models.database.*
 import models.database.ConstraintViolation
 import models.database.CreateSuccess
@@ -33,12 +35,11 @@ import models.skills.Testing
 import models.users.*
 import org.typelevel.log4cats.Logger
 
-import java.sql.Timestamp
-import java.time.LocalDateTime
-
 trait SkillDataRepositoryAlgebra[F[_]] {
 
   def getSkillData(devId: String, skill: Skill): F[Option[SkillData]]
+
+  def getHiscoreSkillData(skill: Skill): F[List[SkillData]]
 }
 
 class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends SkillDataRepositoryAlgebra[F] {
@@ -53,6 +54,7 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tr
       sql"""
         SELECT 
           dev_id,
+          username,
           skill,
           level,
           xp
@@ -61,6 +63,25 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tr
       """
         .query[SkillData]
         .option
+        .transact(transactor)
+
+    findQuery
+  }
+
+  override def getHiscoreSkillData(skill: Skill): F[List[SkillData]] = {
+    val findQuery: F[List[SkillData]] =
+      sql"""
+        SELECT 
+          dev_id,
+          username,
+          skill,
+          level,
+          xp
+        FROM skill
+        WHERE skill = $skill
+      """
+        .query[SkillData]
+        .to[List]
         .transact(transactor)
 
     findQuery

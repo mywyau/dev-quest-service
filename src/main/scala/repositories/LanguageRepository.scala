@@ -35,6 +35,8 @@ trait LanguageRepositoryAlgebra[F[_]] {
 
   def getLanguage(devId: String, language: Language): F[Option[LanguageData]]
 
+  def getHiscoreLanguageData(language: Language): F[List[LanguageData]]
+
 }
 
 class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends LanguageRepositoryAlgebra[F] {
@@ -49,6 +51,7 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
       sql"""
         SELECT 
           dev_id,
+          username,
           language,
           level,
           xp
@@ -57,6 +60,26 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
       """
         .query[LanguageData]
         .option
+        .transact(transactor)
+
+    findQuery
+  }
+
+
+  override def getHiscoreLanguageData(language: Language): F[List[LanguageData]] = {
+    val findQuery: F[List[LanguageData]] =
+      sql"""
+        SELECT 
+          dev_id,
+          username,
+          language,
+          level,
+          xp
+        FROM language
+        WHERE language = $language
+      """
+        .query[LanguageData]
+        .to[List]
         .transact(transactor)
 
     findQuery
