@@ -1,13 +1,10 @@
 package models.skills
 
-package models.rewards
-
-import models.skills.Skill
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.generic.semiauto.deriveEncoder
 import io.circe.Decoder
 import io.circe.Encoder
-import java.time.LocalDateTime
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
+import models.skills.Skill
 
 case class SkillData(
   devId: String,
