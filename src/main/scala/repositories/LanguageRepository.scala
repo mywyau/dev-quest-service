@@ -25,41 +25,37 @@ import models.database.SqlExecutionError
 import models.database.UnexpectedResultError
 import models.database.UnknownError
 import models.database.UpdateSuccess
-import models.skills.Questing
-import models.skills.Reviewing
-import models.skills.Skill
-import models.skills.SkillData
-import models.skills.Testing
-import models.users.*
+import models.languages.*
 import org.typelevel.log4cats.Logger
 
 import java.sql.Timestamp
 import java.time.LocalDateTime
 
-trait SkillDataRepositoryAlgebra[F[_]] {
+trait LanguageRepositoryAlgebra[F[_]] {
 
-  def getSkillData(devId: String, skill: Skill): F[Option[SkillData]]
+  def getLanguage(devId: String, language: Language): F[Option[LanguageData]]
+
 }
 
-class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends SkillDataRepositoryAlgebra[F] {
+class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends LanguageRepositoryAlgebra[F] {
 
-  implicit val skillMeta: Meta[Skill] = Meta[String].timap(Skill.fromString)(_.toString)
+  implicit val languageMeta: Meta[Language] = Meta[String].timap(Language.fromString)(_.toString)
 
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
 
-  override def getSkillData(devId: String, skill: Skill): F[Option[SkillData]] = {
-    val findQuery: F[Option[SkillData]] =
+  override def getLanguage(devId: String, language: Language): F[Option[LanguageData]] = {
+    val findQuery: F[Option[LanguageData]] =
       sql"""
         SELECT 
           dev_id,
-          skill,
+          language,
           level,
           xp
-        FROM skill
-        WHERE dev_id = $devId AND skill = $skill
+        FROM langauges
+        WHERE dev_id = $devId AND language = $language
       """
-        .query[SkillData]
+        .query[LanguageData]
         .option
         .transact(transactor)
 
@@ -67,7 +63,7 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tr
   }
 }
 
-object SkillDataRepository {
-  def apply[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]): SkillDataRepositoryAlgebra[F] =
-    new SkillDataRepositoryImpl[F](transactor)
+object LanguageRepository {
+  def apply[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]): LanguageRepositoryAlgebra[F] =
+    new LanguageRepositoryImpl[F](transactor)
 }

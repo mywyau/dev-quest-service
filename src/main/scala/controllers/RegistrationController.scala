@@ -66,7 +66,7 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
 
     case req @ GET -> Root / "registration" / "health" =>
       Logger[F].info(s"[RegistrationController] GET - Health check for backend RegistrationController service") *>
-        Ok(GetResponse("dev-quest-service/registration/health", "I am alive").asJson)
+        Ok(GetResponse("dev-quest-service/registration/health", "I am alive - RegistrationController").asJson)
 
     case req @ GET -> Root/  "registration" / "user" / "data" / userId =>
       extractSessionToken(req) match {
