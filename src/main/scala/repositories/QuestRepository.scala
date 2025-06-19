@@ -1,9 +1,9 @@
 package repositories
 
-import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
+import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
@@ -11,18 +11,18 @@ import doobie.postgres.implicits.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
+import java.sql.Timestamp
+import java.time.LocalDateTime
+import models.database.*
+import models.languages.Language
+import models.quests.*
+import models.skills.Skill
 import models.Assigned
 import models.NotStarted
 import models.Open
 import models.QuestStatus
 import models.Rank
-import models.database.*
-import models.languages.Language
-import models.quests.*
 import org.typelevel.log4cats.Logger
-
-import java.sql.Timestamp
-import java.time.LocalDateTime
 
 trait QuestRepositoryAlgebra[F[_]] {
 
@@ -255,7 +255,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
         case _ =>
           UnexpectedResultError.invalidNel
       }
-
+      
   override def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       UPDATE quests
