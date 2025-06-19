@@ -66,7 +66,7 @@ object QuestControllerFragments {
           description,
           acceptance_criteria,
           status,
-          tags
+          tags,
           created_at,
           updated_at
         ) VALUES
