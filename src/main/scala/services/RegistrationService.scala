@@ -20,6 +20,7 @@ import models.UserType
 import org.typelevel.log4cats.Logger
 import repositories.UserDataRepositoryAlgebra
 import repositories.UserDataRepositoryImpl
+import models.users.UpdateUserType
 
 trait RegistrationServiceAlgebra[F[_]] {
 
@@ -27,7 +28,7 @@ trait RegistrationServiceAlgebra[F[_]] {
 
   def createUser(userId: String, createRegistration: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def updateUserType(userId: String, userType: UserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def updateUserType(userId: String, userType: UpdateUserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
 class RegistrationServiceImpl[F[_] : Concurrent : Monad : Logger](
@@ -64,7 +65,7 @@ class RegistrationServiceImpl[F[_] : Concurrent : Monad : Logger](
       }
   }
 
-  override def updateUserType(userId: String, userType: UserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def updateUserType(userId: String, userType: UpdateUserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     userDataRepo.updateUserType(userId, userType).flatMap {
       case Valid(value) =>
         Logger[F].info(s"[UserDataService][update] Successfully updated user with ID: $userId") *>

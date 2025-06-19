@@ -28,7 +28,7 @@ trait UserDataServiceAlgebra[F[_]] {
 
   def updateUserData(userId: String, updateUserData: UpdateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def updateUserType(userId: String, userType: UserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def updateUserType(userId: String, userType: UpdateUserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def deleteUser(userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
@@ -66,7 +66,7 @@ class UserDataServiceImpl[F[_] : Concurrent : Monad : Logger](
           Concurrent[F].pure(Invalid(errors))
     }
 
-  override def updateUserType(userId: String, userType: UserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def updateUserType(userId: String, userType: UpdateUserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     userRepo.updateUserType(userId, userType).flatMap {
       case Valid(value) =>
         Logger[F].info(s"[UserDataService][update] Successfully updated user with ID: $userId") *>

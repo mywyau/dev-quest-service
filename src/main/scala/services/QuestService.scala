@@ -226,6 +226,7 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
         title = request.title,
         description = request.description,
         acceptanceCriteria = request.acceptanceCriteria,
+        tags = request.tags,
         status = Some(Open)
       )
 

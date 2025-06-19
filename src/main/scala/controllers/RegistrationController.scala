@@ -111,7 +111,7 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
           withValidSession(userId, cookieToken) {
             Logger[F].info(s"[RegistrationController] PUT - Updating user type for userId: $userId") *>
               req.decode[UpdateUserType] { request =>
-                registrationService.updateUserType(userId, request.userType).flatMap {
+                registrationService.updateUserType(userId, request).flatMap {
                   case Valid(response) =>
                     Logger[F].info(s"[RegistrationController] PUT - Successfully updated user type for ID: $userId") *>
                       Ok(UpdatedResponse(UpdateSuccess.toString, s"User $userId updated successfully with type: ${request.userType}").asJson)

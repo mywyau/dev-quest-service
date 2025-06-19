@@ -10,6 +10,7 @@ import models.UserType
 case class UserData(
   userId: String,
   email: String,
+  username: String,
   firstName: Option[String],
   lastName: Option[String],
   userType: Option[UserType]

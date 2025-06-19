@@ -7,12 +7,14 @@ import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
+import doobie.postgres.implicits._ // <-- Needed for Array handling!
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import models.database.*
+import models.languages.Language
 import models.quests.*
 import models.Assigned
 import models.NotStarted
@@ -159,10 +161,11 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
     findQuery
   }
 
-  override def create(request: CreateQuest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def create(request: CreateQuest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+    val tagArray: Array[String] = request.tags.map(_.toString).toArray
     sql"""
       INSERT INTO quests (
-         quest_id, client_id, rank, title, description, acceptance_criteria, status
+         quest_id, client_id, rank, title, description, acceptance_criteria, status, tags
       )
       VALUES (
         ${request.questId},
@@ -171,7 +174,8 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
         ${request.title},
         ${request.description},
         ${request.acceptanceCriteria},
-        ${request.status}
+        ${request.status},
+        $tagArray
       )
     """.update.run
       .transact(transactor)
@@ -188,6 +192,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
         case _ =>
           UnexpectedResultError.invalidNel
       }
+  }
 
   override def update(quest_id: String, request: UpdateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
