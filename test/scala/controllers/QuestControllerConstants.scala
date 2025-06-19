@@ -16,6 +16,7 @@ object QuestControllerConstants {
       title = "business1",
       description = Some(""),
       acceptanceCriteria = Some(""),
-      status = Some(Completed)
+      status = Some(Completed),
+      tags = Seq("Python", "Scala", "TypeScript")
     )
 }

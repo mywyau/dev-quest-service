@@ -4,11 +4,11 @@ import cats.effect.IO
 import io.circe.*
 import io.circe.parser.*
 import io.circe.syntax.EncoderOps
-import models.ModelsBaseSpec
-import models.quests.CreateQuestPartial
-import weaver.SimpleIOSuite
-
 import java.time.LocalDateTime
+import models.languages.*
+import models.quests.CreateQuestPartial
+import models.ModelsBaseSpec
+import weaver.SimpleIOSuite
 
 object CreateQuestPartialSpec extends SimpleIOSuite with ModelsBaseSpec {
 
@@ -17,7 +17,8 @@ object CreateQuestPartialSpec extends SimpleIOSuite with ModelsBaseSpec {
       rank = Iron,
       title = "Some quest title",
       description = Some("Some description"),
-      acceptanceCriteria = "Some acceptance criteria"
+      acceptanceCriteria = "Some acceptance criteria",
+      tags = Seq(Python, Scala, TypeScript)
     )
 
   test("CreateQuestPartial model encodes correctly to JSON") {
@@ -30,7 +31,8 @@ object CreateQuestPartialSpec extends SimpleIOSuite with ModelsBaseSpec {
         |  "acceptanceCriteria" : "Some acceptance criteria",
         |  "description" : "Some description",
         |  "rank" : "Iron",
-        |  "title" : "Some quest title"          
+        |  "title" : "Some quest title",         
+        |  "tags" : ["Python", "Scala", "TypeScript"]          
         |}
         |""".stripMargin
 

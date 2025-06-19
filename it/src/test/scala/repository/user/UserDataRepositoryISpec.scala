@@ -8,7 +8,10 @@ import doobie.*
 import doobie.implicits.*
 import java.time.LocalDateTime
 import models.database.*
+import models.database.DeleteSuccess
+import models.database.UpdateSuccess
 import models.users.CreateUserData
+import models.users.UpdateUserType
 import models.users.UserData
 import models.Client
 import models.Completed
@@ -22,7 +25,6 @@ import testData.TestConstants.*
 import weaver.GlobalRead
 import weaver.IOSuite
 import weaver.ResourceTag
-import models.database.{DeleteSuccess, UpdateSuccess}
 
 class UserDataRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryISpecBase {
   type Res = UserDataRepositoryImpl[IO]
@@ -50,6 +52,7 @@ class UserDataRepositoryISpec(global: GlobalRead) extends IOSuite with Repositor
       UserData(
         userId = "USER001",
         email = "bob_smith@gmail.com",
+        username = "goku",
         firstName = Some("Bob"),
         lastName = Some("Smith"),
         userType = Some(Dev)
@@ -66,6 +69,7 @@ class UserDataRepositoryISpec(global: GlobalRead) extends IOSuite with Repositor
       UserData(
         userId = "USER002",
         email = "dylan_smith@gmail.com",
+        username = "goku",
         firstName = Some("Dylan"),
         lastName = Some("Smith"),
         userType = Some(Dev)
@@ -76,7 +80,7 @@ class UserDataRepositoryISpec(global: GlobalRead) extends IOSuite with Repositor
 
     for {
       originalData <- userRepo.findUser("USER002")
-      result <- userRepo.updateUserType("USER002", Dev)
+      result <- userRepo.updateUserType("USER002", UpdateUserType("goku", Dev))
       updatedUser <- userRepo.findUser("USER002")
     } yield expect.all(
       originalData == Some(orignalUser),
@@ -93,6 +97,7 @@ class UserDataRepositoryISpec(global: GlobalRead) extends IOSuite with Repositor
       UserData(
         userId = "USER003",
         email = "sam_smith@gmail.com",
+        username = "goku",
         firstName = Some("Sam"),
         lastName = Some("Smith"),
         userType = Some(Dev)

@@ -5,11 +5,14 @@ import cats.effect.kernel.Ref
 import cats.effect.IO
 import java.time.LocalDateTime
 import mocks.MockQuestRepository
+import models.languages.Python
+import models.languages.Scala
+import models.languages.TypeScript
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.InProgress
-import repositories.QuestRepositoryAlgebra
 import models.Iron
+import repositories.QuestRepositoryAlgebra
 
 object QuestRepoConstants {
 
@@ -18,7 +21,8 @@ object QuestRepoConstants {
       rank = Iron,
       title = "",
       description = Some(""),
-      acceptanceCriteria = ""
+      acceptanceCriteria = "",
+      tags = Seq(Python, Scala, TypeScript)
     )
 
   def testQuestPartial(clientId: String, devId: Option[String], questId: String): QuestPartial =
@@ -30,7 +34,8 @@ object QuestRepoConstants {
       rank = Iron,
       description = Some(""),
       acceptanceCriteria = Some(""),
-      status = Some(InProgress)
+      status = Some(InProgress),
+      tags = Seq("Python", "Scala", "TypeScript")
     )
 
 }

@@ -56,6 +56,7 @@ class UserDataControllerISpec(global: GlobalRead) extends IOSuite with Controlle
       UserData(
         userId = userId,
         email = "bob_smith@gmail.com",
+        username = "goku",
         firstName = Some("Bob"),
         lastName = Some("Smith"),
         userType = Some(Dev)
@@ -160,6 +161,7 @@ class UserDataControllerISpec(global: GlobalRead) extends IOSuite with Controlle
 
     val updateUserTypeRequest: UpdateUserType =
       UpdateUserType(
+        username = "goku",
         userType = Client
       )
 

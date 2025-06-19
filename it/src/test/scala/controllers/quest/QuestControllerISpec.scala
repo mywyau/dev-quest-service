@@ -46,6 +46,8 @@ import shared.TransactorResource
 import weaver.*
 
 import java.time.LocalDateTime
+import models.languages.*
+import scala.collection.immutable.ArraySeq
 
 class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
@@ -92,7 +94,9 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         acceptanceCriteria = Some("Some acceptance criteria"),
-        status = Some(InProgress)
+        status = Some(InProgress),
+        tags = ArraySeq("Python", "Scala", "Typescript")
+
       )
 
     val request =
@@ -128,7 +132,9 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         acceptanceCriteria = Some("Some acceptance criteria"),
-        status = Some(InProgress)
+        status = Some(InProgress),
+        tags = ArraySeq("Python", "Scala", "Typescript")
+
       )
 
     val sessionToken = "test-session-token"
@@ -165,7 +171,9 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         acceptanceCriteria = Some("Some acceptance criteria"),
-        status = Some(InProgress)
+        status = Some(InProgress),
+        tags = ArraySeq("Python", "Scala", "Typescript")
+
       )
 
     val sessionToken = "test-session-token"
@@ -201,7 +209,8 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         title = s"Some Quest Title $id",
         description = Some(s"Some Quest Description $id"),
         acceptanceCriteria = Some("Some acceptance criteria"),
-        status = Some(InProgress)
+        status = Some(InProgress),
+        tags = ArraySeq("Python", "Scala", "Typescript")
       )
 
     val expected: List[QuestPartial] = List(
@@ -246,11 +255,13 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         clientId = clientId,
         devId = devId,
         questId = questId,
-                rank = Demon,
+        rank = Demon,
         title = s"Some Quest Title $id",
         description = Some(s"Some Quest Description $id"),
         acceptanceCriteria = Some("Some acceptance criteria"),
-        status = Some(NotStarted)
+        status = Some(NotStarted),
+        tags = ArraySeq("Python", "Scala", "Typescript")
+        
       )
 
     val expected: List[QuestPartial] = List(
@@ -299,7 +310,8 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         rank = Demon,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
-        acceptanceCriteria = "Some acceptance criteria"
+        acceptanceCriteria = "Some acceptance criteria",
+        tags = Seq(Python, Scala, TypeScript)
       )
 
     val createRequest: Json = testCreateQuest().asJson
