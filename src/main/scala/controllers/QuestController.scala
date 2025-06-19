@@ -45,6 +45,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
   implicit val createDecoder: EntityDecoder[F, CreateQuestPartial] = jsonOf[F, CreateQuestPartial]
   implicit val updateDecoder: EntityDecoder[F, UpdateQuestPartial] = jsonOf[F, UpdateQuestPartial]
   implicit val updateQuestStatusPayloadDecoder: EntityDecoder[F, UpdateQuestStatusPayload] = jsonOf[F, UpdateQuestStatusPayload]
+  implicit val completeQuestPayloadDecoder: EntityDecoder[F, CompleteQuestPayload] = jsonOf[F, CompleteQuestPayload]
   implicit val updateDevIdPayloadDecoder: EntityDecoder[F, AcceptQuestPayload] = jsonOf[F, AcceptQuestPayload]
 
   implicit val questStatusQueryParamDecoder: QueryParamDecoder[QuestStatus] =
@@ -308,6 +309,26 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
             Logger[F].info(s"[QuestControllerImpl] PUT - Updating quest with ID: $questId") *>
               req.decode[UpdateQuestPartial] { request =>
                 questService.update(questId, request).flatMap {
+                  case Valid(response) =>
+                    Logger[F].info(s"[QuestControllerImpl] PUT - Successfully updated quest for ID: $questId") *>
+                      Ok(UpdatedResponse(UpdateSuccess.toString, s"Quest $questId updated successfully").asJson)
+                  case Invalid(errors) =>
+                    Logger[F].info(s"[QuestControllerImpl] PUT - Validation failed for quest update: ${errors.toList}") *>
+                      BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
+                }
+              }
+          }
+        case None =>
+          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
+      }
+
+    case req @ PUT -> Root / "quest" / "update" / "complete" / "award" / "xp" / userIdFromRoute / questId =>
+      extractSessionToken(req) match {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
+            Logger[F].info(s"[QuestControllerImpl] PUT - Updating quest with ID: $questId") *>
+              req.decode[CompleteQuestPayload] { request =>
+                questService.completeQuestAwardXp(questId, request.questStatus, request.rank).flatMap {
                   case Valid(response) =>
                     Logger[F].info(s"[QuestControllerImpl] PUT - Successfully updated quest for ID: $questId") *>
                       Ok(UpdatedResponse(UpdateSuccess.toString, s"Quest $questId updated successfully").asJson)

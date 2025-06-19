@@ -37,6 +37,7 @@ trait LanguageRepositoryAlgebra[F[_]] {
 
   def getHiscoreLanguageData(language: Language): F[List[LanguageData]]
 
+  def awardLanguageXP(devId: String, username: String, language: String, xp: BigDecimal): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
 class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends LanguageRepositoryAlgebra[F] {
@@ -65,7 +66,6 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
     findQuery
   }
 
-
   override def getHiscoreLanguageData(language: Language): F[List[LanguageData]] = {
     val findQuery: F[List[LanguageData]] =
       sql"""
@@ -84,6 +84,35 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
 
     findQuery
   }
+
+  override def awardLanguageXP(devId: String, username: String, language: String, xp: BigDecimal): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+     //TODO: calcs the level here this needs to change we want to calc the level on upsert in backend 
+     //       VALUES ($devId, $username, $language, $xp, 1)
+     //      level = LEAST(99, FLOOR(SQRT(language.xp + $xp) / 10)::int + 1) 
+    sql"""
+      INSERT INTO language (dev_id, username, language, xp, level)
+      VALUES ($devId, $username, $language, $xp, LEAST(99, FLOOR(SQRT($xp) / 10)::int + 1) )
+      ON CONFLICT (dev_id, language)
+      DO UPDATE SET xp = language.xp + $xp,
+      level = LEAST(99, FLOOR(SQRT(language.xp + $xp) / 10)::int + 1) 
+    """.update.run.transact(transactor).attempt.map {
+      case Right(affectedRows) if affectedRows == 1 =>
+        UpdateSuccess.validNel
+      case Right(affectedRows) if affectedRows == 0 =>
+        NotFoundError.invalidNel
+      case Left(ex: java.sql.SQLException) if ex.getSQLState == "23503" =>
+        ForeignKeyViolationError.invalidNel // Foreign key constraint violation
+      case Left(ex: java.sql.SQLException) if ex.getSQLState == "08001" =>
+        DatabaseConnectionError.invalidNel // Database connection issue
+      case Left(ex: java.sql.SQLException) if ex.getSQLState == "22001" =>
+        DataTooLongError.invalidNel // Data length exceeds column limit
+      case Left(ex: java.sql.SQLException) =>
+        SqlExecutionError(ex.getMessage).invalidNel // General SQL execution error
+      case Left(ex) =>
+        UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
+      case _ =>
+        UnexpectedResultError.invalidNel
+    }
 }
 
 object LanguageRepository {
