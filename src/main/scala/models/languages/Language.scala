@@ -20,7 +20,7 @@ object Language {
       case "Java" => Java
       case "Rust" => Rust
       case "TypeScript" => TypeScript
-      case "Scala" => TypeScript
+      case "Scala" => Scala
       case "Sql" => Sql
       case _ => throw new Exception(s"Unknown Language type: $str")
     }

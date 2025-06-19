@@ -1,27 +1,28 @@
 package repositories
 
+import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
-import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
-import doobie.postgres.implicits._ // <-- Needed for Array handling!
+import doobie.postgres.implicits.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
-import java.sql.Timestamp
-import java.time.LocalDateTime
-import models.database.*
-import models.languages.Language
-import models.quests.*
 import models.Assigned
 import models.NotStarted
 import models.Open
 import models.QuestStatus
 import models.Rank
+import models.database.*
+import models.languages.Language
+import models.quests.*
 import org.typelevel.log4cats.Logger
+
+import java.sql.Timestamp
+import java.time.LocalDateTime
 
 trait QuestRepositoryAlgebra[F[_]] {
 
@@ -58,8 +59,9 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
 
   implicit val rank: Meta[Rank] = Meta[String].timap(Rank.fromString)(_.toString)
 
-  implicit val localDateTimeMeta: Meta[LocalDateTime] =
-    Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
+  implicit val localDateTimeMeta: Meta[LocalDateTime] = Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
+
+  implicit val metaStringList: Meta[Seq[String]] = Meta[Array[String]].imap(_.toSeq)(_.toArray)
 
   override def countActiveQuests(devId: String): F[Int] =
     sql"""
@@ -70,7 +72,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   override def streamByQuestStatus(clientId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
       sql"""
-        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria,  status
+        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags
         FROM quests
         WHERE status = $questStatus 
           AND client_id = $clientId  
@@ -88,7 +90,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   override def streamByQuestStatusDev(devId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
       sql"""
-        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status
+        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags
         FROM quests
         WHERE status = $questStatus 
           AND dev_id = $devId  
@@ -106,7 +108,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   override def streamByUserId(clientId: String, limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
       sql"""
-        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status
+        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags
         FROM quests
         WHERE client_id = $clientId
         ORDER BY created_at DESC
@@ -123,7 +125,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   override def streamAll(limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
       sql"""
-        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status
+        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags
         FROM quests
         WHERE status = ${Open.toString()}
         ORDER BY created_at DESC
@@ -141,7 +143,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
     val findQuery: F[List[QuestPartial]] =
       sql"""
          SELECT 
-           quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status
+           quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags
          FROM quests
          WHERE client_id = $clientId
        """.query[QuestPartial].to[List].transact(transactor)
@@ -153,7 +155,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
     val findQuery: F[Option[QuestPartial]] =
       sql"""
          SELECT 
-           quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status
+           quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags
          FROM quests
          WHERE quest_id = $questId
        """.query[QuestPartial].option.transact(transactor)
