@@ -1,11 +1,12 @@
 package models.quests
 
-import io.circe.Decoder
-import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.generic.semiauto.deriveEncoder
-import models.QuestStatus
+import io.circe.Decoder
+import io.circe.Encoder
 import java.time.LocalDateTime
+import models.languages.Language
+import models.QuestStatus
 import models.Rank
 
 case class QuestPartial(
@@ -16,7 +17,8 @@ case class QuestPartial(
   title: String,
   description: Option[String],
   acceptanceCriteria: Option[String],
-  status: Option[QuestStatus]
+  status: Option[QuestStatus],
+  tags: Seq[String]
 )
 
 object QuestPartial {

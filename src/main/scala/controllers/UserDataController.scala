@@ -136,7 +136,7 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
           withValidSession(userId, headerToken) {
             Logger[F].info(s"[UserDataControllerImpl] PUT - Updating user with ID: $userId") *>
               req.decode[UpdateUserType] { request =>
-                userService.updateUserType(userId, request.userType).flatMap {
+                userService.updateUserType(userId, request).flatMap {
                   case Valid(response) =>
                     Logger[F].info(s"[UserDataControllerImpl] PUT - Successfully updated user for ID: $userId") *>
                       Ok(UpdatedResponse(UpdateSuccess.toString, s"User $userId updated successfully with type: ${request.userType}").asJson)

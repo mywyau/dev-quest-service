@@ -1,27 +1,26 @@
-import cats.NonEmptyParallel
 import cats.effect.*
 import cats.implicits.*
+import cats.NonEmptyParallel
 import com.comcast.ip4s.*
-import configuration.ConfigReader
 import configuration.models.AppConfig
+import configuration.ConfigReader
 import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts
 import middleware.Middleware.throttleMiddleware
-import org.http4s.HttpRoutes
-import org.http4s.Method
-import org.http4s.Uri
 import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.headers.Origin
 import org.http4s.implicits.*
-import org.http4s.server.Router
 import org.http4s.server.middleware.CORS
+import org.http4s.server.Router
+import org.http4s.HttpRoutes
+import org.http4s.Method
+import org.http4s.Uri
 import org.typelevel.ci.CIString
-import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.Logger
 import routes.Routes.*
-
 import scala.concurrent.duration.DurationInt
 
 object Main extends IOApp {
@@ -94,12 +93,14 @@ object Main extends IOApp {
       baseRoutes <- Resource.pure(baseRoutes())
       authRoutes <- Resource.pure(authRoutes(redisHost, redisPort, transactor, appConfig))
       questsRoutes <- Resource.pure(questsRoutes(redisHost, redisPort, transactor, appConfig))
+      skillRoutes <- Resource.pure(skillRoutes(transactor, appConfig))
+      languageRoutes <- Resource.pure(languageRoutes(transactor, appConfig))
       userDataRoutes <- Resource.pure(userDataRoutes(redisHost, redisPort, transactor, appConfig))
       registrationRoutes <- Resource.pure(registrationRoutes(redisHost, redisPort, transactor, appConfig))
       uploadRoutes <- Resource.pure(uploadRoutes(transactor, appConfig))
 
       combinedRoutes: HttpRoutes[F] = Router(
-        "/dev-quest-service" -> (baseRoutes <+> authRoutes <+> questsRoutes <+> registrationRoutes <+> userDataRoutes <+> uploadRoutes)
+        "/dev-quest-service" -> (baseRoutes <+> authRoutes <+> questsRoutes <+> skillRoutes <+> languageRoutes <+> registrationRoutes <+> userDataRoutes <+> uploadRoutes)
       )
       corsRoutes = corsPolicy(combinedRoutes)
       routesToUse =

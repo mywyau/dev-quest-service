@@ -3,12 +3,11 @@ package routes
 import cache.RedisCacheImpl
 import cache.SessionCache
 import cache.SessionCacheImpl
-import cats.effect.*
 import cats.NonEmptyParallel
+import cats.effect.*
 import configuration.models.AppConfig
 import controllers.*
 import doobie.hikari.HikariTransactor
-import java.net.URI
 import org.http4s.HttpRoutes
 import org.typelevel.log4cats.Logger
 import repositories.*
@@ -20,9 +19,11 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.S3Configuration
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
+
+import java.net.URI
 
 object Routes {
 
@@ -97,6 +98,30 @@ object Routes {
     questController.routes
   }
 
+  def skillRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](
+    transactor: HikariTransactor[F],
+    appConfig: AppConfig
+  ): HttpRoutes[F] = {
+
+    val skillRepository = SkillDataRepository(transactor)
+    val skillService = SkillDataService(skillRepository)
+    val skillController = SkillController(skillService)
+
+    skillController.routes
+  }
+
+  def languageRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](
+    transactor: HikariTransactor[F],
+    appConfig: AppConfig
+  ): HttpRoutes[F] = {
+
+    val languageRepository = LanguageRepository(transactor)
+    val languageService = LanguageService(languageRepository)
+    val languageController = LanguageController(languageService)
+
+    languageController.routes
+  }
+
   def uploadRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](
     transactor: HikariTransactor[F],
     appConfig: AppConfig
@@ -165,12 +190,3 @@ object Routes {
     uploadController.routes
   }
 }
-
-// http POST http://localhost:8080/dev-quest-service/s3/presign-download key="dev-submissions/uploads/test.txt"
-
-// aws --endpoint-url=http://localhost:4566 s3api get-object \
-//   --bucket dev-submissions \
-//   --key uploads/ed677064-ac83-4bf5-9885-e834df6c80bc-UploadController.scala \
-//   output.txt
-
-// cat output.txt

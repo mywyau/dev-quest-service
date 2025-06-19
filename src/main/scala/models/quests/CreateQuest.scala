@@ -5,9 +5,10 @@ import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.generic.semiauto.deriveEncoder
 import models.QuestStatus
+import models.Rank
+import models.languages.Language
 
 import java.time.LocalDateTime
-import models.Rank
 
 case class CreateQuest(
   questId: String,
@@ -16,6 +17,7 @@ case class CreateQuest(
   title: String,
   description: Option[String],
   acceptanceCriteria: String,
+  tags: Seq[Language],
   status: Option[QuestStatus]
 )
 

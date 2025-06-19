@@ -57,7 +57,7 @@ class RegistrationControllerISpec(global: GlobalRead) extends IOSuite with Contr
       response.as[GetResponse].map { body =>
         expect.all(
           response.status == Status.Ok,
-          body == GetResponse("dev-quest-service/registration/health", "I am alive")
+          body == GetResponse("dev-quest-service/registration/health", "I am alive - RegistrationController")
         )
       }
     }
@@ -112,6 +112,7 @@ class RegistrationControllerISpec(global: GlobalRead) extends IOSuite with Contr
 
     val updateUserTypeRequest: UpdateUserType =
       UpdateUserType(
+        username = "goku",
         userType = Client
       )
 

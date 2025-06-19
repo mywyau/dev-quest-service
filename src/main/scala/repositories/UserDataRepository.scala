@@ -40,7 +40,7 @@ trait UserDataRepositoryAlgebra[F[_]] {
 
   def updateUserData(userId: String, updateUserData: UpdateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def updateUserType(userId: String, userType: UserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def updateUserType(userId: String, userType: UpdateUserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def deleteUser(userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
@@ -58,6 +58,7 @@ class UserDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
          SELECT 
             user_id,
             email,
+            username,
             first_name,
             last_name,
             user_type
@@ -131,11 +132,12 @@ class UserDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
           UnexpectedResultError.invalidNel
       }
 
-  override def updateUserType(userId: String, userType: UserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def updateUserType(userId: String, userType: UpdateUserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       UPDATE users
       SET
-          user_type = ${userType}
+          username = ${userType.username},
+          user_type = ${userType.userType}
       WHERE user_id = ${userId}
     """.update.run
       .transact(transactor)

@@ -66,7 +66,7 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
 
     case req @ GET -> Root / "registration" / "health" =>
       Logger[F].info(s"[RegistrationController] GET - Health check for backend RegistrationController service") *>
-        Ok(GetResponse("dev-quest-service/registration/health", "I am alive").asJson)
+        Ok(GetResponse("dev-quest-service/registration/health", "I am alive - RegistrationController").asJson)
 
     case req @ GET -> Root/  "registration" / "user" / "data" / userId =>
       extractSessionToken(req) match {
@@ -111,7 +111,7 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
           withValidSession(userId, cookieToken) {
             Logger[F].info(s"[RegistrationController] PUT - Updating user type for userId: $userId") *>
               req.decode[UpdateUserType] { request =>
-                registrationService.updateUserType(userId, request.userType).flatMap {
+                registrationService.updateUserType(userId, request).flatMap {
                   case Valid(response) =>
                     Logger[F].info(s"[RegistrationController] PUT - Successfully updated user type for ID: $userId") *>
                       Ok(UpdatedResponse(UpdateSuccess.toString, s"User $userId updated successfully with type: ${request.userType}").asJson)

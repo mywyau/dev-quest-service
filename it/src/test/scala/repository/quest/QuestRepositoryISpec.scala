@@ -24,6 +24,8 @@ import testData.TestConstants.*
 import weaver.GlobalRead
 import weaver.IOSuite
 import weaver.ResourceTag
+import models.languages.*
+import scala.collection.immutable.ArraySeq
 
 class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryISpecBase {
   type Res = QuestRepositoryImpl[IO]
@@ -40,7 +42,8 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
       rank = Demon,
       title = "Implement User Authentication",
       description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
-      acceptanceCriteria = "Set up Auth0 integration and secure routes using JWT tokens."
+      acceptanceCriteria = "Set up Auth0 integration and secure routes using JWT tokens.",
+      tags = Seq(Python, Scala, TypeScript)
     )
 
   def sharedResource: Resource[IO, QuestRepositoryImpl[IO]] = {
@@ -64,7 +67,8 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         acceptanceCriteria = Some("Some acceptance criteria"),
-        status = Some(InProgress)
+        status = Some(InProgress),
+        tags = ArraySeq("Python", "Scala", "Typescript")
       )
 
     for {
@@ -83,7 +87,8 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         acceptanceCriteria = Some("Some acceptance criteria"),
-        status = Some(InProgress)
+        status = Some(InProgress),
+        tags = ArraySeq("Python", "Scala", "Typescript")
       )
 
     for {
@@ -119,7 +124,8 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         title = "Refactor API Layer",
         description = Some("Migrate from custom HTTP clients to use http4s and apply middleware."),
         acceptanceCriteria = Some("Some acceptance criteria"),
-        status = Some(InProgress)
+        status = Some(InProgress),
+        tags = ArraySeq("Python", "Scala", "Typescript")
       )
 
     for {
