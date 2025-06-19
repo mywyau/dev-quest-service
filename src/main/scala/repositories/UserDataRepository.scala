@@ -36,6 +36,8 @@ trait UserDataRepositoryAlgebra[F[_]] {
 
   def findUser(userId: String): F[Option[UserData]]
 
+  def findUserNoUserName(userId: String): F[Option[RegistrationUserDataPartial]]
+
   def createUser(userId: String, createUserData: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def updateUserData(userId: String, updateUserData: UpdateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
@@ -69,36 +71,59 @@ class UserDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
     findQuery
   }
 
-  override def createUser(userId: String, createUserData: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    override def findUserNoUserName(userId: String): F[Option[RegistrationUserDataPartial]] = {
+    val findQuery: F[Option[RegistrationUserDataPartial]] =
+      sql"""
+         SELECT 
+            user_id,
+            email,
+            first_name,
+            last_name,
+            user_type
+         FROM users
+         WHERE user_id = $userId
+       """.query[RegistrationUserDataPartial].option.transact(transactor)
+
+    findQuery
+  }
+
+  override def createUser(
+    userId: String,
+    createUserData: CreateUserData
+  ): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
-      INSERT INTO users (
-        user_id,
-        email,
-        first_name,
-        last_name,
-        user_type
-      )
-      VALUES (
-        ${userId},
-        ${createUserData.email},
-        ${createUserData.firstName},
-        ${createUserData.lastName},
-        ${createUserData.userType}
-        )
-    """.update.run
+    INSERT INTO users (
+      user_id,
+      email,
+      first_name,
+      last_name,
+      user_type
+    )
+    VALUES (
+      $userId,
+      ${createUserData.email},
+      ${createUserData.firstName},
+      ${createUserData.lastName},
+      ${createUserData.userType}
+    )
+    ON CONFLICT (user_id) DO UPDATE
+    SET
+      email = EXCLUDED.email,
+      first_name = EXCLUDED.first_name,
+      last_name = EXCLUDED.last_name,
+      user_type = EXCLUDED.user_type,
+      updated_at = CURRENT_TIMESTAMP
+  """.update.run
       .transact(transactor)
       .attempt
       .map {
-        case Right(affectedRows) if affectedRows == 1 =>
-          CreateSuccess.validNel
-        case Left(e: java.sql.SQLIntegrityConstraintViolationException) =>
-          ConstraintViolation.invalidNel
-        case Left(e: java.sql.SQLException) =>
+        case Right(_) => UpdateSuccess.validNel
+        case Left(e: java.sql.SQLException) => 
+          println(s"[DB ERROR] SQL Exception: ${e.getMessage}")
           DatabaseError.invalidNel
-        case Left(ex) =>
+        case Left(ex) => 
+          println(s"[DB ERROR] SQL Exception: ${ex.getMessage}")
           UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
-        case _ =>
-          UnexpectedResultError.invalidNel
       }
 
   override def updateUserData(userId: String, updateUserData: UpdateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =

@@ -23,8 +23,11 @@ import cats.effect.Ref
 import cache.RedisCacheAlgebra
 import models.auth.UserSession
 import models.QuestStatus
+import models.Rank
 
 class MockQuestService(userQuestData: Map[String, QuestPartial]) extends QuestServiceAlgebra[IO] {
+
+  override def completeQuestAwardXp(questId: String, questStatus: QuestStatus, rank: Rank): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
   override def streamClient(clientId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
 
@@ -55,8 +58,6 @@ class MockQuestService(userQuestData: Map[String, QuestPartial]) extends QuestSe
   override def delete(businessId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     IO.pure(Valid(DeleteSuccess))
 }
-
-
 
 /** 
  * A fully‐customizable mock.  
