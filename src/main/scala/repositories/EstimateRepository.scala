@@ -44,12 +44,12 @@ class EstimateRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
   override def createEstimation(estimateId: String, devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
     val query =
       sql"""
-        INSERT INTO quest_estimations (quest_id, dev_id, comments, rank_vote)
-        VALUES ($estimateId, $devId, ${estimate.questId},  ${estimate.comments}, ${estimate.rankVote})
+        INSERT INTO quest_estimations (estimate_id, dev_id, quest_id, comments, rank)
+        VALUES ($estimateId, $devId, ${estimate.questId}, ${estimate.comments}, ${estimate.rank})
         ON CONFLICT (quest_id, dev_id)
         DO UPDATE SET 
           comments = EXCLUDED.comments, 
-          rank = EXCLUDED.rank_vote, 
+          rank = EXCLUDED.rank, 
           created_at = CURRENT_TIMESTAMP
       """.update.run
 

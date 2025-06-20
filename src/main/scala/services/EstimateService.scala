@@ -30,6 +30,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
 ) extends EstimateServiceAlgebra[F] {
 
   override def createEstimate(devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+    
     val newEstimateId = s"estimate-${UUID.randomUUID().toString}"
 
     Logger[F].info(s"[EstimateService][create] Creating a new estimate for user $devId with estimateId $newEstimateId") *>

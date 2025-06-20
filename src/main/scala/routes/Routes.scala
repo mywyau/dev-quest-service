@@ -105,6 +105,22 @@ object Routes {
     questController.routes
   }
 
+  def estimateRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](
+    redisHost: String,
+    redisPort: Int,
+    transactor: HikariTransactor[F],
+    appConfig: AppConfig
+  ): HttpRoutes[F] = {
+
+    val sessionCache = new SessionCacheImpl(redisHost, redisPort, appConfig)
+
+    val estimateRepository = EstimateRepository(transactor)
+    val estimateService = EstimateService(estimateRepository)
+    val estimateController = EstimateController(estimateService, sessionCache)
+
+    estimateController.routes
+  }
+
   def skillRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](
     transactor: HikariTransactor[F],
     appConfig: AppConfig
