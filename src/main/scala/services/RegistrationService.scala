@@ -56,7 +56,7 @@ class RegistrationServiceImpl[F[_] : Concurrent : Monad : Logger](
       }
 
     Logger[F].info(s"[RegistrationService] Attempting to create a new user for userId: $userId") *>
-      userDataRepo.findUser(userId).flatMap {
+      userDataRepo.findUserNoUserName(userId).flatMap {
         case None =>
           createUserWithLogging
         case Some(value) =>

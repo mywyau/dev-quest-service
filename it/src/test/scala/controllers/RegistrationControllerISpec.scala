@@ -88,7 +88,7 @@ class RegistrationControllerISpec(global: GlobalRead) extends IOSuite with Contr
         .addCookie("auth_session", sessionToken)
         .withEntity(requestBody)
 
-    val expectedBody = CreatedResponse(CreateSuccess.toString(), "user details created successfully")
+    val expectedBody = CreatedResponse(UpdateSuccess.toString(), "user details created successfully")
 
     client.run(reuser).use { response =>
       response.as[CreatedResponse].map { body =>

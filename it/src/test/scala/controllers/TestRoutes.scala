@@ -184,7 +184,10 @@ object TestRoutes {
       )
       mockSessionCache = new MockSessionCache(ref)
       questRepository = QuestRepository(transactor)
-      questService = QuestService(questRepository)
+      userDataRepository = UserDataRepository(transactor)
+      skillDataRepository = SkillDataRepository(transactor)
+      languageRepository = LanguageRepository(transactor)
+      questService = QuestService(questRepository, userDataRepository, skillDataRepository, languageRepository)
       questController = QuestController(questService, mockSessionCache)
     } yield questController.routes
   }

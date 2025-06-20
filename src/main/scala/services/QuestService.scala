@@ -1,5 +1,6 @@
 package services
 
+import cats.data.EitherT
 import cats.data.Validated
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
@@ -19,10 +20,15 @@ import models.quests.CreateQuest
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
+import models.skills.Questing
 import models.NotStarted
 import models.QuestStatus
 import org.typelevel.log4cats.Logger
+import repositories.LanguageRepositoryAlgebra
 import repositories.QuestRepositoryAlgebra
+import repositories.SkillDataRepository
+import repositories.SkillDataRepositoryAlgebra
+import repositories.UserDataRepositoryAlgebra
 
 trait QuestServiceAlgebra[F[_]] {
 
@@ -56,13 +62,18 @@ trait QuestServiceAlgebra[F[_]] {
 
   def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
+  def completeQuestAwardXp(questId: String, questStatus: QuestStatus, rank: Rank): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
   def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
 class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
-  questRepo: QuestRepositoryAlgebra[F]
+  questRepo: QuestRepositoryAlgebra[F],
+  userRepo: UserDataRepositoryAlgebra[F],
+  skillRepo: SkillDataRepositoryAlgebra[F],
+  languageRepo: LanguageRepositoryAlgebra[F]
 ) extends QuestServiceAlgebra[F] {
 
   override def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
@@ -71,7 +82,7 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
   override def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
 
     val MAX_ACTIVE_QUESTS = 5
-    
+
     for {
       activeCount <- questRepo.countActiveQuests(devId)
       result <-
@@ -251,6 +262,56 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
           Concurrent[F].pure(Invalid(errors))
     }
 
+  override def completeQuestAwardXp(
+    questId: String,
+    questStatus: QuestStatus,
+    rank: Rank
+  ): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+
+    val xp = rank match {
+      case Bronze => 1000
+      case Iron => 3000
+      case Steel => 6000
+      case Mithril => 10000
+      case Adamantite => 15000
+      case Runic => 21000
+      case Demon => 28000
+      case Ruinous => 40000
+      case Aether => 55000
+    }
+
+    val result = for {
+      quest <- EitherT.fromOptionF(
+        questRepo.findByQuestId(questId),
+        NotFoundError: DatabaseErrors
+      )
+
+      _ <- EitherT.liftF(questRepo.updateStatus(questId, Completed))
+
+      devId <- EitherT.fromOption[F](
+        quest.devId,
+        ForeignKeyViolationError: DatabaseErrors
+      )
+
+      user <- EitherT.fromOptionF(
+        userRepo.findUser(devId),
+        NotFoundError: DatabaseErrors
+      )
+
+      username = user.username
+      tags = quest.tags
+
+      _ <- EitherT.liftF(skillRepo.awardSkillXP(devId, username, Questing, xp))
+
+      _ <- EitherT.liftF(tags.traverse { tag =>
+        languageRepo.awardLanguageXP(devId, username, tag, xp)
+      })
+
+    } yield UpdateSuccess
+
+    result.value.map(_.toValidatedNel)
+  }
+
   // Log quest deletion
   override def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     questRepo.delete(questId).flatMap {
@@ -266,7 +327,10 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
 object QuestService {
 
   def apply[F[_] : Concurrent : NonEmptyParallel : Logger](
-    questRepo: QuestRepositoryAlgebra[F]
+    questRepo: QuestRepositoryAlgebra[F],
+    userRepo: UserDataRepositoryAlgebra[F],
+    skillRepo: SkillDataRepositoryAlgebra[F],
+    languageRepo: LanguageRepositoryAlgebra[F]
   ): QuestServiceAlgebra[F] =
-    new QuestServiceImpl[F](questRepo)
+    new QuestServiceImpl[F](questRepo, userRepo, skillRepo, languageRepo)
 }

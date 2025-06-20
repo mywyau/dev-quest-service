@@ -78,6 +78,8 @@ class UserDataControllerISpec(global: GlobalRead) extends IOSuite with Controlle
     }
   }
 
+
+  // TODO: Change to PUT endpoint, update frontend
   test(
     "POST - /dev-quest-service/user/data/create/USER006 - should generate the user data in db table, returning Created response"
   ) { (transactorResource, log) =>
@@ -102,7 +104,7 @@ class UserDataControllerISpec(global: GlobalRead) extends IOSuite with Controlle
         .addCookie("auth_session", sessionToken)
         .withEntity(requestBody)
 
-    val expectedBody = CreatedResponse(CreateSuccess.toString, "user details created successfully")
+    val expectedBody = CreatedResponse(UpdateSuccess.toString, "user details created successfully")
 
     client.run(reuser).use { response =>
       response.as[CreatedResponse].map { body =>
