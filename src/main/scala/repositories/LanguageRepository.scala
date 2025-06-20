@@ -1,15 +1,17 @@
 package repositories
 
-import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
+import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
+import java.sql.Timestamp
+import java.time.LocalDateTime
 import models.database.*
 import models.database.ConstraintViolation
 import models.database.CreateSuccess
@@ -28,10 +30,9 @@ import models.database.UpdateSuccess
 import models.languages.*
 import org.typelevel.log4cats.Logger
 
-import java.sql.Timestamp
-import java.time.LocalDateTime
-
 trait LanguageRepositoryAlgebra[F[_]] {
+
+  def getAllLanguages(devId: String): F[List[LanguageData]]
 
   def getLanguage(devId: String, language: Language): F[Option[LanguageData]]
 
@@ -47,6 +48,25 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
 
+  override def getAllLanguages(devId: String): F[List[LanguageData]] = {
+    val findQuery: F[List[LanguageData]] =
+      sql"""
+        SELECT 
+          dev_id,
+          username,
+          language,
+          level,
+          xp
+        FROM language
+        WHERE dev_id = $devId
+      """
+        .query[LanguageData]
+        .to[List]
+        .transact(transactor)
+
+    findQuery
+  }
+
   override def getLanguage(devId: String, language: Language): F[Option[LanguageData]] = {
     val findQuery: F[Option[LanguageData]] =
       sql"""
@@ -56,7 +76,7 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
           language,
           level,
           xp
-        FROM langauges
+        FROM language
         WHERE dev_id = $devId AND language = $language
       """
         .query[LanguageData]
@@ -86,9 +106,9 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
   }
 
   override def awardLanguageXP(devId: String, username: String, language: String, xp: BigDecimal): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
-     //TODO: calcs the level here this needs to change we want to calc the level on upsert in backend 
-     //       VALUES ($devId, $username, $language, $xp, 1)
-     //      level = LEAST(99, FLOOR(SQRT(language.xp + $xp) / 10)::int + 1) 
+    // TODO: calcs the level here this needs to change we want to calc the level on upsert in backend
+    //       VALUES ($devId, $username, $language, $xp, 1)
+    //      level = LEAST(99, FLOOR(SQRT(language.xp + $xp) / 10)::int + 1)
     sql"""
       INSERT INTO language (dev_id, username, language, xp, level)
       VALUES ($devId, $username, $language, $xp, LEAST(99, FLOOR(SQRT($xp) / 10)::int + 1) )

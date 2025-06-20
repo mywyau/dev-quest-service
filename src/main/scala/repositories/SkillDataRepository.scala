@@ -1,15 +1,17 @@
 package repositories
 
-import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
+import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
+import java.sql.Timestamp
+import java.time.LocalDateTime
 import models.database.*
 import models.database.ConstraintViolation
 import models.database.CreateSuccess
@@ -33,12 +35,9 @@ import models.skills.Testing
 import models.users.*
 import org.typelevel.log4cats.Logger
 
-import java.sql.Timestamp
-import java.time.LocalDateTime
-
 trait SkillDataRepositoryAlgebra[F[_]] {
 
-  def getSkillData(devId: String, skill: Skill): F[Option[SkillData]]
+  def getAllSkills(devId: String): F[List[SkillData]]
 
   def getHiscoreSkillData(skill: Skill): F[List[SkillData]]
 
@@ -53,8 +52,8 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tr
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
 
-  override def getSkillData(devId: String, skill: Skill): F[Option[SkillData]] = {
-    val findQuery: F[Option[SkillData]] =
+  override def getAllSkills(devId: String): F[List[SkillData]] = {
+    val findQuery: F[List[SkillData]] =
       sql"""
         SELECT 
           dev_id,
@@ -63,14 +62,33 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tr
           level,
           xp
         FROM skill
-        WHERE dev_id = $devId AND skill = $skill
+        WHERE dev_id = $devId
       """
         .query[SkillData]
-        .option
+        .to[List]
         .transact(transactor)
 
     findQuery
   }
+
+  // override def getSkillData(devId: String, skill: Skill): F[Option[SkillData]] = {
+  //   val findQuery: F[Option[SkillData]] =
+  //     sql"""
+  //       SELECT 
+  //         dev_id,
+  //         username,
+  //         skill,
+  //         level,
+  //         xp
+  //       FROM skill
+  //       WHERE dev_id = $devId AND skill = $skill
+  //     """
+  //       .query[SkillData]
+  //       .option
+  //       .transact(transactor)
+
+  //   findQuery
+  // }
 
   override def getHiscoreSkillData(skill: Skill): F[List[SkillData]] = {
     val findQuery: F[List[SkillData]] =

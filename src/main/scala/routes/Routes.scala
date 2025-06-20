@@ -129,6 +129,21 @@ object Routes {
     languageController.routes
   }
 
+  def profileRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](
+    transactor: HikariTransactor[F],
+    appConfig: AppConfig
+  ): HttpRoutes[F] = {
+
+    val skillRepository = SkillDataRepository(transactor)
+    val languageRepository = LanguageRepository(transactor)
+
+    val profileService = ProfileService(skillRepository, languageRepository)
+
+    val profileController = ProfileController(profileService)
+
+    profileController.routes
+  }
+
   def uploadRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](
     transactor: HikariTransactor[F],
     appConfig: AppConfig
