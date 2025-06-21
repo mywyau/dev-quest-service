@@ -16,7 +16,7 @@ import models.skills.SkillData
 
 case object MockSkillDataRepository extends SkillDataRepositoryAlgebra[IO] {
 
-  override def getSkillData(devId: String, skill: Skill): IO[Option[SkillData]] = ???
+  override def getAllSkills(devId: String): IO[List[SkillData]] = ???
 
   override def getHiscoreSkillData(skill: Skill): IO[List[SkillData]] = ???
 

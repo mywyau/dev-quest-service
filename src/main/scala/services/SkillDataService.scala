@@ -24,25 +24,12 @@ import java.util.UUID
 
 trait SkillDataServiceAlgebra[F[_]] {
 
-  def getSkillData(devId: String, skill: Skill): F[Option[SkillData]]
-
   def getHiscoreSkillData(skill: Skill): F[List[SkillData]]
-
 }
 
 class SkillDataServiceImpl[F[_] : Concurrent : Monad : Logger](
   skillRepo: SkillDataRepositoryAlgebra[F]
 ) extends SkillDataServiceAlgebra[F] {
-
-  override def getSkillData(devId: String, skill: Skill): F[Option[SkillData]] =
-    skillRepo.getSkillData(devId, skill).flatMap {
-      case Some(skill) =>
-        Logger[F].info(s"[SkillDataService][getSkillData] Found skill data: $skill for user with devId: $devId") *>
-          Concurrent[F].pure(Some(skill))
-      case None =>
-        Logger[F].info(s"[SkillDataServicegetSkillData No skill data: $skill - found for user with devId: $devId") *>
-          Concurrent[F].pure(None)
-    }
 
   override def getHiscoreSkillData(skill: Skill): F[List[SkillData]] =
     skillRepo.getHiscoreSkillData(skill).map(_.sortBy(_.xp)(Ordering[BigDecimal].reverse))
