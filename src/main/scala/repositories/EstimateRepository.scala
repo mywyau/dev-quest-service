@@ -1,9 +1,9 @@
 package repositories
 
-import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
+import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
@@ -11,21 +11,22 @@ import doobie.postgres.implicits.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
+import java.sql.Timestamp
+import java.time.LocalDateTime
 import models.*
-import models.Assigned
-import models.NotStarted
-import models.Open
-import models.Rank
 import models.database.*
 import models.estimate.*
 import models.languages.Language
 import models.skills.Skill
+import models.Assigned
+import models.NotStarted
+import models.Open
+import models.Rank
 import org.typelevel.log4cats.Logger
 
-import java.sql.Timestamp
-import java.time.LocalDateTime
-
 trait EstimateRepositoryAlgebra[F[_]] {
+
+  def getEstimates(questId: String): F[List[EstimatePartial]]
 
   def createEstimation(estimateId: String, devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
@@ -33,24 +34,30 @@ trait EstimateRepositoryAlgebra[F[_]] {
 
 class EstimateRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends EstimateRepositoryAlgebra[F] {
 
-  // implicit val estimateMeta: Meta[EstimateStatus] = Meta[String].timap(EstimateStatus.fromString)(_.toString)
-
   implicit val rank: Meta[Rank] = Meta[String].timap(Rank.fromString)(_.toString)
 
   implicit val localDateTimeMeta: Meta[LocalDateTime] = Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
 
   implicit val metaStringList: Meta[Seq[String]] = Meta[Array[String]].imap(_.toSeq)(_.toArray)
 
+  override def getEstimates(questId: String): F[List[EstimatePartial]] = {
+    val findQuery: F[List[EstimatePartial]] =
+      sql"""
+         SELECT 
+           comment, rank
+         FROM quests
+         WHERE quest_id = $questId
+       """.query[EstimatePartial].to[List].transact(transactor)
+
+    findQuery
+  }
+
   override def createEstimation(estimateId: String, devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
     val query =
       sql"""
-        INSERT INTO quest_estimations (estimate_id, dev_id, quest_id, comments, rank)
-        VALUES ($estimateId, $devId, ${estimate.questId}, ${estimate.comments}, ${estimate.rank})
-        ON CONFLICT (quest_id, dev_id)
-        DO UPDATE SET 
-          comments = EXCLUDED.comments, 
-          rank = EXCLUDED.rank, 
-          created_at = CURRENT_TIMESTAMP
+        INSERT INTO quest_estimations (estimate_id, dev_id, quest_id, comment, rank)
+        VALUES ($estimateId, $devId, ${estimate.questId}, ${estimate.comment}, ${estimate.rank})
+        ON CONFLICT (quest_id, dev_id) DO NOTHING
       """.update.run
 
     query.transact(transactor).attempt.map {

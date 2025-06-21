@@ -40,11 +40,7 @@ class EstimateControllerImpl[F[_] : Async : Concurrent : Logger](
     with EstimateControllerAlgebra[F] {
 
   implicit val createDecoder: EntityDecoder[F, CreateEstimate] = jsonOf[F, CreateEstimate]
-  // implicit val updateDecoder: EntityDecoder[F, UpdateEstimatePartial] = jsonOf[F, UpdateEstimatePartial]
-  // implicit val updateEstimateStatusPayloadDecoder: EntityDecoder[F, UpdateEstimateStatusPayload] = jsonOf[F, UpdateEstimateStatusPayload]
-  // implicit val completeEstimatePayloadDecoder: EntityDecoder[F, CompleteEstimatePayload] = jsonOf[F, CompleteEstimatePayload]
-  // implicit val updateDevIdPayloadDecoder: EntityDecoder[F, AcceptEstimatePayload] = jsonOf[F, AcceptEstimatePayload]
-
+  
   private def extractSessionToken(req: Request[F]): Option[String] =
     req.cookies
       .find(_.name == "auth_session")
@@ -87,7 +83,6 @@ class EstimateControllerImpl[F[_] : Async : Concurrent : Logger](
         case None =>
           Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
-
   }
 }
 

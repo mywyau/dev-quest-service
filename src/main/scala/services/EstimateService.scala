@@ -17,20 +17,39 @@ import models.database.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
 import models.estimate.CreateEstimate
+import models.estimate.Estimate
 import org.typelevel.log4cats.Logger
 import repositories.EstimateRepositoryAlgebra
+import repositories.UserDataRepositoryAlgebra
 
 trait EstimateServiceAlgebra[F[_]] {
+
+  def getEstimates(devId: String, questId: String): F[List[Estimate]]
 
   def createEstimate(devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
 class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
+  userDataRepo: UserDataRepositoryAlgebra[F],
   estimateRepo: EstimateRepositoryAlgebra[F]
 ) extends EstimateServiceAlgebra[F] {
 
+  override def getEstimates(devId: String, questId: String): F[List[Estimate]] =
+    for {
+      estimates <- estimateRepo.getEstimates(questId)
+      userOpt <- userDataRepo.findUser(devId)
+      result = estimates.map { partial =>
+        Estimate(
+          username = userOpt.map(_.username).getOrElse("No username"),
+          rank = partial.rank,
+          comment = partial.comment
+        )
+      }
+      _ <- Logger[F].info(s"[EstimateService][getEstimate] Returning ${result.length} estimates for quest $questId and dev $devId")
+    } yield result
+
   override def createEstimate(devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
-    
+
     val newEstimateId = s"estimate-${UUID.randomUUID().toString}"
 
     Logger[F].info(s"[EstimateService][create] Creating a new estimate for user $devId with estimateId $newEstimateId") *>
@@ -48,7 +67,8 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
 object EstimateService {
 
   def apply[F[_] : Concurrent : NonEmptyParallel : Logger](
+    userDataRepo: UserDataRepositoryAlgebra[F],
     estimateRepo: EstimateRepositoryAlgebra[F]
   ): EstimateServiceAlgebra[F] =
-    new EstimateServiceImpl[F](estimateRepo)
+    new EstimateServiceImpl[F](userDataRepo, estimateRepo)
 }

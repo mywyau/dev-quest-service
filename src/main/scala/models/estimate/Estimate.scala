@@ -8,13 +8,13 @@ import models.Rank
 
 import java.time.LocalDateTime
 
-case class CreateEstimate(
-  questId: String,
+case class Estimate(
+  username: String,
   rank: Rank,
   comment: Option[String]
 )
 
-object CreateEstimate {
-  implicit val encoder: Encoder[CreateEstimate] = deriveEncoder[CreateEstimate]
-  implicit val decoder: Decoder[CreateEstimate] = deriveDecoder[CreateEstimate]
+object Estimate {
+  implicit val encoder: Encoder[Estimate] = deriveEncoder[Estimate]
+  implicit val decoder: Decoder[Estimate] = deriveDecoder[Estimate]
 }
