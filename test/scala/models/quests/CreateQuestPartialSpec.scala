@@ -1,34 +1,39 @@
-package models
+package models.quests
 
 import cats.effect.IO
 import io.circe.*
 import io.circe.parser.*
 import io.circe.syntax.EncoderOps
-import models.quests.UpdateQuestPartial
+import java.time.LocalDateTime
+import models.languages.*
+import models.quests.CreateQuestPartial
+import models.Iron
 import models.ModelsBaseSpec
 import weaver.SimpleIOSuite
 
-object UpdateQuestPartialSpec extends SimpleIOSuite with ModelsBaseSpec {
+object CreateQuestPartialSpec extends SimpleIOSuite with ModelsBaseSpec {
 
-  val testUpdatedRequest =
-    UpdateQuestPartial(
+  val testCreatedRequest =
+    CreateQuestPartial(
       rank = Iron,
       title = "Some quest title",
       description = Some("Some description"),
-      acceptanceCriteria = Some("Some acceptance criteria")
+      acceptanceCriteria = "Some acceptance criteria",
+      tags = Seq(Python, Scala, TypeScript)
     )
 
-  test("UpdateQuestPartial model encodes correctly to JSON") {
+  test("CreateQuestPartial model encodes correctly to JSON") {
 
-    val jsonResult = testUpdatedRequest.asJson
+    val jsonResult = testCreatedRequest.asJson
 
     val expectedJson =
       """
         |{
-        |  "rank": "Iron",
-        |  "title": "Some quest title",
-        |  "description": "Some description",
-        |  "acceptanceCriteria": "Some acceptance criteria"
+        |  "acceptanceCriteria" : "Some acceptance criteria",
+        |  "description" : "Some description",
+        |  "rank" : "Iron",
+        |  "title" : "Some quest title",         
+        |  "tags" : ["Python", "Scala", "TypeScript"]          
         |}
         |""".stripMargin
 
