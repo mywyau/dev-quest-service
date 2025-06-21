@@ -9,6 +9,7 @@ import models.Rank
 import java.time.LocalDateTime
 
 case class EstimatePartial(
+  username: String,
   rank: Rank,
   comment: Option[String]
 )

@@ -23,7 +23,6 @@ import repositories.UserDataRepositoryAlgebra
 
 trait SessionServiceAlgebra[F[_]] {
 
-
   def getSessionCookieOnly(userId: String): F[Option[String]]
 
   def getSession(userId: String): F[Option[UserSession]]

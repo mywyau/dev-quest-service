@@ -28,7 +28,7 @@ trait EstimateRepositoryAlgebra[F[_]] {
 
   def getEstimates(questId: String): F[List[EstimatePartial]]
 
-  def createEstimation(estimateId: String, devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def createEstimation(estimateId: String, devId: String, username: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
 }
 
@@ -44,19 +44,19 @@ class EstimateRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
     val findQuery: F[List[EstimatePartial]] =
       sql"""
          SELECT 
-           comment, rank
-         FROM quests
+          username, rank, comment
+         FROM quest_estimations
          WHERE quest_id = $questId
        """.query[EstimatePartial].to[List].transact(transactor)
 
     findQuery
   }
 
-  override def createEstimation(estimateId: String, devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+  override def createEstimation(estimateId: String, devId: String, username: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
     val query =
       sql"""
-        INSERT INTO quest_estimations (estimate_id, dev_id, quest_id, comment, rank)
-        VALUES ($estimateId, $devId, ${estimate.questId}, ${estimate.comment}, ${estimate.rank})
+        INSERT INTO quest_estimations (estimate_id, dev_id, quest_id, username, rank, comment)
+        VALUES ($estimateId, $devId, ${estimate.questId}, ${username}, ${estimate.rank}, ${estimate.comment})
         ON CONFLICT (quest_id, dev_id) DO NOTHING
       """.update.run
 
