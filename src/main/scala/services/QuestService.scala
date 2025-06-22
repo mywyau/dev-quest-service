@@ -1,5 +1,7 @@
 package services
 
+import cats.Monad
+import cats.NonEmptyParallel
 import cats.data.EitherT
 import cats.data.Validated
 import cats.data.Validated.Invalid
@@ -8,11 +10,10 @@ import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
-import cats.Monad
-import cats.NonEmptyParallel
 import fs2.Stream
-import java.util.UUID
 import models.*
+import models.NotStarted
+import models.QuestStatus
 import models.database.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
@@ -21,14 +22,14 @@ import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
 import models.skills.Questing
-import models.NotStarted
-import models.QuestStatus
 import org.typelevel.log4cats.Logger
 import repositories.LanguageRepositoryAlgebra
 import repositories.QuestRepositoryAlgebra
 import repositories.SkillDataRepository
 import repositories.SkillDataRepositoryAlgebra
 import repositories.UserDataRepositoryAlgebra
+
+import java.util.UUID
 
 trait QuestServiceAlgebra[F[_]] {
 
@@ -269,15 +270,15 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
   ): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
 
     val xp = rank match {
-      case Bronze => 1000
-      case Iron => 3000
-      case Steel => 6000
-      case Mithril => 10000
-      case Adamantite => 15000
-      case Runic => 21000
-      case Demon => 28000
-      case Ruinous => 40000
-      case Aether => 55000
+      case Bronze => 100
+      case Iron => 300
+      case Steel => 700
+      case Mithril => 1000
+      case Adamantite => 3000
+      case Runic => 5000
+      case Demon => 7000
+      case Ruinous => 8000
+      case Aether => 10000
     }
 
     val result = for {

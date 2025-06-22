@@ -26,7 +26,7 @@ import org.typelevel.log4cats.Logger
 
 trait EstimateRepositoryAlgebra[F[_]] {
 
-  def getEstimates(questId: String): F[List[EstimatePartial]]
+  def getEstimates(questId: String): F[List[Estimate]]
 
   def createEstimation(estimateId: String, devId: String, username: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
@@ -40,14 +40,14 @@ class EstimateRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
 
   implicit val metaStringList: Meta[Seq[String]] = Meta[Array[String]].imap(_.toSeq)(_.toArray)
 
-  override def getEstimates(questId: String): F[List[EstimatePartial]] = {
-    val findQuery: F[List[EstimatePartial]] =
+  override def getEstimates(questId: String): F[List[Estimate]] = {
+    val findQuery: F[List[Estimate]] =
       sql"""
          SELECT 
           username, rank, comment
          FROM quest_estimations
          WHERE quest_id = $questId
-       """.query[EstimatePartial].to[List].transact(transactor)
+       """.query[Estimate].to[List].transact(transactor)
 
     findQuery
   }
