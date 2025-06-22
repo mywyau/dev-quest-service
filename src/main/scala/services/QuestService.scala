@@ -313,7 +313,6 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
     result.value.map(_.toValidatedNel)
   }
 
-  // Log quest deletion
   override def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     questRepo.delete(questId).flatMap {
       case Valid(value) =>
