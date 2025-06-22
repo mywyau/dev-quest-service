@@ -47,10 +47,7 @@ object CreateQuestPartialSpec extends SimpleIOSuite with ModelsBaseSpec {
     for {
       _ <- IO {
         if (differences.nonEmpty) {
-          println("=== JSON Difference Detected! ===")
-          differences.foreach(diff => println(s"- $diff"))
-          println("Generated JSON:\n" + jsonResultPretty)
-          println("Expected JSON:\n" + expectedResultPretty)
+          diffPrinter(differences, jsonResultPretty, expectedResultPretty)
         }
       }
     } yield expect(differences.isEmpty)

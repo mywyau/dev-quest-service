@@ -2,11 +2,10 @@ package models
 
 import cats.effect.IO
 import cats.implicits.*
-import org.typelevel.log4cats.slf4j.Slf4jLogger
-import org.typelevel.log4cats.SelfAwareStructuredLogger
-import io.circe.Printer
 import io.circe.Json
-
+import io.circe.Printer
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 trait ModelsBaseSpec {
 
@@ -16,7 +15,7 @@ trait ModelsBaseSpec {
   val printer: Printer = Printer.spaces2SortKeys
 
   // Function to find JSON differences
-  def jsonDiff(actual: Json, expected: Json, expectedResultPretty:String, jsonResultPretty: String): List[String] =
+  def jsonDiff(actual: Json, expected: Json, expectedResultPretty: String, jsonResultPretty: String): List[String] =
     (actual.asObject, expected.asObject) match {
       case (Some(actualObj), Some(expectedObj)) =>
         val actualKeys = actualObj.keys.toSet
@@ -40,5 +39,12 @@ trait ModelsBaseSpec {
         if (actual != expected) List(s"Entire JSON mismatch:\nExpected:\n$expectedResultPretty\nActual:\n$jsonResultPretty")
         else List.empty
     }
+
+  def diffPrinter(differences: List[String], jsonResultPretty: String, expectedResultPretty: String) = {
+    println("=== JSON Difference Detected! ===")
+    differences.foreach(diff => println(s"- $diff"))
+    println("Generated JSON:\n" + jsonResultPretty)
+    println("Expected JSON:\n" + expectedResultPretty)
+  }
 
 }

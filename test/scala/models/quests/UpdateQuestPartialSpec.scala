@@ -4,9 +4,9 @@ import cats.effect.IO
 import io.circe.*
 import io.circe.parser.*
 import io.circe.syntax.EncoderOps
-import models.quests.UpdateQuestPartial
 import models.Iron
 import models.ModelsBaseSpec
+import models.quests.UpdateQuestPartial
 import weaver.SimpleIOSuite
 
 object UpdateQuestPartialSpec extends SimpleIOSuite with ModelsBaseSpec {
@@ -43,10 +43,7 @@ object UpdateQuestPartialSpec extends SimpleIOSuite with ModelsBaseSpec {
     for {
       _ <- IO {
         if (differences.nonEmpty) {
-          println("=== JSON Difference Detected! ===")
-          differences.foreach(diff => println(s"- $diff"))
-          println("Generated JSON:\n" + jsonResultPretty)
-          println("Expected JSON:\n" + expectedResultPretty)
+          diffPrinter(differences, jsonResultPretty, expectedResultPretty)
         }
       }
     } yield expect(differences.isEmpty)
