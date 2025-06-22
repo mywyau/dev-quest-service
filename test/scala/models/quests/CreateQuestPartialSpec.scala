@@ -1,4 +1,4 @@
-package models
+package models.quests
 
 import cats.effect.IO
 import io.circe.*
@@ -7,6 +7,7 @@ import io.circe.syntax.EncoderOps
 import java.time.LocalDateTime
 import models.languages.*
 import models.quests.CreateQuestPartial
+import models.Iron
 import models.ModelsBaseSpec
 import weaver.SimpleIOSuite
 
@@ -46,10 +47,7 @@ object CreateQuestPartialSpec extends SimpleIOSuite with ModelsBaseSpec {
     for {
       _ <- IO {
         if (differences.nonEmpty) {
-          println("=== JSON Difference Detected! ===")
-          differences.foreach(diff => println(s"- $diff"))
-          println("Generated JSON:\n" + jsonResultPretty)
-          println("Expected JSON:\n" + expectedResultPretty)
+          diffPrinter(differences, jsonResultPretty, expectedResultPretty)
         }
       }
     } yield expect(differences.isEmpty)

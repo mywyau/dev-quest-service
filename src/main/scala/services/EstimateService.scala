@@ -38,17 +38,8 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
   override def getEstimates(devId: String, questId: String): F[List[Estimate]] =
     for {
       estimates <- estimateRepo.getEstimates(questId)
-      // userOpt <- userDataRepo.findUser(devId)
-      result =
-        estimates.map { partial =>
-          Estimate(
-            username = partial.username,
-            rank = partial.rank,
-            comment = partial.comment
-          )
-        }
-      _ <- Logger[F].info(s"[EstimateService][getEstimate] Returning ${result.length} estimates for quest $questId and dev $devId")
-    } yield result
+      _ <- Logger[F].info(s"[EstimateService][getEstimate] Returning ${estimates.length} estimates for quest $questId and dev $devId")
+    } yield estimates
 
   override def createEstimate(devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
     val newEstimateId = s"estimate-${UUID.randomUUID().toString}"
