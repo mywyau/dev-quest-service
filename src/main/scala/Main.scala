@@ -1,27 +1,26 @@
-import cats.NonEmptyParallel
 import cats.effect.*
 import cats.implicits.*
+import cats.NonEmptyParallel
 import com.comcast.ip4s.*
-import configuration.ConfigReader
 import configuration.models.AppConfig
+import configuration.ConfigReader
 import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts
 import middleware.Middleware.throttleMiddleware
-import org.http4s.HttpRoutes
-import org.http4s.Method
-import org.http4s.Uri
 import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.headers.Origin
 import org.http4s.implicits.*
-import org.http4s.server.Router
 import org.http4s.server.middleware.CORS
+import org.http4s.server.Router
+import org.http4s.HttpRoutes
+import org.http4s.Method
+import org.http4s.Uri
 import org.typelevel.ci.CIString
-import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.Logger
 import routes.Routes.*
-
 import scala.concurrent.duration.DurationInt
 
 object Main extends IOApp {
@@ -36,6 +35,7 @@ object Main extends IOApp {
   }
 
   def transactorResource[F[_] : Async](appConfig: AppConfig): Resource[F, HikariTransactor[F]] = {
+
     val dbHost = sys.env.getOrElse("DB_HOST", appConfig.localConfig.postgresqlConfig.host)
     val dbUser = sys.env.getOrElse("DB_USER", appConfig.localConfig.postgresqlConfig.username)
     val dbPassword = sys.env.getOrElse("DB_PASSWORD", appConfig.localConfig.postgresqlConfig.password)
@@ -97,6 +97,7 @@ object Main extends IOApp {
       estimateRoutes <- Resource.pure(estimateRoutes(redisHost, redisPort, transactor, appConfig))
       skillRoutes <- Resource.pure(skillRoutes(transactor, appConfig))
       languageRoutes <- Resource.pure(languageRoutes(transactor, appConfig))
+      paymentRoutes <- Resource.pure(paymentRoutes(redisHost, redisPort, transactor, appConfig, client))
       profileRoutes <- Resource.pure(profileRoutes(transactor, appConfig))
       userDataRoutes <- Resource.pure(userDataRoutes(redisHost, redisPort, transactor, appConfig))
       registrationRoutes <- Resource.pure(registrationRoutes(redisHost, redisPort, transactor, appConfig))
@@ -113,7 +114,8 @@ object Main extends IOApp {
             registrationRoutes <+>
             userDataRoutes <+>
             uploadRoutes <+>
-            profileRoutes
+            profileRoutes <+>
+            paymentRoutes
         )
       )
       corsRoutes = corsPolicy(combinedRoutes)

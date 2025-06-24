@@ -37,7 +37,8 @@ object AppDependencies {
     "io.circe" %% "circe-parser" % circeVersion,
     "org.http4s" %% "http4s-ember-client" % "0.23.28",
     "com.github.pureconfig" %% "pureconfig-core" % "0.17.8",
-    "software.amazon.awssdk" % "s3" % "2.25.0"
+    "software.amazon.awssdk" % "s3" % "2.25.0",
+    "com.stripe" % "stripe-java" % "29.2.0", // or latest
   )
 
   // Test dependencies
@@ -48,8 +49,6 @@ object AppDependencies {
     "com.disneystreaming" %% "weaver-scalacheck" % "0.7.6" % Test,
     "org.http4s" %% "http4s-ember-client" % "0.23.28" % Test,
     "org.scalamock" %% "scalamock" % "7.3.2" % Test
-    // "org.mockito" %% "mockito-scala" % "1.17.12" % Test,
-    // "org.mockito" %% "mockito-scala-scalatest" % "1.17.12" % Test
   )
 
   // Integration test dependencies
@@ -61,8 +60,6 @@ object AppDependencies {
     "com.disneystreaming" %% "weaver-scalacheck" % "0.7.6" % Test,
     "com.github.pureconfig" %% "pureconfig-core" % "0.17.8" % Test,
     "org.scalamock" %% "scalamock" % "7.3.2" % Test
-    // "org.mockito" %% "mockito-scala" % "1.17.12" % Test,
-    // "org.mockito" %% "mockito-scala-scalatest" % "1.17.12" % Test
   )
 
   // Additional workaround for macOS if needed

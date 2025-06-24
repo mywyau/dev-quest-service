@@ -17,7 +17,7 @@ import models.database.*
 import models.languages.Language
 import models.quests.*
 import models.skills.Skill
-import models.Assigned
+import models.PaidOut
 import models.NotStarted
 import models.Open
 import models.QuestStatus
@@ -51,6 +51,10 @@ trait QuestRepositoryAlgebra[F[_]] {
   def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def deleteAllByUserId(clientId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def validateOwnership(questId: String, clientId: String): F[Unit]
+
+  def markPaid(questId: String): F[Unit]
 }
 
 class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends QuestRepositoryAlgebra[F] {
@@ -162,7 +166,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
 
     findQuery
   }
-
+  
   override def create(request: CreateQuest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
     val tagArray: Array[String] = request.tags.map(_.toString).toArray
     sql"""
@@ -255,7 +259,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
         case _ =>
           UnexpectedResultError.invalidNel
       }
-      
+
   override def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       UPDATE quests
@@ -335,6 +339,25 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
         UnexpectedResultError.invalidNel
     }
   }
+
+  override def validateOwnership(questId: String, clientId: String): F[Unit] =
+    sql"""
+      SELECT 1 FROM quests WHERE quest_id = $questId AND client_id = $clientId
+    """.query[Int].option.transact(transactor).flatMap {
+      case Some(_) => ().pure[F]
+      case None => new Exception(s"Unauthorized: client [$clientId] does not own quest [$questId]").raiseError[F, Unit]
+    }
+
+  override def markPaid(questId: String): F[Unit] =
+    sql"""
+      UPDATE quests
+      SET status = ${PaidOut.toString}, updated_at = NOW()
+      WHERE quest_id = $questId
+    """.update.run.transact(transactor).flatMap {
+      case 1 => ().pure[F]
+      case _ => new Exception(s"Failed to mark quest [$questId] as paid. Quest not found or update failed.").raiseError[F, Unit]
+    }
+
 }
 
 object QuestRepository {

@@ -8,9 +8,11 @@ import java.time.LocalDateTime
 import models.RewardStatus
 
 case class RewardPartial(
-  baseReward: BigDecimal,
-  timeReward: BigDecimal,
-  completionReward: BigDecimal
+  questId: String,
+  clientId: String,
+  devId: String,
+  dollarValue: BigDecimal,
+  paid: RewardStatus
 )
 
 object RewardPartial {
