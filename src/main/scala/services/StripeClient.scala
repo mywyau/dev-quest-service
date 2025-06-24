@@ -29,8 +29,8 @@ class StripeClient[F[_] : Async : Logger](
   client: Client[F]
 ) {
 
-  val secretKey: String = sys.env.getOrElse("STRIPE_SECRET_KEY", Dotenv.load().get("STRIPE_SECRET_KEY"))              // fall back is .env not app config but in prod/infra we use aws secrets for the sys variables
-  val webhookSecret: String = sys.env.getOrElse("STRIPE_WEBHOOK_SECRET", Dotenv.load().get("STRIPE_WEBHOOK_SECRET"))  // fall back is .env not app config but in prod/infra we use aws secrets for the sys variables
+  val secretKey: String = sys.env.getOrElse("STRIPE_TEST_SECRET_KEY", Dotenv.load().get("STRIPE_TEST_SECRET_KEY"))              // fall back is .env not app config but in prod/infra we use aws secrets for the sys variables
+  val webhookSecret: String = sys.env.getOrElse("STRIPE_TEST_WEBHOOK_SECRET", Dotenv.load().get("STRIPE_TEST_WEBHOOK_SECRET"))  // fall back is .env not app config but in prod/infra we use aws secrets for the sys variables
 
   private val baseUri: Uri = 
     Uri.fromString(appConfig.localConfig.stripeConfig.stripeUrl)
