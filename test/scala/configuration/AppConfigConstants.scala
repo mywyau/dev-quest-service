@@ -9,7 +9,8 @@ object AppConfigConstants {
       useDockerHost = false,
       localTesting = false,
       useCors = false,
-      useHttpsLocalstack = false
+      useHttpsLocalstack = false,
+      useProdStripe = false
     )
 
   val appServerConfig =
@@ -46,8 +47,8 @@ object AppConfigConstants {
 
   val stripeConfig =
     StripeConfig(
-      platformFeePercent = 0,
-      stripeUrl = ""
+      stripeUrl = "https://api.stripe.com/v1",
+      platformFeePercent = 2.5
     )
 
   val devSubmissionConfig =

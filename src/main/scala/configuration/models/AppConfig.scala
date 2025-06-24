@@ -9,7 +9,8 @@ case class FeatureSwitches(
   useDockerHost: Boolean,
   localTesting: Boolean,
   useCors: Boolean,
-  useHttpsLocalstack: Boolean
+  useHttpsLocalstack: Boolean,
+  useProdStripe: Boolean
 ) derives ConfigReader
 
 case class DevSubmissionConfig(
@@ -17,8 +18,8 @@ case class DevSubmissionConfig(
 )
 
 case class StripeConfig(
-  platformFeePercent: BigDecimal,
-  stripeUrl: String
+  stripeUrl: String,
+  platformFeePercent: BigDecimal
 ) derives ConfigReader
 
 case class S3Config(
