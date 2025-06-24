@@ -19,7 +19,6 @@ class ConfigReaderImpl[F[_] : Sync] extends ConfigReaderAlgebra[F] {
 }
 
 object ConfigReader {
-
   def apply[F[_] : Sync]: ConfigReaderAlgebra[F] =
-    new ConfigReaderImpl
+    new ConfigReaderImpl[F]
 }

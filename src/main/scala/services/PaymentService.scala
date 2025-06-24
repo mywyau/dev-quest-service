@@ -7,17 +7,18 @@ import cats.effect.IO
 import cats.implicits.*
 import com.stripe.net.Webhook
 import configuration.models.AppConfig
+import io.circe.Json
 import io.circe.parser
 import io.circe.syntax.EncoderOps
-import io.circe.Json
+import io.github.cdimascio.dotenv.Dotenv
 import models.payment.CheckoutSessionUrl
 import models.payment.StripePaymentIntent
 import models.responses.*
 import org.http4s.*
+import org.http4s.Header
 import org.http4s.circe.*
 import org.http4s.client.Client
 import org.http4s.syntax.all.uri
-import org.http4s.Header
 import org.typelevel.ci.CIStringSyntax
 import org.typelevel.log4cats.Logger
 import repositories.QuestRepositoryAlgebra
@@ -53,9 +54,9 @@ class StripeClient[F[_] : Async : Logger](
     Uri.fromString(appConfig.localConfig.stripeConfig.stripeUrl)
       .getOrElse(sys.error(s"Invalid Stripe URL: ${appConfig.localConfig.stripeConfig.stripeUrl}"))
 
-  val secretKey: String = sys.env.getOrElse("STRIPE_SECRET_KEY", appConfig.localConfig.stripeConfig.secretKey)
-  val webhookSecret: String = sys.env.getOrElse("STRIPE_WEBHOOK_SECRET", appConfig.localConfig.stripeConfig.webhookSecret)
-
+  val secretKey: String = sys.env.getOrElse("STRIPE_SECRET_KEY", Dotenv.load().get("STRIPE_SECRET_KEY"))              // fall back is .env not app config but in prod/infra we use aws secrets
+  val webhookSecret: String = sys.env.getOrElse("STRIPE_WEBHOOK_SECRET", Dotenv.load().get("STRIPE_WEBHOOK_SECRET"))  // fall back is .env not app config but in prod/infra we use aws secrets
+ 
   val platformFeePercent: BigDecimal =
     sys.env
       .get("STRIPE_PLATFORM_FEE_PERCENT")

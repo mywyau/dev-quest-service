@@ -39,6 +39,7 @@ object AppDependencies {
     "com.github.pureconfig" %% "pureconfig-core" % "0.17.8",
     "software.amazon.awssdk" % "s3" % "2.25.0",
     "com.stripe" % "stripe-java" % "29.2.0", // or latest
+    "io.github.cdimascio" % "dotenv-java" % "3.0.0"
   )
 
   // Test dependencies

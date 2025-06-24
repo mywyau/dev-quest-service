@@ -17,8 +17,6 @@ case class DevSubmissionConfig(
 )
 
 case class StripeConfig(
-  secretKey: String,
-  webhookSecret: String,
   platformFeePercent: BigDecimal,
   stripeUrl: String
 ) derives ConfigReader

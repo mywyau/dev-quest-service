@@ -44,6 +44,14 @@ object AppConfigConstants {
       port = 4566
     )
 
+  val stripeConfig =
+    StripeConfig(
+      secretKey = "",
+      webhookSecret = "",
+      platformFeePercent = 0,
+      stripeUrl = ""
+    )
+
   val devSubmissionConfig =
     DevSubmissionConfig(
       expiryDays = 730
@@ -54,7 +62,8 @@ object AppConfigConstants {
       serverConfig = appServerConfig,
       postgresqlConfig = containerPostgreSqlConfig,
       redisConfig = redisConfig,
-      awsS3Config = s3Config
+      awsS3Config = s3Config,
+      stripeConfig = stripeConfig
     )
 
   val itSpecServerConfig =
@@ -94,7 +103,8 @@ object AppConfigConstants {
       serverConfig = itSpecServerConfig,
       postgresqlConfig = itPostgresqlConfig,
       redisConfig = itRedisConfig,
-      awsS3Config = itS3Config
+      awsS3Config = itS3Config,
+      stripeConfig = stripeConfig
     )
 
   val appConfig =
