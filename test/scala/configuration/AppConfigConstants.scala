@@ -46,8 +46,6 @@ object AppConfigConstants {
 
   val stripeConfig =
     StripeConfig(
-      secretKey = "",
-      webhookSecret = "",
       platformFeePercent = 0,
       stripeUrl = ""
     )
