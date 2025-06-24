@@ -12,6 +12,7 @@ case object Completed extends QuestStatus
 case object Failed extends QuestStatus
 case object Submitted extends QuestStatus
 case object Assigned extends QuestStatus
+case object PaidOut extends QuestStatus
 case object Open extends QuestStatus
 
 object QuestStatus {
@@ -25,6 +26,7 @@ object QuestStatus {
       case "Failed" => Failed
       case "Submitted" => Submitted
       case "Assigned" => Assigned
+      case "PaidOut" => PaidOut
       case "Open" => Open
       case _ => throw new Exception(s"Unknown QuestStatus type: $str")
     }
@@ -38,6 +40,7 @@ object QuestStatus {
       case Failed => "Failed"
       case Submitted => "Submitted"
       case Assigned => "Assigned"
+      case PaidOut => "PaidOut"
       case Open => "Open"
     }
 
@@ -50,6 +53,7 @@ object QuestStatus {
       case "Failed" => Right(Failed)
       case "Submitted" => Right(Submitted)
       case "Assigned" => Right(Assigned)
+      case "PaidOut" => Right(PaidOut)
       case "Open" => Right(Open)
       case other => Left(s"Invalid QuestStatus: $other")
     }

@@ -71,7 +71,8 @@ class UserDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
     findQuery
   }
 
-    override def findUserNoUserName(userId: String): F[Option[RegistrationUserDataPartial]] = {
+
+  override def findUserNoUserName(userId: String): F[Option[RegistrationUserDataPartial]] = {
     val findQuery: F[Option[RegistrationUserDataPartial]] =
       sql"""
          SELECT 
@@ -118,10 +119,10 @@ class UserDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
       .attempt
       .map {
         case Right(_) => UpdateSuccess.validNel
-        case Left(e: java.sql.SQLException) => 
+        case Left(e: java.sql.SQLException) =>
           println(s"[DB ERROR] SQL Exception: ${e.getMessage}")
           DatabaseError.invalidNel
-        case Left(ex) => 
+        case Left(ex) =>
           println(s"[DB ERROR] SQL Exception: ${ex.getMessage}")
           UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
       }

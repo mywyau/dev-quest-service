@@ -13,14 +13,27 @@ import fs2.Stream
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import models.database.*
+import models.database.ConstraintViolation
+import models.database.CreateSuccess
+import models.database.DataTooLongError
+import models.database.DatabaseConnectionError
+import models.database.DatabaseError
+import models.database.DatabaseErrors
+import models.database.DatabaseSuccess
+import models.database.DeleteSuccess
+import models.database.ForeignKeyViolationError
+import models.database.NotFoundError
+import models.database.SqlExecutionError
+import models.database.UnexpectedResultError
+import models.database.UnknownError
+import models.database.UpdateSuccess
 import models.rewards.*
 import models.RewardStatus
 import org.typelevel.log4cats.Logger
-import models.database.{ConstraintViolation, CreateSuccess, DataTooLongError, DatabaseConnectionError, DatabaseError, DatabaseErrors, DatabaseSuccess, DeleteSuccess, ForeignKeyViolationError, NotFoundError, SqlExecutionError, UnexpectedResultError, UnknownError, UpdateSuccess}
 
 trait RewardRepositoryAlgebra[F[_]] {
 
-  def findByRewardId(questId: String): F[Option[RewardPartial]]
+  def getRewardDetails(questId: String): F[Option[RewardPartial]]
 
   def create(request: CreateReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
@@ -33,18 +46,20 @@ trait RewardRepositoryAlgebra[F[_]] {
 
 class RewardRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends RewardRepositoryAlgebra[F] {
 
-  implicit val questMeta: Meta[RewardStatus] = Meta[String].timap(RewardStatus.fromString)(_.toString)
+  implicit val rewardMeta: Meta[RewardStatus] = Meta[String].timap(RewardStatus.fromString)(_.toString)
 
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
 
-  override def findByRewardId(questId: String): F[Option[RewardPartial]] = {
+  override def getRewardDetails(questId: String): F[Option[RewardPartial]] = {
     val findQuery: F[Option[RewardPartial]] =
       sql"""
-        SELECT 
-          base_reward
-          time_reward
-          completion_reward
+        SELECT
+          quest_id,
+          client_id,
+          dev_id, 
+          dollar_value,
+          paid
         FROM reward
         WHERE quest_id = $questId
        """.query[RewardPartial].option.transact(transactor)
@@ -55,14 +70,16 @@ class RewardRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Trans
   override def create(request: CreateReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       INSERT INTO reward (
-        base_reward
-        time_reward
-        completion_reward
+        quest_id,
+        client_id,
+        dev_id,
+        dollar_value
       )
       VALUES (
-        ${request.baseReward},
-        ${request.timeReward},
-        ${request.completionReward}
+        ${request.questId},
+        ${request.clientId},
+        ${request.devId},
+        ${request.dollarValue}
         )
     """.update.run
       .transact(transactor)
@@ -80,15 +97,16 @@ class RewardRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Trans
           UnexpectedResultError.invalidNel
       }
 
-  override def update(quest_id: String, request: UpdateRewardsPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def update(questId: String, request: UpdateRewardsPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       UPDATE reward
       SET
-          base_reward = ${request.baseReward},
-          time_reward = ${request.timeReward},
-          completion_reward = ${request.completionReward},
+          quest_id, = ${request.questId},
+          client_id, = ${request.clientId},
+          dev_id, = ${request.devId},
+          dollar_value = ${request.dollarValue},
           updated_at = ${LocalDateTime.now()}
-      WHERE quest_id = ${quest_id}
+      WHERE quest_id = ${questId}
     """.update.run
       .transact(transactor)
       .attempt
@@ -111,11 +129,11 @@ class RewardRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Trans
           UnexpectedResultError.invalidNel
       }
 
-  override def delete(quest_id: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+  override def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
     val deleteQuery: Update0 =
       sql"""
         DELETE FROM reward
-        WHERE quest_id = $quest_id
+        WHERE quest_id = $questId
       """.update
 
     deleteQuery.run.transact(transactor).attempt.map {
