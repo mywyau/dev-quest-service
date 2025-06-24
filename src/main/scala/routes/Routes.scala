@@ -3,11 +3,12 @@ package routes
 import cache.RedisCacheImpl
 import cache.SessionCache
 import cache.SessionCacheImpl
-import cats.NonEmptyParallel
 import cats.effect.*
+import cats.NonEmptyParallel
 import configuration.models.AppConfig
 import controllers.*
 import doobie.hikari.HikariTransactor
+import java.net.URI
 import org.http4s.HttpRoutes
 import org.typelevel.log4cats.Logger
 import repositories.*
@@ -19,11 +20,10 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.S3Configuration
-import software.amazon.awssdk.services.s3.presigner.S3Presigner
-
-import java.net.URI
+import org.http4s.client.Client
 
 object Routes {
 
@@ -160,6 +160,25 @@ object Routes {
     val profileController = ProfileController(profileService)
 
     profileController.routes
+  }
+
+  def paymentRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](
+    redisHost: String,
+    redisPort: Int,
+    transactor: HikariTransactor[F],
+    appConfig: AppConfig,
+    client: Client[F] // <-- accept HTTP client here
+  ): HttpRoutes[F] = {
+
+    val sessionCache = new SessionCacheImpl(redisHost, redisPort, appConfig)
+
+    val questRepository = QuestRepository(transactor)
+    val rewardRepository = RewardRepository(transactor)
+    val stripeClient = StripeClient(appConfig, client)
+    val paymentService = LivePaymentService(stripeClient, questRepository, rewardRepository)
+    val paymentController = new PaymentControllerImpl(paymentService, sessionCache)
+
+    paymentController.routes
   }
 
   def uploadRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](

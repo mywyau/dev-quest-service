@@ -17,5 +17,6 @@ hs_err_pid*
 .metals
 .bloop
 dump.rdb
+.env
 
 /shared/target
