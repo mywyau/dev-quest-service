@@ -125,22 +125,22 @@ class StripeClient[F[_] : Async : Logger](
             if (resp.status.isSuccess) {
               json.hcursor.get[String]("url") match {
                 case Right(url) =>
-                  Logger[F].info(s"[Stripe] Checkout Session created: $url") *>
+                  Logger[F].info(s"[StripeClient] Checkout Session created: $url") *>
                     Sync[F].pure(CheckoutSessionUrl(url))
                 case Left(err) =>
-                  Logger[F].error(s"[Stripe] Missing 'url' in response: ${json.spaces2}") *>
+                  Logger[F].error(s"[StripeClient] Missing 'url' in response: ${json.spaces2}") *>
                     Sync[F].raiseError[CheckoutSessionUrl](new RuntimeException("Missing 'url' in Stripe response"))
               }
             } else {
-              Logger[F].error(s"[Stripe] Checkout failed with ${resp.status.code}: ${json.spaces2}") *>
+              Logger[F].error(s"[StripeClient] Checkout failed with ${resp.status.code}: ${json.spaces2}") *>
                 Sync[F].raiseError[CheckoutSessionUrl](new RuntimeException(s"Stripe error ${resp.status.code}"))
             }
           }
       }
-      _ <- Logger[F].info(s"[Stripe] Checkout Session created successfully: ${responseJson.asJson.spaces2}")
+      _ <- Logger[F].info(s"[StripeClient] Checkout Session created successfully: ${responseJson.asJson.spaces2}")
 
       url <- responseJson.asJson.hcursor.get[String]("url").liftTo[F].handleErrorWith { err =>
-        Logger[F].error(s"[Stripe] Failed to extract 'url' from response: ${err.getMessage}") *> err.raiseError[F, String]
+        Logger[F].error(s"[StripeClient] Failed to extract 'url' from response: ${err.getMessage}") *> err.raiseError[F, String]
       }
 
     } yield CheckoutSessionUrl(url)
