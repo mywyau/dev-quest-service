@@ -16,6 +16,10 @@ case class MockQuestRepository(
   existingQuest: Map[String, QuestPartial] = Map.empty
 ) extends QuestRepositoryAlgebra[IO] {
 
+  override def validateOwnership(questId: String, clientId: String): IO[Unit] = ???
+
+  override def markPaid(questId: String): IO[Unit] = ???
+
   override def countActiveQuests(devId: String): IO[Int] = ???
 
   override def streamByQuestStatusDev(devId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???

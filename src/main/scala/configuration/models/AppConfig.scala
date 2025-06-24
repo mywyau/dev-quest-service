@@ -9,12 +9,18 @@ case class FeatureSwitches(
   useDockerHost: Boolean,
   localTesting: Boolean,
   useCors: Boolean,
-  useHttpsLocalstack: Boolean
+  useHttpsLocalstack: Boolean,
+  useProdStripe: Boolean
 ) derives ConfigReader
 
 case class DevSubmissionConfig(
   expiryDays: Int
 )
+
+case class StripeConfig(
+  stripeUrl: String,
+  platformFeePercent: BigDecimal
+) derives ConfigReader
 
 case class S3Config(
   awsRegion: String,
@@ -48,14 +54,16 @@ case class LocalConfig(
   serverConfig: ServerConfig,
   postgresqlConfig: PostgresqlConfig,
   redisConfig: RedisConfig,
-  awsS3Config: S3Config
+  awsS3Config: S3Config,
+  stripeConfig: StripeConfig
 ) derives ConfigReader
 
 case class IntegrationSpecConfig(
   serverConfig: ServerConfig,
   postgresqlConfig: PostgresqlConfig,
   redisConfig: RedisConfig,
-  awsS3Config: S3Config
+  awsS3Config: S3Config,
+  stripeConfig: StripeConfig
 ) derives ConfigReader
 
 case class AppConfig(

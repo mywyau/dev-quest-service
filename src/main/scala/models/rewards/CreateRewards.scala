@@ -5,12 +5,12 @@ import io.circe.generic.semiauto.deriveEncoder
 import io.circe.Decoder
 import io.circe.Encoder
 import java.time.LocalDateTime
-import models.RewardStatus
 
 case class CreateReward(
-  baseReward: BigDecimal,
-  timeReward: BigDecimal,
-  completionReward: BigDecimal
+  questId: String,
+  clientId: String,
+  devId: String,
+  dollarValue: BigDecimal
 )
 
 object CreateReward {
