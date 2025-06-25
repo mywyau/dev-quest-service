@@ -81,7 +81,7 @@ class StripeRegistrationService[F[_] : Async : Logger](
   }
 
   def createAccountLink(devUserId: String)(using logger: Logger[F]): F[AccountLinkResponse] = for {
-    _ <- logger.info(s"Starting account link creation for devUserId: $devUserId")
+    _ <- logger.info(s"[createAccountLink] Starting account link creation for devUserId: $devUserId")
 
     // Step 1: Get existing or create new Stripe account
     maybeStripeAccountDetails <- stripeAccountRepository.findStripeAccount(devUserId)

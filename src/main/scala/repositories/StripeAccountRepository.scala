@@ -54,6 +54,7 @@ class StripeAccountRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor
     val findQuery: F[Option[StripeAccountDetails]] =
       sql"""
          SELECT 
+            user_id,
             stripe_account_id,
             onboarded,
             charges_enabled,
