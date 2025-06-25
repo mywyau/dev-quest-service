@@ -33,15 +33,15 @@ import org.typelevel.log4cats.Logger
 
 trait RewardRepositoryAlgebra[F[_]] {
 
-  def getRewardDetails(questId: String): F[Option[RewardPartial]]
+  def getRewardData(questId: String): F[Option[RewardData]]
 
-  def create(request: CreateReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def create(clientId: String, request: CreateReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def update(questId: String, request: UpdateRewardsPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def update(questId: String, updateRewardData: UpdateRewardData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def updateWithDevId(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
-
-  def deleteAllByUserId(userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
 class RewardRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends RewardRepositoryAlgebra[F] {
@@ -51,36 +51,34 @@ class RewardRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Trans
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
 
-  override def getRewardDetails(questId: String): F[Option[RewardPartial]] = {
-    val findQuery: F[Option[RewardPartial]] =
+  override def getRewardData(questId: String): F[Option[RewardData]] = {
+    val findQuery: F[Option[RewardData]] =
       sql"""
         SELECT
           quest_id,
           client_id,
           dev_id, 
-          dollar_value,
+          reward_value,
           paid
         FROM reward
         WHERE quest_id = $questId
-       """.query[RewardPartial].option.transact(transactor)
+       """.query[RewardData].option.transact(transactor)
 
     findQuery
   }
 
-  override def create(request: CreateReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def create(clientId:String, request: CreateReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       INSERT INTO reward (
         quest_id,
         client_id,
-        dev_id,
-        dollar_value
+        reward_value
       )
       VALUES (
         ${request.questId},
-        ${request.clientId},
-        ${request.devId},
-        ${request.dollarValue}
-        )
+        ${clientId},
+        ${request.rewardValue}
+      )
     """.update.run
       .transact(transactor)
       .attempt
@@ -97,14 +95,40 @@ class RewardRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Trans
           UnexpectedResultError.invalidNel
       }
 
-  override def update(questId: String, request: UpdateRewardsPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def updateWithDevId(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       UPDATE reward
       SET
-          quest_id, = ${request.questId},
-          client_id, = ${request.clientId},
-          dev_id, = ${request.devId},
-          dollar_value = ${request.dollarValue},
+          dev_id= ${devId},
+          updated_at = ${LocalDateTime.now()}
+      WHERE quest_id = ${questId}
+    """.update.run
+      .transact(transactor)
+      .attempt
+      .map {
+        case Right(affectedRows) if affectedRows == 1 =>
+          UpdateSuccess.validNel
+        case Right(affectedRows) if affectedRows == 0 =>
+          NotFoundError.invalidNel
+        case Left(ex: java.sql.SQLException) if ex.getSQLState == "23503" =>
+          ForeignKeyViolationError.invalidNel // Foreign key constraint violation
+        case Left(ex: java.sql.SQLException) if ex.getSQLState == "08001" =>
+          DatabaseConnectionError.invalidNel // Database connection issue
+        case Left(ex: java.sql.SQLException) if ex.getSQLState == "22001" =>
+          DataTooLongError.invalidNel // Data length exceeds column limit
+        case Left(ex: java.sql.SQLException) =>
+          SqlExecutionError(ex.getMessage).invalidNel // General SQL execution error
+        case Left(ex) =>
+          UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
+        case _ =>
+          UnexpectedResultError.invalidNel
+      }
+
+  override def update(questId: String, updateRewardData: UpdateRewardData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    sql"""
+      UPDATE reward
+      SET
+          reward_value = ${updateRewardData.rewardValue},
           updated_at = ${LocalDateTime.now()}
       WHERE quest_id = ${questId}
     """.update.run
@@ -154,30 +178,6 @@ class RewardRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Trans
     }
   }
 
-  override def deleteAllByUserId(userId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
-    val deleteQuery: Update0 =
-      sql"""
-         DELETE FROM reward
-         WHERE user_id = $userId
-       """.update
-
-    deleteQuery.run.transact(transactor).attempt.map {
-      case Right(affectedRows) if affectedRows > 0 =>
-        DeleteSuccess.validNel
-      case Right(affectedRows) if affectedRows == 0 =>
-        NotFoundError.invalidNel
-      case Left(ex: java.sql.SQLException) if ex.getSQLState == "23503" =>
-        ForeignKeyViolationError.invalidNel
-      case Left(ex: java.sql.SQLException) if ex.getSQLState == "08001" =>
-        DatabaseConnectionError.invalidNel
-      case Left(ex: java.sql.SQLException) =>
-        SqlExecutionError(ex.getMessage).invalidNel
-      case Left(ex) =>
-        UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
-      case _ =>
-        UnexpectedResultError.invalidNel
-    }
-  }
 }
 
 object RewardRepository {
