@@ -28,19 +28,19 @@ object Main extends IOApp {
   implicit def logger[F[_] : Sync]: Logger[F] = Slf4jLogger.getLogger[F]
 
   def redisAddress[F[_] : Async](appConfig: AppConfig): Resource[F, (String, Int)] = {
-    val redisHost = sys.env.getOrElse("REDIS_HOST", appConfig.localConfig.redisConfig.host)
-    val redisPort = sys.env.get("REDIS_PORT").flatMap(_.toIntOption).getOrElse(appConfig.localConfig.redisConfig.port)
+    val redisHost = sys.env.getOrElse("REDIS_HOST", appConfig.localAppConfig.redisConfig.host)
+    val redisPort = sys.env.get("REDIS_PORT").flatMap(_.toIntOption).getOrElse(appConfig.localAppConfig.redisConfig.port)
 
     Resource.eval(Async[F].pure((redisHost, redisPort)))
   }
 
   def transactorResource[F[_] : Async](appConfig: AppConfig): Resource[F, HikariTransactor[F]] = {
 
-    val dbHost = sys.env.getOrElse("DB_HOST", appConfig.localConfig.postgresqlConfig.host)
-    val dbUser = sys.env.getOrElse("DB_USER", appConfig.localConfig.postgresqlConfig.username)
-    val dbPassword = sys.env.getOrElse("DB_PASSWORD", appConfig.localConfig.postgresqlConfig.password)
-    val dbName = sys.env.getOrElse("DB_NAME", appConfig.localConfig.postgresqlConfig.dbName)
-    val dbPort = sys.env.getOrElse("DB_PORT", appConfig.localConfig.postgresqlConfig.port.toString)
+    val dbHost = sys.env.getOrElse("DB_HOST", appConfig.localAppConfig.postgresqlConfig.host)
+    val dbUser = sys.env.getOrElse("DB_USER", appConfig.localAppConfig.postgresqlConfig.username)
+    val dbPassword = sys.env.getOrElse("DB_PASSWORD", appConfig.localAppConfig.postgresqlConfig.password)
+    val dbName = sys.env.getOrElse("DB_NAME", appConfig.localAppConfig.postgresqlConfig.dbName)
+    val dbPort = sys.env.getOrElse("DB_PORT", appConfig.localAppConfig.postgresqlConfig.port.toString)
 
     val dbUrl = s"jdbc:postgresql://$dbHost:$dbPort/$dbName"
     val driverClassName = "org.postgresql.Driver"
@@ -155,13 +155,13 @@ object Main extends IOApp {
       _ <- Resource.eval(Logger[IO].info(s"Loaded configuration: $appConfig"))
 
       host <- Resource.eval(
-        IO.fromOption(Host.fromString(appConfig.localConfig.serverConfig.host))(
+        IO.fromOption(Host.fromString(appConfig.localAppConfig.serverConfig.host))(
           new RuntimeException("Invalid host in configuration")
         )
       )
 
       port <- Resource.eval(
-        IO.fromOption(Port.fromInt(appConfig.localConfig.serverConfig.port))(
+        IO.fromOption(Port.fromInt(appConfig.localAppConfig.serverConfig.port))(
           new RuntimeException("Invalid port in configuration")
         )
       )

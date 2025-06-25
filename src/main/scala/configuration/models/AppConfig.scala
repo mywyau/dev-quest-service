@@ -3,7 +3,12 @@ package configuration.models
 import cats.kernel.Eq
 import pureconfig.generic.derivation.*
 import pureconfig.ConfigReader
-import java.time.Duration
+
+case class DevIrlFrontendConfig(
+  host: String,
+  port: Int,
+  baseUrl: String
+)
 
 case class FeatureSwitches(
   useDockerHost: Boolean,
@@ -18,6 +23,10 @@ case class DevSubmissionConfig(
 )
 
 case class StripeConfig(
+  registrationRefreshUrl: String,
+  registrationReturnUrl: String,
+  paymentSuccessUrl: String,
+  paymentCancelUrl: String,
   stripeUrl: String,
   platformFeePercent: BigDecimal
 ) derives ConfigReader
@@ -50,7 +59,16 @@ case class PostgresqlConfig(
   password: String
 ) derives ConfigReader
 
-case class LocalConfig(
+case class LocalAppConfig(
+  devIrlFrontendConfig: DevIrlFrontendConfig,
+  serverConfig: ServerConfig,
+  postgresqlConfig: PostgresqlConfig,
+  redisConfig: RedisConfig,
+  awsS3Config: S3Config,
+  stripeConfig: StripeConfig
+) derives ConfigReader
+
+case class ProdAppConfig(
   serverConfig: ServerConfig,
   postgresqlConfig: PostgresqlConfig,
   redisConfig: RedisConfig,
@@ -69,6 +87,6 @@ case class IntegrationSpecConfig(
 case class AppConfig(
   featureSwitches: FeatureSwitches,
   devSubmission: DevSubmissionConfig,
-  localConfig: LocalConfig,
+  localAppConfig: LocalAppConfig,
   integrationSpecConfig: IntegrationSpecConfig
 ) derives ConfigReader

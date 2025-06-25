@@ -13,6 +13,13 @@ object AppConfigConstants {
       useProdStripe = false
     )
 
+  val devIrlFrontendConfig =
+    DevIrlFrontendConfig(
+      host = "0.0.0.0",
+      port = 8080,
+      baseUrl = ""
+    )
+
   val appServerConfig =
     ServerConfig(
       host = "0.0.0.0",
@@ -47,6 +54,10 @@ object AppConfigConstants {
 
   val stripeConfig =
     StripeConfig(
+      registrationRefreshUrl = "http://localhost:3000/dev/stripe/onboarding/refresh",
+      registrationReturnUrl = "http://localhost:3000/dev/stripe/onboarding/success",
+      paymentSuccessUrl = "http://localhost:3000/payment/success",
+      paymentCancelUrl = "http://localhost:3000/payment/error",
       stripeUrl = "https://api.stripe.com/v1",
       platformFeePercent = 2.5
     )
@@ -56,8 +67,9 @@ object AppConfigConstants {
       expiryDays = 730
     )
 
-  val localConfig =
-    LocalConfig(
+  val localAppConfig =
+    LocalAppConfig(
+      devIrlFrontendConfig = devIrlFrontendConfig,
       serverConfig = appServerConfig,
       postgresqlConfig = containerPostgreSqlConfig,
       redisConfig = redisConfig,
@@ -110,7 +122,7 @@ object AppConfigConstants {
     AppConfig(
       featureSwitches = featureSwitches,
       devSubmission = devSubmissionConfig,
-      localConfig = localConfig,
+      localAppConfig = localAppConfig,
       integrationSpecConfig = integrationSpecConfig
     )
 

@@ -34,14 +34,14 @@ class StripePaymentService[F[_] : Async : Logger](
   val webhookSecret: String = sys.env.getOrElse("STRIPE_TEST_WEBHOOK_SECRET", Dotenv.load().get("STRIPE_TEST_WEBHOOK_SECRET"))  // fall back is .env not app config but in prod/infra we use aws secrets for the sys variables
 
   private val baseUri: Uri = 
-    Uri.fromString(appConfig.localConfig.stripeConfig.stripeUrl)
-      .getOrElse(sys.error(s"Invalid Stripe URL: ${appConfig.localConfig.stripeConfig.stripeUrl}"))
+    Uri.fromString(appConfig.localAppConfig.stripeConfig.stripeUrl)
+      .getOrElse(sys.error(s"Invalid Stripe URL: ${appConfig.localAppConfig.stripeConfig.stripeUrl}"))
 
   val platformFeePercent: BigDecimal =
     sys.env
       .get("STRIPE_PLATFORM_FEE_PERCENT")
       .flatMap(s => Either.catchOnly[NumberFormatException](BigDecimal(s)).toOption)
-      .getOrElse(appConfig.localConfig.stripeConfig.platformFeePercent)
+      .getOrElse(appConfig.localAppConfig.stripeConfig.platformFeePercent)
 
   private def authHeader: Header.Raw =
     Header.Raw(ci"Authorization", s"Bearer ${secretKey}")
