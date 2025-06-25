@@ -22,9 +22,9 @@ trait RewardServiceAlgebra[F[_]] {
 
   def getReward(questId: String): F[Option[RewardData]]
 
-  def createReward(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def createReward(clientId: String, request: CreateReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def updateReward(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def updateReward(questId: String, request: UpdateRewardData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
 class RewardServiceImpl[F[_] : Concurrent : Monad : Logger](

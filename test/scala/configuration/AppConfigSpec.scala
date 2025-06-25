@@ -37,7 +37,7 @@ object AppConfigSpec extends SimpleIOSuite {
   test("loads localConfig correctly") {
     for {
       config <- configReader.loadAppConfig
-    } yield expect.eql(config.localConfig, appConfig.localConfig)
+    } yield expect.eql(config.localConfig, appConfig.localAppConfig)
   }
 
   test("loads integrationSpecConfig correctly") {

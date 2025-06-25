@@ -41,8 +41,8 @@ class StripeRegistrationService[F[_] : Async : Logger](
 
   private val baseUri: Uri =
     Uri
-      .fromString(appConfig.localConfig.stripeConfig.stripeUrl)
-      .getOrElse(sys.error(s"Invalid Stripe URL: ${appConfig.localConfig.stripeConfig.stripeUrl}"))
+      .fromString(appConfig.localAppConfig.stripeConfig.stripeUrl)
+      .getOrElse(sys.error(s"Invalid Stripe URL: ${appConfig.localAppConfig.stripeConfig.stripeUrl}"))
 
   println(baseUri)
 
