@@ -15,7 +15,7 @@ object AppConfigSpec extends SimpleIOSuite {
   given Eq[RedisConfig] = Eq.fromUniversalEquals
   given Eq[S3Config] = Eq.fromUniversalEquals
   given Eq[PostgresqlConfig] = Eq.fromUniversalEquals
-  given Eq[LocalConfig] = Eq.fromUniversalEquals
+  given Eq[LocalAppConfig] = Eq.fromUniversalEquals
   given Eq[IntegrationSpecConfig] = Eq.fromUniversalEquals
   given Eq[FeatureSwitches] = Eq.fromUniversalEquals
   given Eq[AppConfig] = Eq.fromUniversalEquals
@@ -37,7 +37,7 @@ object AppConfigSpec extends SimpleIOSuite {
   test("loads localConfig correctly") {
     for {
       config <- configReader.loadAppConfig
-    } yield expect.eql(config.localConfig, appConfig.localAppConfig)
+    } yield expect.eql(config.localAppConfig, appConfig.localAppConfig)
   }
 
   test("loads integrationSpecConfig correctly") {
