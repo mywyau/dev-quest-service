@@ -141,6 +141,35 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
       }
 
+    case req @ GET -> Root / "quest" / "reward" /"stream" / userIdFromRoute =>
+      extractSessionToken(req) match {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
+            val page = req.params.get("page").flatMap(_.toIntOption).getOrElse(1)
+            val limit = req.params.get("limit").flatMap(_.toIntOption).getOrElse(10)
+            val offset = (page - 1) * limit
+
+            Logger[F].info(
+              s"[QuestController] Streaming paginated quests for $userIdFromRoute (page=$page, limit=$limit)"
+            ) *>
+              Ok(
+                questService
+                  .streamAllWithRewards(limit, offset)
+                  .map(_.asJson.noSpaces) // Quest ⇒ JSON string
+                  .evalTap(json => Logger[F].info(s"[QuestController] → $json")) // <── log every line
+                  .intersperse("\n") // ND-JSON framing
+                  .handleErrorWith { e =>
+                    Stream.eval(Logger[F].info(e)("[QuestController] Stream error")) >> Stream.empty
+                  }
+                  .onFinalize(Logger[F].info("[QuestController] Stream completed").void)
+              )
+          }
+
+        case None =>
+          Logger[F].info("[QuestController] Unauthorized request to /quest/stream") *>
+            Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
+      }
+
     // 2) Match the query‐param pattern, *not* a literal `?status=…`
     case req @ GET -> Root / "quest" / "stream" / "dev" / "new" / devIdFromRoute :?
         StatusParam(mStatus) +&

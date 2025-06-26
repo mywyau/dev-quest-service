@@ -45,10 +45,10 @@ class RewardServiceImpl[F[_] : Concurrent : Monad : Logger](
     Logger[F].info(s"[RewardService][createReward] Creating a new reward data for quest with questId ${request.questId}") *>
       rewardRepo.create(clientId, request).flatMap {
         case Valid(value) =>
-          Logger[F].info(s"[QuestService][createReward] Successfully created reward data for quest with questId: ${request.questId}") *>
+          Logger[F].info(s"[RewardService][createReward] Successfully created reward data for quest with questId: ${request.questId}") *>
             Concurrent[F].pure(Valid(value))
         case Invalid(errors) =>
-          Logger[F].error(s"[QuestService][createReward] Failed to create reward data. Errors: ${errors.toList.mkString(", ")}") *>
+          Logger[F].error(s"[RewardService][createReward] Failed to create reward data. Errors: ${errors.toList.mkString(", ")}") *>
             Concurrent[F].pure(Invalid(errors))
       }
 
@@ -56,10 +56,10 @@ class RewardServiceImpl[F[_] : Concurrent : Monad : Logger](
     Logger[F].info(s"[RewardService][createReward] Updating reward data for quest with questId ${questId}") *>
       rewardRepo.update(questId, request).flatMap {
         case Valid(value) =>
-          Logger[F].info(s"[QuestService][createReward] Successfully UPDATED reward data for quest with questId: ${questId}") *>
+          Logger[F].info(s"[RewardService][createReward] Successfully UPDATED reward data for quest with questId: ${questId}") *>
             Concurrent[F].pure(Valid(value))
         case Invalid(errors) =>
-          Logger[F].error(s"[QuestService][createReward] Failed to UPDATE reward data. Errors: ${errors.toList.mkString(", ")}") *>
+          Logger[F].error(s"[RewardService][createReward] Failed to UPDATE reward data. Errors: ${errors.toList.mkString(", ")}") *>
             Concurrent[F].pure(Invalid(errors))
       }
 

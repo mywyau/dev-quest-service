@@ -99,8 +99,9 @@ object Main extends IOApp {
       languageRoutes <- Resource.pure(languageRoutes(transactor, appConfig))
       paymentRoutes <- Resource.pure(paymentRoutes(redisHost, redisPort, transactor, appConfig, client))
       profileRoutes <- Resource.pure(profileRoutes(transactor, appConfig, client))
-      userDataRoutes <- Resource.pure(userDataRoutes(redisHost, redisPort, transactor, appConfig))
+      rewardRoutes <- Resource.pure(rewardRoutes(redisHost, redisPort, transactor, appConfig))
       registrationRoutes <- Resource.pure(registrationRoutes(redisHost, redisPort, transactor, appConfig))
+      userDataRoutes <- Resource.pure(userDataRoutes(redisHost, redisPort, transactor, appConfig))
       uploadRoutes <- Resource.pure(uploadRoutes(transactor, appConfig))
 
       combinedRoutes: HttpRoutes[F] = Router(
@@ -115,7 +116,8 @@ object Main extends IOApp {
             userDataRoutes <+>
             uploadRoutes <+>
             profileRoutes <+>
-            paymentRoutes
+            paymentRoutes <+>
+            rewardRoutes
         )
       )
       corsRoutes = corsPolicy(combinedRoutes)

@@ -1,7 +1,5 @@
 package services
 
-import cats.Monad
-import cats.NonEmptyParallel
 import cats.data.EitherT
 import cats.data.Validated
 import cats.data.Validated.Invalid
@@ -10,26 +8,29 @@ import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
+import cats.Monad
+import cats.NonEmptyParallel
 import fs2.Stream
+import java.util.UUID
 import models.*
-import models.NotStarted
-import models.QuestStatus
 import models.database.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
 import models.quests.CreateQuest
 import models.quests.CreateQuestPartial
+import models.quests.QuestWithReward
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
 import models.skills.Questing
+import models.NotStarted
+import models.QuestStatus
 import org.typelevel.log4cats.Logger
 import repositories.LanguageRepositoryAlgebra
 import repositories.QuestRepositoryAlgebra
+import repositories.RewardRepositoryAlgebra
 import repositories.SkillDataRepository
 import repositories.SkillDataRepositoryAlgebra
 import repositories.UserDataRepositoryAlgebra
-
-import java.util.UUID
 
 trait QuestServiceAlgebra[F[_]] {
 
@@ -53,6 +54,8 @@ trait QuestServiceAlgebra[F[_]] {
 
   def streamAll(limit: Int, offset: Int): Stream[F, QuestPartial]
 
+  def streamAllWithRewards(limit: Int, offset: Int): Stream[F, QuestWithReward]
+
   def getAllQuests(clientId: String): F[List[QuestPartial]]
 
   def getByQuestId(questId: String): F[Option[QuestPartial]]
@@ -74,7 +77,8 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
   questRepo: QuestRepositoryAlgebra[F],
   userRepo: UserDataRepositoryAlgebra[F],
   skillRepo: SkillDataRepositoryAlgebra[F],
-  languageRepo: LanguageRepositoryAlgebra[F]
+  languageRepo: LanguageRepositoryAlgebra[F],
+  rewardRepo: RewardRepositoryAlgebra[F]
 ) extends QuestServiceAlgebra[F] {
 
   override def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
@@ -213,6 +217,29 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
     headLog ++ dataStream
   }
 
+  override def streamAllWithRewards(limit: Int, offset: Int): Stream[F, QuestWithReward] = {
+    val headLog: Stream[F, QuestWithReward] =
+      Stream
+        .eval(
+          Logger[F].info(s"[QuestService] Streaming all quests with rewards (limit=$limit, offset=$offset)")
+        )
+        .drain
+
+    val enrichedQuests: Stream[F, QuestWithReward] =
+      questRepo
+        .streamAll(limit, offset)
+        .evalMap { quest =>
+          rewardRepo
+            .streamRewardByQuest(quest.questId)
+            .head // get only the first reward since it's 1:1
+            .compile
+            .last // or use `last` and handle Option
+            .map(reward => QuestWithReward(quest, reward))
+        }
+
+    headLog ++ enrichedQuests
+  }
+
   override def getAllQuests(clientId: String): F[List[QuestPartial]] =
     questRepo.findAllByUserId(clientId).flatMap { quests =>
       Logger[F].info(s"[QuestService][getAllQuests] Retrieved ${quests.size} quests for user $clientId") *>
@@ -330,7 +357,8 @@ object QuestService {
     questRepo: QuestRepositoryAlgebra[F],
     userRepo: UserDataRepositoryAlgebra[F],
     skillRepo: SkillDataRepositoryAlgebra[F],
-    languageRepo: LanguageRepositoryAlgebra[F]
+    languageRepo: LanguageRepositoryAlgebra[F],
+    rewardRepo: RewardRepositoryAlgebra[F],
   ): QuestServiceAlgebra[F] =
-    new QuestServiceImpl[F](questRepo, userRepo, skillRepo, languageRepo)
+    new QuestServiceImpl[F](questRepo, userRepo, skillRepo, languageRepo, rewardRepo)
 }
