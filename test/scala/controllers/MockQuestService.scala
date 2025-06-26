@@ -9,14 +9,7 @@ import cats.implicits.*
 import fs2.Stream
 import models.auth.UserSession
 import models.database.*
-import models.database.CreateSuccess
-import models.database.DatabaseErrors
-import models.database.DatabaseSuccess
-import models.database.DeleteSuccess
-import models.database.UpdateSuccess
-import models.quests.CreateQuestPartial
-import models.quests.QuestPartial
-import models.quests.UpdateQuestPartial
+import models.quests.* 
 import services.QuestServiceAlgebra
 import cats.effect.IO
 import cats.effect.Ref
@@ -38,6 +31,8 @@ class MockQuestService(userQuestData: Map[String, QuestPartial]) extends QuestSe
   override def acceptQuest(questId: String, devId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
   override def streamAll(limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
+
+  override def streamAllWithRewards(limit: Int, offset: Int): Stream[IO, QuestWithReward] = ???
 
   override def streamByUserId(userId: String, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
 
