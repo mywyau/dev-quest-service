@@ -46,27 +46,27 @@ class ProfileControllerImpl[F[_] : Async : Concurrent : Logger](
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
     case req @ GET -> Root / "profile" / "health" =>
-      Logger[F].info(s"[ProfileController] GET - Health check for backend ProfileController") *>
+      Logger[F].debug(s"[ProfileController] GET - Health check for backend ProfileController") *>
         Ok(GetResponse("/dev-quest-service/skill/health", "I am alive - ProfileController").asJson)
 
     case req @ GET -> Root / "profile" / "skill" / "language" / "data" / devId =>
-      Logger[F].info(s"[ProfileController] GET - Trying to get skill data for userId $devId") *>
+      Logger[F].debug(s"[ProfileController] GET - Trying to get skill data for userId $devId") *>
         profileService.getSkillAndLanguageData(devId).flatMap {
           case Nil =>
             BadRequest(ErrorResponse("NO_PROFILE_SKILL_OR_LANGUAGE_DATA", s"No profile data found").asJson)
           case profileData =>
-            Logger[F].info(s"[ProfileController] GET - Successfully retrieved skill & language data for userId $devId, ${profileData.asJson}") *>
+            Logger[F].debug(s"[ProfileController] GET - Successfully retrieved skill & language data for userId $devId, ${profileData.asJson}") *>
               Ok(profileData.asJson)
         }
 
     case req @ POST -> Root / "stripe" / "onboarding" =>
       for {
-        _ <- Logger[F].info(s"[ProfileController] POST - Trying to get stripe link for user")
+        _ <- Logger[F].debug(s"[ProfileController] POST - Trying to get stripe link for user")
         userData <- req.as[StripeDevUserData] // or decode from session/cookie.   // this is a simple json body to return the devId
-        _ <- Logger[F].info(s"[ProfileController] POST - UserData Recieved: $userData")
+        _ <- Logger[F].debug(s"[ProfileController] POST - UserData Recieved: $userData")
         link <- stripeRegistrationService.createAccountLink(userData.userId)
         resp <- {
-          Logger[F].info(s"[ProfileController] POST - Stripe account creation Link created generated: ${link.asJson}") *>
+          Logger[F].debug(s"[ProfileController] POST - Stripe account creation Link created generated: ${link.asJson}") *>
             Ok(link.asJson)
         }
       } yield resp

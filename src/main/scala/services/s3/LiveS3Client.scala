@@ -31,7 +31,7 @@ class LiveS3Client[F[_]: Async: Logger](client: S3AsyncClient) extends S3ClientA
     val body = AsyncRequestBody.fromBytes(content)
 
     for {
-      _ <- Logger[F].info(s"[LiveS3Client] Attempting to upload to bucket='$bucket', key='$key', size=${content.length} bytes")
+      _ <- Logger[F].debug(s"[LiveS3Client] Attempting to upload to bucket='$bucket', key='$key', size=${content.length} bytes")
       result <- Async[F]
         .fromCompletableFuture(Async[F].delay {
           client.putObject(request, body)
@@ -39,7 +39,7 @@ class LiveS3Client[F[_]: Async: Logger](client: S3AsyncClient) extends S3ClientA
         .attempt
       _ <- result match {
         case Right(_) =>
-          Logger[F].info(s"[LiveS3Client] Successfully uploaded key='$key' to bucket='$bucket'")
+          Logger[F].debug(s"[LiveS3Client] Successfully uploaded key='$key' to bucket='$bucket'")
         case Left(e) =>
           Logger[F].error(e)(s"[LiveS3Client] Failed to upload key='$key' to bucket='$bucket'")
             *> e.raiseError[F, Unit]

@@ -44,7 +44,7 @@ object UploadServiceSpec extends SimpleIOSuite {
       case Some((bucket, key, contentType, bytes)) =>
         expect.eql(bucket, "test-bucket") and
           expect.eql(key, "foo.txt") and
-          expect.eql(bytes.toSeq, data.toSeq) // ✅ compare contents, not reference
+          expect.eql(bytes.toSeq, data.toSeq) //  compare contents, not reference
       case None =>
         failure("Expected some uploaded data, got None")
     }

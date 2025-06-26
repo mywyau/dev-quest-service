@@ -45,7 +45,7 @@ class UploadController[F[_] : Async : Logger](
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
     case req @ GET -> Root / "uploads" / "health" =>
-      Logger[F].info(s"[UploadController] GET - Health check for backend service: ${GetResponse("success", "I am alive").asJson}") *>
+      Logger[F].debug(s"[UploadController] GET - Health check for backend service: ${GetResponse("success", "I am alive").asJson}") *>
         Ok(GetResponse("successful uploads health route", "I am alive").asJson)
 
     case req @ POST -> Root / "upload" =>
@@ -68,7 +68,7 @@ class UploadController[F[_] : Async : Logger](
               uploadService
                 .upload(objectKey, sizeCheckStream)
                 .flatMap { _ =>
-                  Logger[F].info(s"Uploaded file to S3 with key: $objectKey") *>
+                  Logger[F].debug(s"Uploaded file to S3 with key: $objectKey") *>
                     Ok(Json.obj("key" -> Json.fromString(objectKey)))
                 }
                 .handleErrorWith { e =>

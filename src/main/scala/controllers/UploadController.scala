@@ -59,12 +59,12 @@ class UploadController[F[_] : Async : Logger](
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
     case req @ GET -> Root / "upload" / "health" =>
-      Logger[F].info(s"[UploadController] GET - Health check for backend service: ${GetResponse("success", "I am alive").asJson}") *>
+      Logger[F].debug(s"[UploadController] GET - Health check for backend service: ${GetResponse("success", "I am alive").asJson}") *>
         Ok(GetResponse("successful uploads health route", "I am alive").asJson)
 
     case GET -> Root / "dev" / "submission" / "file" / "metadata" / questId =>
       for {
-        _ <- Logger[F].info(s"[UploadController] GET - Fetching file metadata for questId: $questId")
+        _ <- Logger[F].debug(s"[UploadController] GET - Fetching file metadata for questId: $questId")
         metadataList <- devSubmissionService.getAllFileMetaData(questId)
         response <-
           if (metadataList.nonEmpty)
@@ -98,7 +98,7 @@ class UploadController[F[_] : Async : Logger](
             uploadService
               .upload(objectKey, contentType, sizeCheckStream)
               .flatMap { _ =>
-                Logger[F].info(s"Uploaded file to S3 with key: $objectKey") *>
+                Logger[F].debug(s"Uploaded file to S3 with key: $objectKey") *>
                   Ok(Json.obj("key" -> Json.fromString(objectKey)))
               }
               .handleErrorWith { e =>
@@ -149,7 +149,7 @@ class UploadController[F[_] : Async : Logger](
                   bucketName = appConfig.localAppConfig.awsS3Config.bucketName
                 )
               )
-              _ <- Logger[F].info(s"Uploaded and saved metadata for $filename")
+              _ <- Logger[F].debug(s"Uploaded and saved metadata for $filename")
               res <- Ok(Json.obj("key" -> Json.fromString(objectKey)))
             } yield res
 

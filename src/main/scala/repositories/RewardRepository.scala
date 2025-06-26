@@ -35,6 +35,8 @@ trait RewardRepositoryAlgebra[F[_]] {
 
   def getRewardData(questId: String): F[Option[RewardData]]
 
+  def streamRewardByQuest(questId: String): Stream[F, RewardData]
+
   def create(clientId: String, request: CreateReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def update(questId: String, updateRewardData: UpdateRewardData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
@@ -67,7 +69,18 @@ class RewardRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Trans
     findQuery
   }
 
-  override def create(clientId:String, request: CreateReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def streamRewardByQuest(questId: String): Stream[F, RewardData] =
+    sql"""
+      SELECT quest_id, client_id, dev_id, reward_value, paid
+      FROM reward
+      WHERE quest_id = $questId
+      ORDER BY created_at DESC
+    """
+      .query[RewardData]
+      .stream
+      .transact(transactor)
+
+  override def create(clientId: String, request: CreateReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       INSERT INTO reward (
         quest_id,

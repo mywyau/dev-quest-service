@@ -59,20 +59,20 @@ class PaymentControllerImpl[F[_] : Async : Concurrent : Logger](
   private def withValidSession(userId: String, token: String)(onValid: F[Response[F]]): F[Response[F]] =
     sessionCache.getSession(userId).flatMap {
       case Some(userSessionJson) if userSessionJson.cookieValue == token =>
-        Logger[F].info("[QuestControllerImpl][withValidSession] Found valid session for userId:") *>
+        Logger[F].debug("[QuestControllerImpl][withValidSession] Found valid session for userId:") *>
           onValid
       case Some(_) =>
-        Logger[F].info("[QuestControllerImpl][withValidSession] User session does not match requested user session token value from redis.")
+        Logger[F].debug("[QuestControllerImpl][withValidSession] User session does not match requested user session token value from redis.")
         Forbidden("User session does not match requested user session token value from redis.")
       case None =>
-        Logger[F].info("[QuestControllerImpl][withValidSession] Invalid or expired session")
+        Logger[F].debug("[QuestControllerImpl][withValidSession] Invalid or expired session")
         Forbidden("Invalid or expired session")
     }
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
     case req @ GET -> Root / "payment" / "health" =>
-      Logger[F].info(s"[PaymentController] GET - Health check for backend PaymentController") *>
+      Logger[F].debug(s"[PaymentController] GET - Health check for backend PaymentController") *>
         Ok(GetResponse("/dev-quest-service/payment/health", "I am alive - PaymentController").asJson)
 
     // Client triggers this to pay a developer for a quest - Not used
@@ -96,13 +96,13 @@ class PaymentControllerImpl[F[_] : Async : Concurrent : Logger](
                 amountCents = amountCents
               )
               resp <- {
-                Logger[F].info(s"[PaymentController] POST - pay a developer for a quest - Not used") *>
+                Logger[F].debug(s"[PaymentController] POST - pay a developer for a quest - Not used") *>
                   Ok(result.asJson)
               }
             } yield resp
           }
         case None =>
-          Logger[F].info("[PaymentController] Unauthorized request to /pay/clientId/questId") *>
+          Logger[F].debug("[PaymentController] Unauthorized request to /pay/clientId/questId") *>
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
       }
 
@@ -126,7 +126,7 @@ class PaymentControllerImpl[F[_] : Async : Concurrent : Logger](
             for {
               payload <- req.as[CheckoutPaymentPayload]
               session <- {
-                Logger[F].info(s"[PaymentController] Attempting to create Stripe checkout session, payload: $payload") *>
+                Logger[F].debug(s"[PaymentController] Attempting to create Stripe checkout session, payload: $payload") *>
                   paymentService.createCheckoutSession(
                     questId,
                     clientId,
@@ -135,7 +135,7 @@ class PaymentControllerImpl[F[_] : Async : Concurrent : Logger](
                   )
               }
               resp <- {
-                Logger[F].info("[PaymentController] Unauthorized request to /pay/clientId/questId") *>
+                Logger[F].debug("[PaymentController] Unauthorized request to /pay/clientId/questId") *>
                   Ok(session.asJson)
               }
             } yield resp

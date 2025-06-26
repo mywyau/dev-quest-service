@@ -86,9 +86,9 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
         .query[QuestPartial]
         .stream
         .transact(transactor)
-        .evalTap(q => Logger[F].info(s"[QuestRepository][streamByQuestStatus] Fetched quest: ${q.questId}"))
+        .evalTap(q => Logger[F].debug(s"[QuestRepository][streamByQuestStatus] Fetched quest: ${q.questId}"))
 
-    Stream.eval(Logger[F].info(s"[QuestRepository][streamByQuestStatus] Streaming quests (questStatus=$questStatus, limit=$limit, offset=$offset)")) >> queryStream
+    Stream.eval(Logger[F].debug(s"[QuestRepository][streamByQuestStatus] Streaming quests (questStatus=$questStatus, limit=$limit, offset=$offset)")) >> queryStream
   }
 
   override def streamByQuestStatusDev(devId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial] = {
@@ -104,9 +104,9 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
         .query[QuestPartial]
         .stream
         .transact(transactor)
-        .evalTap(q => Logger[F].info(s"[QuestRepository][streamByQuestStatus] Fetched quest: ${q.questId}"))
+        .evalTap(q => Logger[F].debug(s"[QuestRepository][streamByQuestStatus] Fetched quest: ${q.questId}"))
 
-    Stream.eval(Logger[F].info(s"[QuestRepository][streamByQuestStatusDev] Streaming quests (questStatus=$questStatus, limit=$limit, offset=$offset)")) >> queryStream
+    Stream.eval(Logger[F].debug(s"[QuestRepository][streamByQuestStatusDev] Streaming quests (questStatus=$questStatus, limit=$limit, offset=$offset)")) >> queryStream
   }
 
   override def streamByUserId(clientId: String, limit: Int, offset: Int): Stream[F, QuestPartial] = {
@@ -121,9 +121,9 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
         .query[QuestPartial]
         .stream
         .transact(transactor)
-        .evalTap(q => Logger[F].info(s"[QuestRepository] Fetched quest: ${q.questId}"))
+        .evalTap(q => Logger[F].debug(s"[QuestRepository] Fetched quest: ${q.questId}"))
 
-    Stream.eval(Logger[F].info(s"[QuestRepository] Streaming quests (clientId=$clientId, limit=$limit, offset=$offset)")) >> queryStream
+    Stream.eval(Logger[F].debug(s"[QuestRepository] Streaming quests (clientId=$clientId, limit=$limit, offset=$offset)")) >> queryStream
   }
 
   override def streamAll(limit: Int, offset: Int): Stream[F, QuestPartial] = {
@@ -138,9 +138,9 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
         .query[QuestPartial]
         .stream
         .transact(transactor)
-        .evalTap(q => Logger[F].info(s"[QuestRepository] Fetched quest: ${q.questId}"))
+        .evalTap(q => Logger[F].debug(s"[QuestRepository] Fetched quest: ${q.questId}"))
 
-    Stream.eval(Logger[F].info(s"[QuestRepository] Streaming quests (limit=$limit, offset=$offset)")) >> queryStream
+    Stream.eval(Logger[F].debug(s"[QuestRepository] Streaming quests (limit=$limit, offset=$offset)")) >> queryStream
   }
 
   override def findAllByUserId(clientId: String): F[List[QuestPartial]] = {

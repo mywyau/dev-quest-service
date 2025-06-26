@@ -21,7 +21,7 @@ class BaseControllerImpl[F[_] : Concurrent : Logger]() extends BaseControllerAlg
 
   override val routes: HttpRoutes[F] = HttpRoutes.of[F] {
     case req @ GET -> Root / "health" =>
-      Logger[F].info(s"[BaseControllerImpl] GET - Health check for backend service: ${GetResponse("success", "I am alive").asJson}") *>
+      Logger[F].debug(s"[BaseControllerImpl] GET - Health check for backend service: ${GetResponse("success", "I am alive").asJson}") *>
         Ok(GetResponse("success", "I am alive").asJson)
   }
 

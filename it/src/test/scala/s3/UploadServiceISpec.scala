@@ -37,7 +37,7 @@ object UploadServiceISpec extends SimpleIOSuite with AwsS3ISpecBase with BaseApp
       )
     )
     .region(region)
-    .forcePathStyle(true) // ✅ This fixes the DNS issue
+    .forcePathStyle(true) //  This fixes the DNS issue
     .build()
 
   val presigner: S3Presigner = 
@@ -49,7 +49,7 @@ object UploadServiceISpec extends SimpleIOSuite with AwsS3ISpecBase with BaseApp
       )
     )
     .region(region)
-    // .forcePathStyle(true) // ✅ This fixes the DNS issue
+    // .forcePathStyle(true) //  This fixes the DNS issue
     .build()
 
   val uploadService =

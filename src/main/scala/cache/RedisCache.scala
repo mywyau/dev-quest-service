@@ -5,27 +5,26 @@ import cats.implicits.*
 import cats.syntax.all.*
 import configuration.models.AppConfig
 import dev.profunktor.redis4cats.*
+import dev.profunktor.redis4cats.RedisCommands
 import dev.profunktor.redis4cats.data.RedisCodec
 import dev.profunktor.redis4cats.effect.Log.Stdout.*
-import dev.profunktor.redis4cats.RedisCommands
-import io.circe.generic.auto._
+import io.circe.generic.auto.*
 import io.circe.parser.decode
-import io.circe.syntax._
+import io.circe.syntax.*
 import models.auth.UserSession
-import org.http4s.circe._
 import org.http4s.EntityDecoder
+import org.http4s.circe.*
 import org.typelevel.log4cats.Logger
+
 import scala.concurrent.duration.*
 
 trait RedisCacheAlgebra[F[_]] {
-
-  // def getSession(userId: String): F[Option[String]]
 
   def getSession(userId: String): F[Option[UserSession]]
 
   def storeSession(userId: String, token: String): F[Unit]
 
-  def updateSession(userId: String, token: String): F[Unit] // NEW
+  def updateSession(userId: String, token: String): F[Unit]
 
   def deleteSession(userId: String): F[Long]
 }
@@ -38,7 +37,7 @@ class RedisCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int, a
 
   private def withRedis[A](fa: RedisCommands[F, String, String] => F[A]): F[A] = {
     val redisUri = s"redis://$redisHost:$redisPort"
-    Logger[F].info(s"[RedisCache] Uri: $redisUri") *>
+    Logger[F].debug(s"[RedisCache] Uri: $redisUri") *>
       Redis[F].utf8(redisUri).use(fa)
   }
 
@@ -47,7 +46,7 @@ class RedisCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int, a
     val key = s"auth:session:$userId"
 
     for {
-      _ <- Logger[F].info(s"[RedisCache] Retrieving session for userId=$userId")
+      _ <- Logger[F].debug(s"[RedisCache] Retrieving session for userId=$userId")
       maybeJ <- withRedis(_.get(key))
       result <- maybeJ match {
         case None =>
@@ -55,7 +54,7 @@ class RedisCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int, a
             .info(s"[RedisCache] No session found for userId=$userId")
             .as(None)
         case Some(jsonStr) =>
-          Logger[F].info(s"[RedisCache] Session JSON for userId=$userId: $jsonStr") *>
+          Logger[F].debug(s"[RedisCache] Session JSON for userId=$userId: $jsonStr") *>
             (
               decode[UserSession](jsonStr) match {
                 case Right(session) =>
@@ -74,23 +73,23 @@ class RedisCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int, a
   }
 
   override def storeSession(userId: String, token: String): F[Unit] =
-    Logger[F].info(s"[RedisCache] Storing session for userId=$userId") *>
+    Logger[F].debug(s"[RedisCache] Storing session for userId=$userId") *>
       withRedis(_.setEx(s"auth:session:$userId", token, 1.day)) <*
-      Logger[F].info(s"[RedisCache] Session stored with TTL 1 day for userId=$userId")
+      Logger[F].debug(s"[RedisCache] Session stored with TTL 1 day for userId=$userId")
 
   // No difference to def storeSession
   override def updateSession(userId: String, token: String): F[Unit] =
-    Logger[F].info(s"[RedisCache] Updating session for userId=$userId") *>
+    Logger[F].debug(s"[RedisCache] Updating session for userId=$userId") *>
       withRedis(_.setEx(s"auth:session:$userId", token, 1.day)) <*
-      Logger[F].info(s"[RedisCache] Session updated with TTL 1 day for userId=$userId")
+      Logger[F].debug(s"[RedisCache] Session updated with TTL 1 day for userId=$userId")
 
   override def deleteSession(userId: String): F[Long] =
-    Logger[F].info(s"[RedisCache] Deleting session for userId=$userId") *>
+    Logger[F].debug(s"[RedisCache] Deleting session for userId=$userId") *>
       withRedis(_.del(s"auth:session:$userId")).flatTap { deleted =>
         if (deleted > 0)
-          Logger[F].info(s"[RedisCache] Successfully deleted session for userId=$userId")
+          Logger[F].debug(s"[RedisCache] Successfully deleted session for userId=$userId")
         else
-          Logger[F].info(s"[RedisCache] No session to delete for userId=$userId")
+          Logger[F].debug(s"[RedisCache] No session to delete for userId=$userId")
       }
 }
 

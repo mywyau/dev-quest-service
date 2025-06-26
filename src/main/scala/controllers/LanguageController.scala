@@ -35,12 +35,12 @@ class LanguageControllerImpl[F[_] : Async : Concurrent : Logger](
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
     case req @ GET -> Root / "language" / "health" =>
-      Logger[F].info(s"[LanguageController] GET - Health check for backend LanguageController") *>
+      Logger[F].debug(s"[LanguageController] GET - Health check for backend LanguageController") *>
         Ok(GetResponse("/dev-quest-service/language/health", "I am alive - LanguageController").asJson)
 
     // TODO: change this to return a list of paginated languages
     case req @ GET -> Root / "language" / language / devId =>
-      Logger[F].info(s"[LanguageController] GET - Trying to get $language language data for for userId $devId") *>
+      Logger[F].debug(s"[LanguageController] GET - Trying to get $language language data for for userId $devId") *>
         languageService.getLanguage(devId, Language.fromString(language)).flatMap {
           case None =>
             BadRequest(ErrorResponse("NO_LANGUAGE_DATA", s"No language data found for $language").asJson)
@@ -50,7 +50,7 @@ class LanguageControllerImpl[F[_] : Async : Concurrent : Logger](
 
     // TODO: change this to return a list of paginated languages
     case req @ GET -> Root / "hiscore" / "language" / language =>
-      Logger[F].info(s"[LanguageController] GET - Trying to get hiscores language data for language: $language") *>
+      Logger[F].debug(s"[LanguageController] GET - Trying to get hiscores language data for language: $language") *>
         languageService.getHiscoreLanguage(Language.fromString(language.capitalize)).flatMap {
           case Nil =>
             BadRequest(ErrorResponse("NO_HISCORE_LANGUAGE_DATA", s"No hiscore language data found: $language").asJson)

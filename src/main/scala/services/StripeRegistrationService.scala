@@ -71,7 +71,7 @@ class StripeRegistrationService[F[_] : Async : Logger](
       response.as[Json].flatMap { json =>
         if (response.status.isSuccess) {
           for {
-            _ <- Logger[F].info(s"[Stripe] Account creation response: ${json.spaces2}")
+            _ <- Logger[F].debug(s"[Stripe] Account creation response: ${json.spaces2}")
             id <- json.hcursor
               .get[String]("id")
               .leftMap(err => new RuntimeException(s"Could not extract Stripe account ID: $err\nResponse: ${json.spaces2}"))
@@ -160,7 +160,7 @@ class StripeRegistrationService[F[_] : Async : Logger](
       )
     )
 
-    _ <- Logger[F].info(s"[Stripe] Updated account status for user $devUserId")
+    _ <- Logger[F].debug(s"[Stripe] Updated account status for user $devUserId")
 
   } yield ()
 

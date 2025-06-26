@@ -56,33 +56,33 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
       case Some(cookieToken) if cookieToken == token =>
         onValid
       case Some(_) =>
-        Logger[F].info("[RegistrationController][withValidSession] User session does not match reusered user session token value from redis.")
+        Logger[F].debug("[RegistrationController][withValidSession] User session does not match reusered user session token value from redis.")
         Forbidden("User session does not match reusered user session token value from redis.")
       case None =>
-        Logger[F].info("[RegistrationController][withValidSession] Invalid or expired session")
+        Logger[F].debug("[RegistrationController][withValidSession] Invalid or expired session")
         Forbidden("Invalid or expired session")
     }
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
     case req @ GET -> Root / "registration" / "health" =>
-      Logger[F].info(s"[RegistrationController] GET - Health check for backend RegistrationController service") *>
+      Logger[F].debug(s"[RegistrationController] GET - Health check for backend RegistrationController service") *>
         Ok(GetResponse("dev-quest-service/registration/health", "I am alive - RegistrationController").asJson)
 
     case req @ GET -> Root/  "registration" / "user" / "data" / userId =>
       extractSessionToken(req) match {
         case Some(cookieToken) =>
           withValidSession(userId, cookieToken) {
-            Logger[F].info(s"[UserDataController] GET - Authenticated for userId $userId") *>
+            Logger[F].debug(s"[UserDataController] GET - Authenticated for userId $userId") *>
               registrationService.getUser(userId).flatMap {
                 case Some(user) =>
-                  Logger[F].info(s"[UserDataController] GET - Found user ${userId.toString()}") *>
+                  Logger[F].debug(s"[UserDataController] GET - Found user ${userId.toString()}") *>
                     Ok(user.asJson)
                 case None =>
                   BadRequest(ErrorResponse("NO_QUEST", "No user found").asJson)
               }
           }
         case None =>
-          Logger[F].info(s"[UserDataController] GET - Unauthorised") *>
+          Logger[F].debug(s"[UserDataController] GET - Unauthorised") *>
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
@@ -90,11 +90,11 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
       extractSessionToken(req) match {
         case Some(headerToken) =>
           withValidSession(userId, headerToken) {
-            Logger[F].info(s"[RegistrationController] POST - Registering user") *>
+            Logger[F].debug(s"[RegistrationController] POST - Registering user") *>
               req.decode[CreateUserData] { request =>
                 registrationService.createUser(userId, request).flatMap {
                   case Valid(response) =>
-                    Logger[F].info(s"[RegistrationController] POST - Successfully created a user for userId: $userId") *>
+                    Logger[F].debug(s"[RegistrationController] POST - Successfully created a user for userId: $userId") *>
                       Created(CreatedResponse(response.toString, "user details created successfully").asJson)
                   case Invalid(_) =>
                     InternalServerError(ErrorResponse(code = "Code", message = "An error occurred").asJson)
@@ -109,14 +109,14 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
       extractSessionToken(req) match {
         case Some(cookieToken) =>
           withValidSession(userId, cookieToken) {
-            Logger[F].info(s"[RegistrationController] PUT - Updating user type for userId: $userId") *>
+            Logger[F].debug(s"[RegistrationController] PUT - Updating user type for userId: $userId") *>
               req.decode[UpdateUserType] { request =>
                 registrationService.updateUserType(userId, request).flatMap {
                   case Valid(response) =>
-                    Logger[F].info(s"[RegistrationController] PUT - Successfully updated user type for ID: $userId") *>
+                    Logger[F].debug(s"[RegistrationController] PUT - Successfully updated user type for ID: $userId") *>
                       Ok(UpdatedResponse(UpdateSuccess.toString, s"User $userId updated successfully with type: ${request.userType}").asJson)
                   case Invalid(errors) =>
-                    Logger[F].info(s"[RegistrationController] PUT - Validation failed for user update: ${errors.toList}") *>
+                    Logger[F].debug(s"[RegistrationController] PUT - Validation failed for user update: ${errors.toList}") *>
                       BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
                 }
               }

@@ -58,21 +58,21 @@ class LivePaymentService[F[_] : Async : Logger](
     amountCents: Long
   ): F[StripePaymentIntent] =
     for {
-      _ <- Logger[F].info(s"[LivePaymentService][createQuestPayment] Creating payment intent for quest [$questId] by client [$clientId]")
+      _ <- Logger[F].debug(s"[LivePaymentService][createQuestPayment] Creating payment intent for quest [$questId] by client [$clientId]")
       _ <- questRepo.validateOwnership(questId, clientId)
       intent <- stripePaymentService.createPaymentIntent(
         amount = amountCents,
         currency = "usd",
         devAccountId = developerStripeId
       )
-      _ <- Logger[F].info(s"[LivePaymentService][createQuestPayment] Stripe intent created for quest [$questId]")
+      _ <- Logger[F].debug(s"[LivePaymentService][createQuestPayment] Stripe intent created for quest [$questId]")
     } yield intent
 
   override def handleStripeWebhook(payload: String, sigHeader: String): F[Unit] =
     for {
       json <- stripePaymentService.verifyWebhook(payload, sigHeader)
       eventType = json.hcursor.get[String]("type").getOrElse("unknown")
-      _ <- Logger[F].info(s"[LivePaymentService][handleStripeWebhook] Stripe webhook received: $eventType")
+      _ <- Logger[F].debug(s"[LivePaymentService][handleStripeWebhook] Stripe webhook received: $eventType")
 
       _ <- eventType match {
         case "payment_intent.succeeded" =>
@@ -86,7 +86,7 @@ class LivePaymentService[F[_] : Async : Logger](
           maybeQuestId match {
             case Some(questId) =>
               for {
-                _ <- Logger[F].info(s"[LivePaymentService][handleStripeWebhook] Payment succeeded for quest [$questId]")
+                _ <- Logger[F].debug(s"[LivePaymentService][handleStripeWebhook] Payment succeeded for quest [$questId]")
                 _ <- questRepo.markPaid(questId)
               } yield ()
             case None =>
@@ -94,7 +94,7 @@ class LivePaymentService[F[_] : Async : Logger](
           }
 
         case other =>
-          Logger[F].info(s"[LivePaymentService][handleStripeWebhook] Ignoring webhook type: $other")
+          Logger[F].debug(s"[LivePaymentService][handleStripeWebhook] Ignoring webhook type: $other")
       }
     } yield ()
 
@@ -104,9 +104,9 @@ class LivePaymentService[F[_] : Async : Logger](
     developerStripeId: String,
     amountCents: Long
   ): F[CheckoutSessionUrl] = for {
-    _ <- Logger[F].info(s"[LivePaymentService][createCheckoutSession] Creating checkout session for quest [$questId] by client [$clientId]")
+    _ <- Logger[F].debug(s"[LivePaymentService][createCheckoutSession] Creating checkout session for quest [$questId] by client [$clientId]")
     _ <- questRepo.validateOwnership(questId, clientId)
-    _ <- Logger[F].info(s"[LivePaymentService][createCheckoutSession] Passed ownership validation check [$questId] by client [$clientId]")
+    _ <- Logger[F].debug(s"[LivePaymentService][createCheckoutSession] Passed ownership validation check [$questId] by client [$clientId]")
     session <- stripePaymentService.createCheckoutSession(
       questId = questId,
       clientId = clientId,

@@ -26,7 +26,7 @@ object Diffable {
   def diff[T](a: T, b: T)(implicit diffInstance: Diffable[T]): Map[String, (Any, Any)] =
     diffInstance.diff(a, b)
 
-  // ✅ Fix `logDifferences` to explicitly use `Diffable`
+  //  Fix `logDifferences` to explicitly use `Diffable`
   def logDifferences[T](expected: T, actual: T)(implicit diffInstance: Diffable[T]): Unit = {
     val differences = diffInstance.diff(expected, actual)
     if (differences.nonEmpty) {
@@ -35,14 +35,14 @@ object Diffable {
         println(s"❌ Difference Found - $field: $expectedValue | $actualValue \n")
       }
     } else {
-      println("✅ No differences found!")
+      println(" No differences found!")
     }
   }
 
-  // ✅ Fix `DiffableOps` to correctly reference `Diffable.logDifferences`
+  //  Fix `DiffableOps` to correctly reference `Diffable.logDifferences`
   implicit class DiffableOps[T](val expected: T) extends AnyVal {
     def logDifferences(actual: T)(implicit diffInstance: Diffable[T]): Unit = {
-      Diffable.logDifferences(expected, actual) // ✅ Explicitly reference `Diffable.logDifferences`
+      Diffable.logDifferences(expected, actual) //  Explicitly reference `Diffable.logDifferences`
     }
   }
 
