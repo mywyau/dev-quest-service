@@ -38,9 +38,9 @@ class RegistrationServiceImpl[F[_] : Concurrent : Monad : Logger](
   override def getUser(userId: String): F[Option[UserData]] =
     userDataRepo.findUser(userId).flatMap {
       case Some(user) =>
-        Logger[F].info(s"[UserDataService] Found user with ID: $userId") *> Concurrent[F].pure(Some(user))
+        Logger[F].debug(s"[UserDataService] Found user with ID: $userId") *> Concurrent[F].pure(Some(user))
       case None =>
-        Logger[F].info(s"[UserDataService] No user found with ID: $userId") *> Concurrent[F].pure(None)
+        Logger[F].debug(s"[UserDataService] No user found with ID: $userId") *> Concurrent[F].pure(None)
     }
 
   override def createUser(userId: String, createUserData: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
@@ -48,19 +48,19 @@ class RegistrationServiceImpl[F[_] : Concurrent : Monad : Logger](
     val createUserWithLogging =
       userDataRepo.createUser(userId, createUserData).flatMap {
         case Valid(value) =>
-          Logger[F].info(s"[RegistrationService] User successfully created with ID: $userId") *>
+          Logger[F].debug(s"[RegistrationService] User successfully created with ID: $userId") *>
             Concurrent[F].pure(Valid(value))
         case Invalid(errors) =>
           Logger[F].error(s"[RegistrationService] Failed to create user. Errors: ${errors.toList.mkString(", ")}") *>
             Concurrent[F].pure(Invalid(errors))
       }
 
-    Logger[F].info(s"[RegistrationService] Attempting to create a new user for userId: $userId") *>
+    Logger[F].debug(s"[RegistrationService] Attempting to create a new user for userId: $userId") *>
       userDataRepo.findUserNoUserName(userId).flatMap {
         case None =>
           createUserWithLogging
         case Some(value) =>
-          Logger[F].info(s"[RegistrationService] User already created with ID: ${value.userId}") *>
+          Logger[F].debug(s"[RegistrationService] User already created with ID: ${value.userId}") *>
             Concurrent[F].pure(Valid(ReadSuccess))
       }
   }
@@ -68,7 +68,7 @@ class RegistrationServiceImpl[F[_] : Concurrent : Monad : Logger](
   override def updateUserType(userId: String, userType: UpdateUserType): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     userDataRepo.updateUserType(userId, userType).flatMap {
       case Valid(value) =>
-        Logger[F].info(s"[UserDataService][update] Successfully updated user with ID: $userId") *>
+        Logger[F].debug(s"[UserDataService][update] Successfully updated user with ID: $userId") *>
           Concurrent[F].pure(Valid(value))
       case Invalid(errors) =>
         Logger[F].error(s"[UserDataService][update] Failed to update user with ID: $userId. Errors: ${errors.toList.mkString(", ")}") *>

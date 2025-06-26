@@ -34,18 +34,18 @@ class RewardServiceImpl[F[_] : Concurrent : Monad : Logger](
   override def getReward(questId: String): F[Option[RewardData]] =
     rewardRepo.getRewardData(questId).flatMap {
       case Some(reward) =>
-        Logger[F].info(s"[RewardService] Found reward data for quest with questId: $questId") *>
+        Logger[F].debug(s"[RewardService] Found reward data for quest with questId: $questId") *>
           Concurrent[F].pure(Some(reward))
       case None =>
-        Logger[F].info(s"[RewardService] No reward data found for quest with questId: $questId") *>
+        Logger[F].debug(s"[RewardService] No reward data found for quest with questId: $questId") *>
           Concurrent[F].pure(None)
     }
 
   override def createReward(clientId: String, request: CreateReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
-    Logger[F].info(s"[RewardService][createReward] Creating a new reward data for quest with questId ${request.questId}") *>
+    Logger[F].debug(s"[RewardService][createReward] Creating a new reward data for quest with questId ${request.questId}") *>
       rewardRepo.create(clientId, request).flatMap {
         case Valid(value) =>
-          Logger[F].info(s"[RewardService][createReward] Successfully created reward data for quest with questId: ${request.questId}") *>
+          Logger[F].debug(s"[RewardService][createReward] Successfully created reward data for quest with questId: ${request.questId}") *>
             Concurrent[F].pure(Valid(value))
         case Invalid(errors) =>
           Logger[F].error(s"[RewardService][createReward] Failed to create reward data. Errors: ${errors.toList.mkString(", ")}") *>
@@ -53,10 +53,10 @@ class RewardServiceImpl[F[_] : Concurrent : Monad : Logger](
       }
 
   override def updateReward(questId: String, request: UpdateRewardData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
-    Logger[F].info(s"[RewardService][createReward] Updating reward data for quest with questId ${questId}") *>
+    Logger[F].debug(s"[RewardService][createReward] Updating reward data for quest with questId ${questId}") *>
       rewardRepo.update(questId, request).flatMap {
         case Valid(value) =>
-          Logger[F].info(s"[RewardService][createReward] Successfully UPDATED reward data for quest with questId: ${questId}") *>
+          Logger[F].debug(s"[RewardService][createReward] Successfully UPDATED reward data for quest with questId: ${questId}") *>
             Concurrent[F].pure(Valid(value))
         case Invalid(errors) =>
           Logger[F].error(s"[RewardService][createReward] Failed to UPDATE reward data. Errors: ${errors.toList.mkString(", ")}") *>

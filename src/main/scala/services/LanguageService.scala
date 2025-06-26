@@ -35,10 +35,10 @@ class LanguageServiceImpl[F[_] : Concurrent : Monad : Logger](
   override def getLanguage(devId: String, language: Language): F[Option[LanguageData]] =
     languageRepo.getLanguage(devId, language).flatMap {
       case Some(langauge) =>
-        Logger[F].info(s"[LanguageService] Found $language language data for user with devId: $devId") *>
+        Logger[F].debug(s"[LanguageService] Found $language language data for user with devId: $devId") *>
           Concurrent[F].pure(Some(langauge))
       case None =>
-        Logger[F].info(s"[LanguageService] No $language language data found for user with devId: $devId") *>
+        Logger[F].debug(s"[LanguageService] No $language language data found for user with devId: $devId") *>
           Concurrent[F].pure(None)
     }
 

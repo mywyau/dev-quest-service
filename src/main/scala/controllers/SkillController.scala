@@ -45,11 +45,11 @@ class SkillControllerImpl[F[_] : Async : Concurrent : Logger](
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
     case req @ GET -> Root / "skill" / "health" =>
-      Logger[F].info(s"[SkillController] GET - Health check for backend SkillController") *>
+      Logger[F].debug(s"[SkillController] GET - Health check for backend SkillController") *>
         Ok(GetResponse("/dev-quest-service/skill/health", "I am alive - SkillController").asJson)
 
     // case req @ GET -> Root / "skill" / skill / devId =>
-    //   Logger[F].info(s"[SkillController] GET - Trying to get skill data for userId $devId for skill: $skill") *>
+    //   Logger[F].debug(s"[SkillController] GET - Trying to get skill data for userId $devId for skill: $skill") *>
     //     skillDataService.getSkillData(devId, Skill.fromString(skill)).flatMap {
     //       case None =>
     //         BadRequest(ErrorResponse("NO_SKILL_DATA", s"No $skill skill data found").asJson)
@@ -59,7 +59,7 @@ class SkillControllerImpl[F[_] : Async : Concurrent : Logger](
 
     // TODO: change this to return a list of paginated skills
     case req @ GET -> Root / "hiscore" / "skill" / skill =>
-      Logger[F].info(s"[SkillController] GET - Trying to get hiscores skill data for skill: $skill") *>
+      Logger[F].debug(s"[SkillController] GET - Trying to get hiscores skill data for skill: $skill") *>
         skillDataService.getHiscoreSkillData(Skill.fromString(skill.capitalize)).flatMap {
           case Nil =>
             BadRequest(ErrorResponse("NO_HISCORE_SKILL_DATA", s"No hiscore skill data found: $skill").asJson)

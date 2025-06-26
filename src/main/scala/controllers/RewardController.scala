@@ -51,27 +51,27 @@ class RewardControllerImpl[F[_] : Async : Concurrent : Logger](
   private def withValidSession(userId: String, token: String)(onValid: F[Response[F]]): F[Response[F]] =
     sessionCache.getSession(userId).flatMap {
       case Some(userSessionJson) if userSessionJson.cookieValue == token =>
-        Logger[F].info("[RewardController][withValidSession] Found valid session for userId:") *>
+        Logger[F].debug("[RewardController][withValidSession] Found valid session for userId:") *>
           onValid
       case Some(_) =>
-        Logger[F].info("[RewardController][withValidSession] User session does not match rewarded user session token value from redis.")
+        Logger[F].debug("[RewardController][withValidSession] User session does not match rewarded user session token value from redis.")
         Forbidden("User session does not match rewarded user session token value from redis.")
       case None =>
-        Logger[F].info("[RewardController][withValidSession] Invalid or expired session")
+        Logger[F].debug("[RewardController][withValidSession] Invalid or expired session")
         Forbidden("Invalid or expired session")
     }
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
     case req @ GET -> Root / "reward" / "health" =>
-      Logger[F].info(s"[RewardController] GET - Health check for backend RewardController service") *>
+      Logger[F].debug(s"[RewardController] GET - Health check for backend RewardController service") *>
         Ok(GetResponse("/dev-reward-service/health", "I am alive - RewardController").asJson)
 
     case req @ GET -> Root / "reward" / userIdFromRoute / questId =>
       extractSessionToken(req) match {
         case Some(cookieToken) =>
           withValidSession(userIdFromRoute, cookieToken) {
-            Logger[F].info(s"[RewardController] GET - Authenticated for userId $userIdFromRoute") *>
+            Logger[F].debug(s"[RewardController] GET - Authenticated for userId $userIdFromRoute") *>
               rewardService.getReward(questId).flatMap {
                 case Some(rewardData) =>
                   Ok(rewardData.asJson)
@@ -81,7 +81,7 @@ class RewardControllerImpl[F[_] : Async : Concurrent : Logger](
           }
 
         case None =>
-          Logger[F].info(s"[QuestController] GET - Unauthorised") *>
+          Logger[F].debug(s"[QuestController] GET - Unauthorised") *>
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
@@ -89,11 +89,11 @@ class RewardControllerImpl[F[_] : Async : Concurrent : Logger](
       extractSessionToken(req) match {
         case Some(cookieToken) =>
           withValidSession(clientId, cookieToken) {
-            Logger[F].info(s"[RewardControllerImpl] POST - Creating reward") *>
+            Logger[F].debug(s"[RewardControllerImpl] POST - Creating reward") *>
               req.decode[CreateReward] { reward =>
                 rewardService.createReward(clientId, reward).flatMap {
                   case Valid(response) =>
-                    Logger[F].info(s"[RewardControllerImpl] POST - Successfully created a reward") *>
+                    Logger[F].debug(s"[RewardControllerImpl] POST - Successfully created a reward") *>
                       Created(CreatedResponse(response.toString, "reward details created successfully").asJson)
                   case Invalid(_) =>
                     InternalServerError(ErrorResponse(code = "Code", message = "An error occurred").asJson)
@@ -108,14 +108,14 @@ class RewardControllerImpl[F[_] : Async : Concurrent : Logger](
       extractSessionToken(req) match {
         case Some(cookieToken) =>
           withValidSession(clientId, cookieToken) {
-            Logger[F].info(s"[RewardControllerImpl] PUT - Updating reward status for questId: $questId") *>
+            Logger[F].debug(s"[RewardControllerImpl] PUT - Updating reward status for questId: $questId") *>
               req.decode[UpdateRewardData] { request =>
                 rewardService.updateReward(questId, request).flatMap {
                   case Valid(response) =>
-                    Logger[F].info(s"[RewardControllerImpl] PUT - Successfully updated reward status for questId: $questId") *>
+                    Logger[F].debug(s"[RewardControllerImpl] PUT - Successfully updated reward status for questId: $questId") *>
                       Ok(UpdatedResponse(UpdateSuccess.toString, s"updated reward data: ${request.rewardValue} successfully, for questId: ${questId}").asJson)
                   case Invalid(errors) =>
-                    Logger[F].info(s"[RewardControllerImpl] PUT - Validation failed for reward update: ${errors.toList}") *>
+                    Logger[F].debug(s"[RewardControllerImpl] PUT - Validation failed for reward update: ${errors.toList}") *>
                       BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
                 }
               }

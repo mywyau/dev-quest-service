@@ -116,17 +116,17 @@ class StripePaymentService[F[_] : Async : Logger](
       .withEntity(form)
 
     for {
-      _ <- Logger[F].info(s"[StripeClient][createCheckoutSession] Starting Checkout Session creation")
-      _ <- Logger[F].info(s"[StripeClient][createCheckoutSession] Quest ID: $questId, Client ID: $clientId, Dev Stripe ID: $developerStripeId")
-      _ <- Logger[F].info(s"[StripeClient][createCheckoutSession] Amount (cents): $amount, Fee (cents): $fee, Currency: $currency")
-      _ <- Logger[F].info(s"[StripeClient][createCheckoutSession] Requesting Stripe Checkout Session with form data: ${form.values.mkString(", ")}")
+      _ <- Logger[F].debug(s"[StripeClient][createCheckoutSession] Starting Checkout Session creation")
+      _ <- Logger[F].debug(s"[StripeClient][createCheckoutSession] Quest ID: $questId, Client ID: $clientId, Dev Stripe ID: $developerStripeId")
+      _ <- Logger[F].debug(s"[StripeClient][createCheckoutSession] Amount (cents): $amount, Fee (cents): $fee, Currency: $currency")
+      _ <- Logger[F].debug(s"[StripeClient][createCheckoutSession] Requesting Stripe Checkout Session with form data: ${form.values.mkString(", ")}")
 
       responseJson <- client.run(req).use { resp =>
           resp.as[Json].flatMap { json =>
             if (resp.status.isSuccess) {
               json.hcursor.get[String]("url") match {
                 case Right(url) =>
-                  Logger[F].info(s"[StripeClient] Checkout Session created: $url") *>
+                  Logger[F].debug(s"[StripeClient] Checkout Session created: $url") *>
                     Sync[F].pure(CheckoutSessionUrl(url))
                 case Left(err) =>
                   Logger[F].error(s"[StripeClient] Missing 'url' in response: ${json.spaces2}") *>
@@ -138,7 +138,7 @@ class StripePaymentService[F[_] : Async : Logger](
             }
           }
       }
-      _ <- Logger[F].info(s"[StripeClient] Checkout Session created successfully: ${responseJson.asJson.spaces2}")
+      _ <- Logger[F].debug(s"[StripeClient] Checkout Session created successfully: ${responseJson.asJson.spaces2}")
 
       url <- responseJson.asJson.hcursor.get[String]("url").liftTo[F].handleErrorWith { err =>
         Logger[F].error(s"[StripeClient] Failed to extract 'url' from response: ${err.getMessage}") *> err.raiseError[F, String]

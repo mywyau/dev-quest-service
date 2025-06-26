@@ -38,7 +38,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
   override def getEstimates(devId: String, questId: String): F[List[Estimate]] =
     for {
       estimates <- estimateRepo.getEstimates(questId)
-      _ <- Logger[F].info(s"[EstimateService][getEstimate] Returning ${estimates.length} estimates for quest $questId and dev $devId")
+      _ <- Logger[F].debug(s"[EstimateService][getEstimate] Returning ${estimates.length} estimates for quest $questId and dev $devId")
     } yield estimates
 
   override def createEstimate(devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
@@ -48,12 +48,12 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
       userOpt <- userDataRepo.findUser(devId)
       result <- userOpt match {
         case Some(user) =>
-          Logger[F].info(s"[EstimateService][create] Creating a new estimate for user ${user.username} with ID $newEstimateId") *>
+          Logger[F].debug(s"[EstimateService][create] Creating a new estimate for user ${user.username} with ID $newEstimateId") *>
             estimateRepo
               .createEstimation(newEstimateId, devId, user.username, estimate)
               .flatMap {
                 case Valid(value) =>
-                  Logger[F].info(s"[EstimateService][create] Estimate created successfully") *>
+                  Logger[F].debug(s"[EstimateService][create] Estimate created successfully") *>
                     Concurrent[F].pure(Valid(value))
                 case Invalid(errors) =>
                   Logger[F].error(s"[EstimateService][create] Failed to create estimate: ${errors.toList.mkString(", ")}") *>
