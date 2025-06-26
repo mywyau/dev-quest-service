@@ -5,27 +5,26 @@ import cats.implicits.*
 import cats.syntax.all.*
 import configuration.models.AppConfig
 import dev.profunktor.redis4cats.*
+import dev.profunktor.redis4cats.RedisCommands
 import dev.profunktor.redis4cats.data.RedisCodec
 import dev.profunktor.redis4cats.effect.Log.Stdout.*
-import dev.profunktor.redis4cats.RedisCommands
-import io.circe.generic.auto._
+import io.circe.generic.auto.*
 import io.circe.parser.decode
-import io.circe.syntax._
+import io.circe.syntax.*
 import models.auth.UserSession
-import org.http4s.circe._
 import org.http4s.EntityDecoder
+import org.http4s.circe.*
 import org.typelevel.log4cats.Logger
+
 import scala.concurrent.duration.*
 
 trait RedisCacheAlgebra[F[_]] {
-
-  // def getSession(userId: String): F[Option[String]]
 
   def getSession(userId: String): F[Option[UserSession]]
 
   def storeSession(userId: String, token: String): F[Unit]
 
-  def updateSession(userId: String, token: String): F[Unit] // NEW
+  def updateSession(userId: String, token: String): F[Unit]
 
   def deleteSession(userId: String): F[Long]
 }

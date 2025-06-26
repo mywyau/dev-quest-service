@@ -50,7 +50,7 @@ object TestRoutes {
       )
     )
     .region(region)
-    .forcePathStyle(true) // ✅ This fixes the DNS issue
+    .forcePathStyle(true) //  This fixes the DNS issue
     .build()
 
   val presigner: S3Presigner = S3Presigner.builder()
@@ -61,7 +61,7 @@ object TestRoutes {
       )
     )
     .region(region)
-    // .forcePathStyle(true) // ✅ This fixes the DNS issue
+    // .forcePathStyle(true) //  This fixes the DNS issue
     .build()
 
   class MockRedisCache(ref: Ref[IO, Map[String, UserSession]]) extends RedisCacheAlgebra[IO] {
