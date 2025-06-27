@@ -1,13 +1,16 @@
 package configuration
 
+import cats.Eq
 import cats.effect.IO
 import cats.syntax.eq.*
-import cats.Eq
 import configuration.models.*
-import configuration.AppConfigConstants.*
 import io.circe.generic.auto.*
 import io.circe.syntax.*
 import weaver.SimpleIOSuite
+
+import configuration.AppConfig
+import configuration.models.DevSubmissionConfig
+import configuration.AppConfigConstants.*
 
 object AppConfigSpec extends SimpleIOSuite {
 

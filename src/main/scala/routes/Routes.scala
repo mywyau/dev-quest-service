@@ -5,7 +5,7 @@ import cache.SessionCache
 import cache.SessionCacheImpl
 import cats.NonEmptyParallel
 import cats.effect.*
-import configuration.models.AppConfig
+import configuration.AppConfig
 import controllers.*
 import doobie.hikari.HikariTransactor
 import org.http4s.HttpRoutes

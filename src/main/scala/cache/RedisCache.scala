@@ -3,7 +3,7 @@ package cache
 import cats.effect.*
 import cats.implicits.*
 import cats.syntax.all.*
-import configuration.models.AppConfig
+import configuration.AppConfig
 import dev.profunktor.redis4cats.*
 import dev.profunktor.redis4cats.RedisCommands
 import dev.profunktor.redis4cats.data.RedisCodec

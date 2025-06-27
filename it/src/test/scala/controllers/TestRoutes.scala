@@ -8,7 +8,7 @@ import cats.data.Validated
 import cats.data.ValidatedNel
 import cats.effect.*
 import cats.implicits.*
-import configuration.models.AppConfig
+import configuration.AppConfig
 import dev.profunktor.redis4cats.RedisCommands
 import doobie.util.transactor.Transactor
 import models.auth.UserSession

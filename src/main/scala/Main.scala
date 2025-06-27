@@ -2,7 +2,7 @@ import cats.effect.*
 import cats.implicits.*
 import cats.NonEmptyParallel
 import com.comcast.ip4s.*
-import configuration.models.AppConfig
+import configuration.AppConfig
 import configuration.ConfigReader
 import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts

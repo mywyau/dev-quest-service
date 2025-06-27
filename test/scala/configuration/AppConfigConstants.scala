@@ -2,6 +2,8 @@ package configuration
 
 import configuration.models.*
 
+import configuration.AppConfig
+
 object AppConfigConstants {
 
   val featureSwitches =
