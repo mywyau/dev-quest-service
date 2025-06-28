@@ -27,8 +27,6 @@ object UploadServiceISpec extends SimpleIOSuite with AwsS3ISpecBase with BaseApp
 
   val region = Region.US_EAST_1
   val bucket = "test-bucket"
-  val endpoint = "http://localstack:4566"
-  // val endpoint = "http://localhost:4566"
 
   def s3ClientsResource(): Resource[IO, (S3AsyncClient, S3Presigner)] = {
     for {
@@ -63,30 +61,6 @@ object UploadServiceISpec extends SimpleIOSuite with AwsS3ISpecBase with BaseApp
     })
     } yield (s3Client, presigner)
   }
-
-  // val s3Client: S3AsyncClient =
-  //    S3AsyncClient.builder()
-  //   .endpointOverride(URI.create(endpoint))
-  //   .credentialsProvider(
-  //     StaticCredentialsProvider.create(
-  //       software.amazon.awssdk.auth.credentials.AwsBasicCredentials.create("test", "test")
-  //     )
-  //   )
-  //   .region(region)
-  //   .forcePathStyle(true) //  This fixes the DNS issue
-  //   .build()
-
-  // val presigner: S3Presigner = 
-  //   S3Presigner.builder()
-  //   .endpointOverride(URI.create(endpoint))
-  //   .credentialsProvider(
-  //     StaticCredentialsProvider.create(
-  //       software.amazon.awssdk.auth.credentials.AwsBasicCredentials.create("test", "test")
-  //     )
-  //   )
-  //   .region(region)
-  //   // .forcePathStyle(true) //  This fixes the DNS issue
-  //   .build()
 
 
   def uploadServiceResource: Resource[IO, UploadServiceAlgebra[IO]] = {
