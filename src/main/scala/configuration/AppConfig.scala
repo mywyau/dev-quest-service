@@ -9,5 +9,6 @@ case class AppConfig(
   featureSwitches: FeatureSwitches,
   devSubmission: DevSubmissionConfig,
   localAppConfig: LocalAppConfig,
+  prodAppConfig: ProdAppConfig,
   integrationSpecConfig: IntegrationSpecConfig
 ) derives ConfigReader
