@@ -44,3 +44,15 @@ class UploadServiceImpl[F[_] : Async : Logger](
       _ <- Logger[F].debug(s"[UploadService] Generated presigned PUT URL: $uri")
     } yield uri
 }
+
+object UploadService {
+  def apply[F[_] : Async : Logger](
+    bucket: String,
+    client: S3ClientAlgebra[F],
+    presigner: S3PresignerAlgebra[F]
+  ) = new UploadServiceImpl[F](
+    bucket,
+    client,
+    presigner
+  )
+}

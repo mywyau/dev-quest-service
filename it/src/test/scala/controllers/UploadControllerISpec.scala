@@ -81,7 +81,7 @@ class UploadControllerISpec(global: GlobalRead) extends IOSuite with ControllerI
 
         expect.all(
           response.status == Status.Ok,
-          keyOpt.exists(_.startsWith("uploads/"))
+          keyOpt.exists(_.startsWith("uploads/")) // needs an aws s3 bucket called uploads
         )
       }
     }
