@@ -107,7 +107,7 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     IO(expect(resultantLevel == 8))
   }
 
-  test(".calculateLevel() - returns the correct level: '99', for 10,000,000 xp") {
+  test(".calculateLevel() - returns the correct level: '97', for 10,000,000 xp") {
 
     val dummySkillRepo = new SkillDataRepositoryAlgebra[IO] {
 
@@ -152,7 +152,7 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     IO(expect(resultantLevel == 97))
   }
 
-  test(".calculateLevel() - returns the correct level: '99', for 15,000,000 xp") {
+  test(".calculateLevel() - returns the correct level: '101', for 15,000,000 xp") {
 
     val dummySkillRepo = new SkillDataRepositoryAlgebra[IO] {
 
