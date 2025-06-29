@@ -6,7 +6,7 @@ import cats.data.Validated.Valid
 import cats.data.ValidatedNel
 import cats.effect.*
 import cats.syntax.all.*
-import configuration.models.AppConfig
+import configuration.AppConfig
 import dev.profunktor.redis4cats.*
 import dev.profunktor.redis4cats.effect.Log.Stdout.*
 import io.circe.generic.auto._

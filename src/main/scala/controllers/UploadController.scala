@@ -4,7 +4,7 @@ import cats.data.Validated.Valid
 import cats.effect.*
 import cats.implicits.*
 import cats.syntax.all.*
-import configuration.models.AppConfig
+import configuration.AppConfig
 import fs2.Pipe
 import fs2.RaiseThrowable
 import fs2.Stream

@@ -13,22 +13,9 @@ import fs2.Stream
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import models.database.*
-import models.database.ConstraintViolation
-import models.database.CreateSuccess
-import models.database.DataTooLongError
-import models.database.DatabaseConnectionError
-import models.database.DatabaseError
-import models.database.DatabaseErrors
-import models.database.DatabaseSuccess
-import models.database.DeleteSuccess
-import models.database.ForeignKeyViolationError
-import models.database.NotFoundError
-import models.database.SqlExecutionError
-import models.database.UnexpectedResultError
-import models.database.UnknownError
-import models.database.UpdateSuccess
 import models.languages.*
 import org.typelevel.log4cats.Logger
+import services.LevelServiceAlgebra
 
 trait LanguageRepositoryAlgebra[F[_]] {
 
@@ -38,10 +25,12 @@ trait LanguageRepositoryAlgebra[F[_]] {
 
   def getHiscoreLanguageData(language: Language): F[List[LanguageData]]
 
-  def awardLanguageXP(devId: String, username: String, language: String, xp: BigDecimal): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def awardLanguageXP(devId: String, username: String, language: Language, xp: BigDecimal, level: Int): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
-class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends LanguageRepositoryAlgebra[F] {
+class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
+  transactor: Transactor[F]
+) extends LanguageRepositoryAlgebra[F] {
 
   implicit val languageMeta: Meta[Language] = Meta[String].timap(Language.fromString)(_.toString)
 
@@ -105,16 +94,14 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
     findQuery
   }
 
-  override def awardLanguageXP(devId: String, username: String, language: String, xp: BigDecimal): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
-    // TODO: calcs the level here this needs to change we want to calc the level on upsert in backend
-    //       VALUES ($devId, $username, $language, $xp, 1)
-    //      level = LEAST(99, FLOOR(SQRT(language.xp + $xp) / 10)::int + 1)
+  override def awardLanguageXP(devId: String, username: String, language: Language, xp: BigDecimal, level: Int): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       INSERT INTO language (dev_id, username, language, xp, level)
-      VALUES ($devId, $username, $language, $xp, LEAST(99, FLOOR(SQRT($xp) / 10)::int + 1) )
+      VALUES ($devId, $username, ${language.toString()}, $xp, LEAST(99, FLOOR(SQRT($xp) / 10)::int + 1) )
       ON CONFLICT (dev_id, language)
-      DO UPDATE SET xp = language.xp + $xp,
-      level = LEAST(99, FLOOR(SQRT(language.xp + $xp) / 10)::int + 1) 
+      DO UPDATE SET 
+      xp = language.xp + $xp,
+      level = $level
     """.update.run.transact(transactor).attempt.map {
       case Right(affectedRows) if affectedRows == 1 =>
         UpdateSuccess.validNel
@@ -136,6 +123,8 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
 }
 
 object LanguageRepository {
-  def apply[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]): LanguageRepositoryAlgebra[F] =
+  def apply[F[_] : Concurrent : Monad : Logger](
+    transactor: Transactor[F]
+  ): LanguageRepositoryAlgebra[F] =
     new LanguageRepositoryImpl[F](transactor)
 }

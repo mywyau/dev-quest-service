@@ -16,6 +16,7 @@ import models.*
 import models.database.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
+import models.languages.Language
 import models.quests.CreateQuest
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
@@ -78,7 +79,8 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
   userRepo: UserDataRepositoryAlgebra[F],
   skillRepo: SkillDataRepositoryAlgebra[F],
   languageRepo: LanguageRepositoryAlgebra[F],
-  rewardRepo: RewardRepositoryAlgebra[F]
+  rewardRepo: RewardRepositoryAlgebra[F],
+  levelService: LevelServiceAlgebra[F]
 ) extends QuestServiceAlgebra[F] {
 
   override def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
@@ -327,11 +329,10 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
 
       username = user.username
       tags = quest.tags
-
-      _ <- EitherT.liftF(skillRepo.awardSkillXP(devId, username, Questing, xp))
-
+      
+      _ <- EitherT.liftF(levelService.awardSkillXpWithLevel(devId, username, Questing, xp))
       _ <- EitherT.liftF(tags.traverse { tag =>
-        languageRepo.awardLanguageXP(devId, username, tag, xp)
+        levelService.awardLanguageXpWithLevel(devId, username, Language.fromString(tag), xp)
       })
 
     } yield UpdateSuccess
@@ -357,7 +358,8 @@ object QuestService {
     userRepo: UserDataRepositoryAlgebra[F],
     skillRepo: SkillDataRepositoryAlgebra[F],
     languageRepo: LanguageRepositoryAlgebra[F],
-    rewardRepo: RewardRepositoryAlgebra[F]
+    rewardRepo: RewardRepositoryAlgebra[F],
+    levelService: LevelServiceAlgebra[F]
   ): QuestServiceAlgebra[F] =
-    new QuestServiceImpl[F](questRepo, userRepo, skillRepo, languageRepo, rewardRepo)
+    new QuestServiceImpl[F](questRepo, userRepo, skillRepo, languageRepo, rewardRepo, levelService)
 }

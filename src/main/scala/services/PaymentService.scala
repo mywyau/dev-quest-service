@@ -6,7 +6,7 @@ import cats.effect.Concurrent
 import cats.effect.IO
 import cats.implicits.*
 import com.stripe.net.Webhook
-import configuration.models.AppConfig
+import configuration.AppConfig
 import io.circe.Json
 import io.circe.parser
 import io.circe.syntax.EncoderOps

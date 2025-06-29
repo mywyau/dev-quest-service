@@ -4,7 +4,7 @@ import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
-import configuration.models.AppConfig
+import configuration.AppConfig
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*

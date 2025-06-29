@@ -20,6 +20,6 @@ case object MockLanguageRepository extends LanguageRepositoryAlgebra[IO] {
 
   override def getHiscoreLanguageData(language: Language): IO[List[LanguageData]] = ???
 
-  override def awardLanguageXP(devId: String, username: String, language: String, xp: BigDecimal): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+  override def awardLanguageXP(devId: String, username: String, language: Language, xp: BigDecimal, level: Int): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
 }

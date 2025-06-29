@@ -4,6 +4,7 @@ import cats.effect.*
 import com.comcast.ip4s.Host
 import com.comcast.ip4s.Port
 import configuration.models.*
+import configuration.AppConfig
 
 trait BaseAppConfig {
 
