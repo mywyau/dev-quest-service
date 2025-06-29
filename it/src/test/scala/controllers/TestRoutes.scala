@@ -200,7 +200,8 @@ object TestRoutes extends BaseAppConfig {
       userDataRepository = UserDataRepository(transactor)
       skillDataRepository = SkillDataRepository(transactor)
       languageRepository = LanguageRepository(transactor)
-      questService = QuestService(questRepository, userDataRepository, skillDataRepository, languageRepository, rewardRepository)
+      levelService = LevelService(skillDataRepository,languageRepository)
+      questService = QuestService(questRepository, userDataRepository, skillDataRepository, languageRepository, rewardRepository, levelService)
       questController = QuestController(questService, mockSessionCache)
     } yield questController.routes
   }

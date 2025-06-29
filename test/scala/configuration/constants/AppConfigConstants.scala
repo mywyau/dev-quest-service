@@ -14,7 +14,7 @@ object AppConfigConstants {
       useDockerHost = false,
       localTesting = false,
       useCors = false,
-      useHttpsLocalstack = false,
+      useHttpsLocalstack = true,
       useProdStripe = false
     )
 
