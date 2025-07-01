@@ -238,23 +238,6 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
-    // TODO: change this to return a list of paginated quests
-    case req @ GET -> Root / "quest" / "all" / userIdFromRoute =>
-      extractSessionToken(req) match {
-        case Some(cookieToken) =>
-          withValidSession(userIdFromRoute, cookieToken) {
-            Logger[F].debug(s"[QuestController] GET - Authenticated for userId $userIdFromRoute") *>
-              questService.getAllQuests(userIdFromRoute).flatMap {
-                case Nil => BadRequest(ErrorResponse("NO_QUEST", "No quests found").asJson)
-                case quests => Ok(quests.asJson)
-              }
-          }
-
-        case None =>
-          Logger[F].debug(s"[QuestController] GET - Unauthorised") *>
-            Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
-      }
-
     case req @ GET -> Root / "quest" / userIdFromRoute / questId =>
       extractSessionToken(req) match {
         case Some(cookieToken) =>
