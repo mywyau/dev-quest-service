@@ -210,8 +210,7 @@ object QuestStreamingService {
   def apply[F[_] : Concurrent : NonEmptyParallel : Logger](
     appConfig: AppConfig,
     questRepo: QuestRepositoryAlgebra[F],
-    rewardRepo: RewardRepositoryAlgebra[F],
-    levelService: LevelServiceAlgebra[F]
+    rewardRepo: RewardRepositoryAlgebra[F]
   ): QuestStreamingServiceAlgebra[F] =
     new QuestStreamingServiceImpl[F](appConfig, questRepo, rewardRepo)
 }
