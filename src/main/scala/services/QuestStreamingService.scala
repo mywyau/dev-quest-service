@@ -1,8 +1,5 @@
-package services.quest
-
 package services
 
-import _root_.services.LevelServiceAlgebra
 import cats.data.EitherT
 import cats.data.Validated
 import cats.data.Validated.Invalid
@@ -32,6 +29,7 @@ import repositories.RewardRepositoryAlgebra
 import repositories.SkillDataRepository
 import repositories.SkillDataRepositoryAlgebra
 import repositories.UserDataRepositoryAlgebra
+import services.LevelServiceAlgebra
 
 trait QuestStreamingServiceAlgebra[F[_]] {
 
