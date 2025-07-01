@@ -36,8 +36,6 @@ class MockQuestService(userQuestData: Map[String, QuestPartial]) extends QuestSe
 
   override def streamByUserId(userId: String, limit: Int, offset: Int): Stream[IO, QuestWithReward] = ???
 
-  override def getAllQuests(userId: String): IO[List[QuestPartial]] = ???
-
   override def getByQuestId(businessId: String): IO[Option[QuestPartial]] =
     userQuestData.get(businessId) match {
       case Some(address) => IO.pure(Some(address))
