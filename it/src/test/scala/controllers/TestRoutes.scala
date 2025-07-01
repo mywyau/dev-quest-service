@@ -46,7 +46,7 @@ object TestRoutes extends BaseAppConfig {
     for {
       appConfig <- appConfigResource
       useHttps = appConfig.featureSwitches.useHttpsLocalstack
-      endpoint = if (useHttps) "https://localstack:4566" else "http://localhost:4566"
+      endpoint = if (useHttps) "http://localstack:4566" else "http://localhost:4566"
       uri = URI.create(endpoint)
       s3Client <- Resource.fromAutoCloseable(IO.blocking {
         S3AsyncClient.builder()
