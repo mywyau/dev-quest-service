@@ -8,61 +8,73 @@ import cats.data.Validated
 import cats.data.ValidatedNel
 import cats.effect.*
 import cats.implicits.*
-import configuration.models.AppConfig
+import configuration.AppConfig
+import configuration.BaseAppConfig
 import dev.profunktor.redis4cats.RedisCommands
 import doobie.util.transactor.Transactor
 import models.auth.UserSession
 import models.cache.CacheErrors
 import models.cache.CacheSuccess
 import models.cache.CacheUpdateSuccess
-import org.http4s.server.Router
 import org.http4s.HttpRoutes
-import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.http4s.Uri
+import org.http4s.server.Router
 import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import repositories.*
 import services.*
+import services.s3.LiveS3Client
+import services.s3.S3ClientAlgebra
+import services.s3.S3PresignerAlgebra
+import services.s3.UploadServiceImpl
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
-import java.net.URI
-import software.amazon.awssdk.services.s3.presigner.S3Presigner
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
-import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
-import org.http4s.Uri
-import java.time.Duration
-import services.s3.LiveS3Client
-import services.s3.UploadServiceImpl
-import services.s3.S3PresignerAlgebra
-import services.s3.S3ClientAlgebra
+import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
 
-object TestRoutes {
+import java.net.URI
+import java.time.Duration
+
+object TestRoutes extends BaseAppConfig {
 
   val region = Region.US_EAST_1
   val bucket = "test-bucket"
-  val endpoint =  "http://localstack:4566"
-  // val endpoint =  "http://localhost:4566"
 
-  val s3Client: S3AsyncClient = S3AsyncClient.builder()
-    .endpointOverride(URI.create(endpoint))
-    .credentialsProvider(
-      StaticCredentialsProvider.create(
-        software.amazon.awssdk.auth.credentials.AwsBasicCredentials.create("test", "test")
-      )
-    )
-    .region(region)
-    .forcePathStyle(true) //  This fixes the DNS issue
-    .build()
+  def s3ClientsResource(): Resource[IO, (S3AsyncClient, S3Presigner)] = {
+    for {
+      appConfig <- appConfigResource
+      useHttps = appConfig.featureSwitches.useHttpsLocalstack
+      endpoint = if (useHttps) "http://localstack:4566" else "http://localhost:4566"
+      uri = URI.create(endpoint)
+      s3Client <- Resource.fromAutoCloseable(IO.blocking {
+        S3AsyncClient.builder()
+          .endpointOverride(uri)
+          .credentialsProvider(
+            StaticCredentialsProvider.create(
+              software.amazon.awssdk.auth.credentials.AwsBasicCredentials.create("test", "test")
+            )
+          )
+          .region(Region.US_EAST_1)
+          .forcePathStyle(true)
+          .build()
+      })
 
-  val presigner: S3Presigner = S3Presigner.builder()
-    .endpointOverride(URI.create(endpoint))
-    .credentialsProvider(
-      StaticCredentialsProvider.create(
-        software.amazon.awssdk.auth.credentials.AwsBasicCredentials.create("test", "test")
-      )
-    )
-    .region(region)
-    // .forcePathStyle(true) //  This fixes the DNS issue
-    .build()
+      presigner <- Resource.fromAutoCloseable(IO.blocking {
+        S3Presigner.builder()
+          .endpointOverride(uri)
+          .credentialsProvider(
+            StaticCredentialsProvider.create(
+              software.amazon.awssdk.auth.credentials.AwsBasicCredentials.create("test", "test")
+            )
+          )
+          .region(Region.US_EAST_1)
+          .build()
+      })
+    } yield (s3Client, presigner)
+}
+
 
   class MockRedisCache(ref: Ref[IO, Map[String, UserSession]]) extends RedisCacheAlgebra[IO] {
 
@@ -188,7 +200,8 @@ object TestRoutes {
       userDataRepository = UserDataRepository(transactor)
       skillDataRepository = SkillDataRepository(transactor)
       languageRepository = LanguageRepository(transactor)
-      questService = QuestService(questRepository, userDataRepository, skillDataRepository, languageRepository, rewardRepository)
+      levelService = LevelService(skillDataRepository,languageRepository)
+      questService = QuestService(questRepository, userDataRepository, skillDataRepository, languageRepository, rewardRepository, levelService)
       questController = QuestController(questService, mockSessionCache)
     } yield questController.routes
   }
@@ -293,13 +306,17 @@ object TestRoutes {
           )
         )
       )
+      s3ResourceResult <- s3ClientsResource()
+      (s3Client, presigner) = s3ResourceResult
       mockSessionCache = new MockSessionCache(ref)
 
       liveS3Client = new LiveS3Client[IO](s3Client)
       uploadServiceImpl = new UploadServiceImpl(
-        bucket,
-        new S3ClientAlgebra[IO] {
-              def putObject(bucket: String, key: String, contentType: String, bytes: Array[Byte]): IO[Unit] = IO.fromCompletableFuture(IO {
+        bucket = bucket,
+        client = 
+          new S3ClientAlgebra[IO] {
+              def putObject(bucket: String, key: String, contentType: String, bytes: Array[Byte]): IO[Unit] = 
+                IO.fromCompletableFuture(IO {
                 val request = PutObjectRequest.builder()
                   .bucket(bucket)
                   .key(key)
@@ -307,7 +324,7 @@ object TestRoutes {
                 s3Client.putObject(request, software.amazon.awssdk.core.async.AsyncRequestBody.fromBytes(bytes))
               }).void
         },
-        new S3PresignerAlgebra[IO] {
+        presigner = new S3PresignerAlgebra[IO] {
             def presignGetUrl(bucket: String, key: String, fileName: String, expiresIn: Duration): IO[Uri] = IO {
               val req = 
                 GetObjectRequest

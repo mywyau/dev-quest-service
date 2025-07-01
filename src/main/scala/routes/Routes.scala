@@ -3,28 +3,28 @@ package routes
 import cache.RedisCacheImpl
 import cache.SessionCache
 import cache.SessionCacheImpl
-import cats.NonEmptyParallel
 import cats.effect.*
-import configuration.models.AppConfig
+import cats.NonEmptyParallel
+import configuration.AppConfig
 import controllers.*
 import doobie.hikari.HikariTransactor
-import org.http4s.HttpRoutes
+import java.net.URI
 import org.http4s.client.Client
+import org.http4s.HttpRoutes
 import org.typelevel.log4cats.Logger
 import repositories.*
 import services.*
 import services.s3.LiveS3Client
 import services.s3.LiveS3Presigner
 import services.s3.UploadServiceImpl
+import services.LevelService
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.S3Configuration
-import software.amazon.awssdk.services.s3.presigner.S3Presigner
-
-import java.net.URI
 
 object Routes {
 
@@ -97,13 +97,16 @@ object Routes {
     val langaugeRepository = LanguageRepository(transactor)
     val rewardRepository = RewardRepository(transactor)
 
+    val levelService = LevelService(skillDataRepository, langaugeRepository)
+
     val questService =
       QuestService(
         questRepository,
         userDataRepository,
         skillDataRepository,
         langaugeRepository,
-        rewardRepository
+        rewardRepository,
+        levelService
       )
     val questController = QuestController(questService, sessionCache)
 
@@ -132,6 +135,7 @@ object Routes {
     appConfig: AppConfig
   ): HttpRoutes[F] = {
 
+    val levelService = LevelService
     val skillRepository = SkillDataRepository(transactor)
     val skillService = SkillDataService(skillRepository)
     val skillController = SkillController(skillService)
@@ -144,6 +148,7 @@ object Routes {
     appConfig: AppConfig
   ): HttpRoutes[F] = {
 
+    val levelService = LevelService
     val languageRepository = LanguageRepository(transactor)
     val languageService = LanguageService(languageRepository)
     val languageController = LanguageController(languageService)
@@ -157,6 +162,7 @@ object Routes {
     client: Client[F]
   ): HttpRoutes[F] = {
 
+    val levelService = LevelService
     val stripeAccountRepository = StripeAccountRepository(transactor)
     val skillRepository = SkillDataRepository(transactor)
     val languageRepository = LanguageRepository(transactor)

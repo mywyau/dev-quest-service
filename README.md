@@ -133,7 +133,7 @@ sbt docker:publishLocal
 
 aws --endpoint-url=http://localhost:4566 s3 mb s3://test-bucket
 aws --endpoint-url=http://localhost:4566 s3 mb s3://dev-submissions
-aws --endpoint-url=http://localhost:4566 s3 ls
+aws --endpoint-url=http://localhost:4566 s3 ls s3://test-bucket
 
 ---
 

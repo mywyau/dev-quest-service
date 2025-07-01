@@ -10,8 +10,7 @@ import cats.effect.*
 import cats.syntax.all.*
 import com.comcast.ip4s.Host
 import com.comcast.ip4s.Port
-import configuration.models.*
-import configuration.models.AppConfig
+import configuration.AppConfig
 import configuration.BaseAppConfig
 import controllers.TestRoutes.*
 import dev.profunktor.redis4cats.*
