@@ -25,7 +25,7 @@ object QuestServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val existingQuestForUser = testQuest(userId1, Some(devId1), questId1)
 
-    val mockQuestRepository = new MockQuestRepository(Map(businessId1 -> existingQuestForUser))
+    val mockQuestRepository = new MockQuestRepository(existingQuest = Map(businessId1 -> existingQuestForUser))
 
     val service = QuestService(mockQuestRepository, mockUserDataRepository, mockSkillDataRepository, mockLanguageRepository, mockRewardRepository, mockLevelService)
 
@@ -36,7 +36,7 @@ object QuestServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
   test(".getByQuestId() - when there are no existing quest details given a businessId should return Left(QuestNotFound)") {
 
-    val mockQuestRepository = new MockQuestRepository(Map())
+    val mockQuestRepository = new MockQuestRepository(existingQuest = Map())
     val service = QuestService(mockQuestRepository, mockUserDataRepository, mockSkillDataRepository, mockLanguageRepository, mockRewardRepository, mockLevelService)
 
     for {
@@ -48,7 +48,7 @@ object QuestServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val testPartial = testQuestRequest(userId1, questId = questId1)
 
-    val mockQuestRepository = new MockQuestRepository(Map())
+    val mockQuestRepository = new MockQuestRepository(existingQuest = Map())
     val service = QuestService(mockQuestRepository, mockUserDataRepository, mockSkillDataRepository, mockLanguageRepository, mockRewardRepository, mockLevelService)
 
     for {

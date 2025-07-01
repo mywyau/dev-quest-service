@@ -10,20 +10,21 @@ import models.quests.*
 import repositories.QuestRepositoryAlgebra
 
 case class MockQuestRepository(
+  countActiveQuests: Int = 5,
   existingQuest: Map[String, QuestPartial] = Map.empty
 ) extends QuestRepositoryAlgebra[IO] {
+
+  override def countActiveQuests(devId: String): IO[Int] = IO(countActiveQuests)
 
   override def validateOwnership(questId: String, clientId: String): IO[Unit] = ???
 
   override def markPaid(questId: String): IO[Unit] = ???
 
-  override def countActiveQuests(devId: String): IO[Int] = ???
-
   override def streamByQuestStatusDev(devId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
 
   override def updateStatus(questId: String, questStatus: QuestStatus): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = IO.pure(Valid(UpdateSuccess))
 
-  override def acceptQuest(questId: String, devId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+  override def acceptQuest(questId: String, devId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = IO(Valid(UpdateSuccess))
 
   override def streamByQuestStatus(userId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
 

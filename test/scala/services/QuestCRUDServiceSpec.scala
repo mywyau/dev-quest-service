@@ -1,15 +1,17 @@
 package services
 
+import cats.data.NonEmptyList
+import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
 import cats.effect.IO
 import configuration.ConfigReader
 import configuration.ConfigReaderAlgebra
 import mocks.*
+import models.Completed
 import models.Steel
 import models.database.*
 import models.languages.*
 import models.quests.*
-import models.Completed
 import services.QuestCRUDService
 import services.QuestCRUDServiceImpl
 import services.constants.QuestServiceConstants.*
@@ -22,11 +24,37 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
   val mockUserDataRepository = MockUserDataRepository
   val mockLevelService = MockLevelService
 
+  test(".acceptQuest() - when the number of quests a dev has accepted is <= 5, return success") {
+
+    val existingQuestForUser = testQuest(userId1, Some(devId1), questId1)
+
+    val mockQuestRepository = new MockQuestRepository(countActiveQuests = 5, existingQuest = Map(businessId1 -> existingQuestForUser))
+
+    for {
+      appConfig <- configReader.loadAppConfig
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockLevelService)
+      result <- service.acceptQuest(questId1, devId1)
+    } yield expect(result == Valid(UpdateSuccess))
+  }
+
+  test(".acceptQuest() - when the number of quests a dev has accepted is > 5, return success") {
+
+    val existingQuestForUser = testQuest(userId1, Some(devId1), questId1)
+
+    val mockQuestRepository = new MockQuestRepository(countActiveQuests = 6, existingQuest = Map(businessId1 -> existingQuestForUser))
+
+    for {
+      appConfig <- configReader.loadAppConfig
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockLevelService)
+      result <- service.acceptQuest(questId1, devId1)
+    } yield expect(result == Invalid(NonEmptyList.one(TooManyActiveQuestsError)))
+  }
+
   test(".getByQuestId() - when there is an existing quest details given a businessId should return the correct address details - Right(address)") {
 
     val existingQuestForUser = testQuest(userId1, Some(devId1), questId1)
 
-    val mockQuestRepository = new MockQuestRepository(Map(businessId1 -> existingQuestForUser))
+    val mockQuestRepository = new MockQuestRepository(existingQuest = Map(businessId1 -> existingQuestForUser))
 
     for {
       appConfig <- configReader.loadAppConfig
@@ -39,7 +67,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val existingQuestForUser = testQuest(clientId1, Some(devId1), questId1)
 
-    val mockQuestRepository = new MockQuestRepository(Map(clientId1 -> existingQuestForUser))
+    val mockQuestRepository = new MockQuestRepository(existingQuest = Map(clientId1 -> existingQuestForUser))
 
     val createQuestPartial =
       CreateQuestPartial(
@@ -61,7 +89,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val existingQuestForUser = testQuest(clientId1, Some(devId1), questId1)
 
-    val mockQuestRepository = new MockQuestRepository(Map(clientId1 -> existingQuestForUser))
+    val mockQuestRepository = new MockQuestRepository(existingQuest = Map(clientId1 -> existingQuestForUser))
 
     val updateQuestPartial =
       UpdateQuestPartial(
@@ -82,7 +110,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val existingQuestForUser = testQuest(clientId1, Some(devId1), questId1)
 
-    val mockQuestRepository = new MockQuestRepository(Map(clientId1 -> existingQuestForUser))
+    val mockQuestRepository = new MockQuestRepository(existingQuest = Map(clientId1 -> existingQuestForUser))
 
     val updateQuestPartial =
       UpdateQuestPartial(
@@ -103,7 +131,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val existingQuestForUser = testQuest(clientId1, Some(devId1), questId1)
 
-    val mockQuestRepository = new MockQuestRepository(Map(clientId1 -> existingQuestForUser))
+    val mockQuestRepository = new MockQuestRepository(existingQuest = Map(clientId1 -> existingQuestForUser))
 
     for {
       appConfig <- configReader.loadAppConfig

@@ -75,18 +75,12 @@ class QuestCRUDServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger
     for {
       activeCount <- questRepo.countActiveQuests(devId)
       result <-
-        if (activeCount >= MAX_ACTIVE_QUESTS)
+        if (activeCount > MAX_ACTIVE_QUESTS)
           TooManyActiveQuestsError.invalidNel[DatabaseSuccess].pure[F]
         else
           questRepo.acceptQuest(questId, devId)
     } yield result
   }
-
-  // override def getAllQuests(clientId: String): F[List[QuestPartial]] =
-  //   questRepo.findAllByUserId(clientId).flatMap { quests =>
-  //     Logger[F].debug(s"[QuestCRUDService][getAllQuests] Retrieved ${quests.size} quests for user $clientId") *>
-  //       Concurrent[F].pure(quests)
-  //   }
 
   override def getByQuestId(questId: String): F[Option[QuestPartial]] =
     questRepo.findByQuestId(questId).flatMap {
