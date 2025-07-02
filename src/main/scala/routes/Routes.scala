@@ -104,7 +104,6 @@ object Routes {
         appConfig,
         questRepository,
         userDataRepository,
-        rewardRepository,
         levelService
       )
 

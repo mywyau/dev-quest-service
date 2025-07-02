@@ -16,6 +16,8 @@ import repositories.SkillDataRepositoryAlgebra
 
 case object MockSkillDataRepository extends SkillDataRepositoryAlgebra[IO] {
 
+  def getAllSkillData(): IO[List[SkillData]] = ???
+
   override def getAllSkills(devId: String): IO[List[SkillData]] = ???
 
   override def getSkill(devId: String, skill: Skill): IO[Option[SkillData]] = ???
