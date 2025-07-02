@@ -22,6 +22,7 @@ import models.database.*
 import models.database.CreateSuccess
 import models.database.DeleteSuccess
 import models.database.UpdateSuccess
+import models.languages.*
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
@@ -46,7 +47,6 @@ import shared.TransactorResource
 import weaver.*
 
 import java.time.LocalDateTime
-import models.languages.*
 import scala.collection.immutable.ArraySeq
 
 class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
@@ -74,47 +74,6 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
       email = "fakeEmail@gmail.com",
       userType = "Dev"
     )
-
-  // TODO: Change to test for retrieving all quests in paginated form or stream etc.
-  test(
-    "GET - /dev-quest-service/quest/all/USER001 - should find the quest data for given user id, returning OK and the correct quest json body"
-  ) { (transactorResource, log) =>
-
-    val transactor = transactorResource._1.xa
-    val client = transactorResource._2.client
-
-    val sessionToken = "test-session-token"
-
-    def testQuest(clientId: String, questId: String, devId:Option[String]): QuestPartial =
-      QuestPartial(
-        clientId = clientId,
-        devId = devId,
-        questId = questId,
-        rank = Demon,
-        title = "Implement User Authentication",
-        description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
-        acceptanceCriteria = Some("Some acceptance criteria"),
-        status = Some(InProgress),
-        tags = ArraySeq("Python", "Scala", "Typescript")
-
-      )
-
-    val request =
-      Request[IO](GET, uri"http://127.0.0.1:9999/dev-quest-service/quest/all/USER001")
-        .addCookie("auth_session", sessionToken)
-
-    val expectedQuest = testQuest("USER001", "QUEST001", Some("DEV001"))
-    val expectedQuest2 = testQuest("USER001", "QUEST016", None)
-
-    client.run(request).use { response =>
-      response.as[List[QuestPartial]].map { body =>
-        expect.all(
-          response.status == Status.Ok,
-          body == List(expectedQuest, expectedQuest2)
-        )
-      }
-    }
-  }
 
   test(
     "GET - /dev-quest-service/quest/USER001/QUEST001 - should find the quest data for given quest id, returning OK and the correct quest json body"

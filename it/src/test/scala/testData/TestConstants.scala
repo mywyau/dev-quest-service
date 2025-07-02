@@ -1,6 +1,5 @@
 package testData
 
-
 import java.time.LocalDateTime
 import java.time.LocalTime
 
@@ -11,6 +10,12 @@ object TestConstants {
   val userId3 = "userId3"
   val userId4 = "userId4"
   val userId5 = "userId5"
+
+  val clientId1 = "clientId1"
+  val clientId2 = "clientId2"
+  val clientId3 = "clientId3"
+  val clientId4 = "clientId4"
+  val clientId5 = "clientId5"
 
   val businessId1 = "businessId1"
   val businessId2 = "businessId2"

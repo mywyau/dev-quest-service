@@ -99,16 +99,22 @@ object Routes {
 
     val levelService = LevelService(skillDataRepository, langaugeRepository)
 
-    val questService =
-      QuestService(
+    val questCRUDService =
+      QuestCRUDService(
+        appConfig,
         questRepository,
         userDataRepository,
-        skillDataRepository,
-        langaugeRepository,
-        rewardRepository,
         levelService
       )
-    val questController = QuestController(questService, sessionCache)
+
+    val questStreamingService =
+      QuestStreamingService(
+        appConfig,
+        questRepository,
+        rewardRepository
+      )
+
+    val questController = QuestController(questCRUDService, questStreamingService, sessionCache)
 
     questController.routes
   }

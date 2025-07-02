@@ -8,6 +8,7 @@ import pureconfig.generic.derivation.*
 case class AppConfig(
   featureSwitches: FeatureSwitches,
   devSubmission: DevSubmissionConfig,
+  questConfig: QuestConfig,
   localAppConfig: LocalAppConfig,
   prodAppConfig: ProdAppConfig,
   integrationSpecConfig: IntegrationSpecConfig

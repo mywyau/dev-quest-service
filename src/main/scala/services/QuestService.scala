@@ -57,8 +57,6 @@ trait QuestServiceAlgebra[F[_]] {
 
   def streamAllWithRewards(limit: Int, offset: Int): Stream[F, QuestWithReward]
 
-  def getAllQuests(clientId: String): F[List[QuestPartial]]
-
   def getByQuestId(questId: String): F[Option[QuestPartial]]
 
   def create(request: CreateQuestPartial, clientId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
@@ -240,12 +238,6 @@ class QuestServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
 
     headLog ++ enrichedQuests
   }
-
-  override def getAllQuests(clientId: String): F[List[QuestPartial]] =
-    questRepo.findAllByUserId(clientId).flatMap { quests =>
-      Logger[F].debug(s"[QuestService][getAllQuests] Retrieved ${quests.size} quests for user $clientId") *>
-        Concurrent[F].pure(quests)
-    }
 
   override def getByQuestId(questId: String): F[Option[QuestPartial]] =
     questRepo.findByQuestId(questId).flatMap {

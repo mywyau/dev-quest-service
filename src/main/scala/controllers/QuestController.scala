@@ -30,14 +30,17 @@ import org.http4s.syntax.all.http4sHeaderSyntax
 import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
 import scala.concurrent.duration.*
-import services.QuestServiceAlgebra
+import services.QuestCRUDServiceAlgebra
+import services.QuestStreamingServiceAlgebra
 
 trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
 }
 
 class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
-  questService: QuestServiceAlgebra[F],
+  questCRUDService: QuestCRUDServiceAlgebra[F],
+  questStreamingService: QuestStreamingServiceAlgebra[F],
+
   sessionCache: SessionCacheAlgebra[F]
 ) extends Http4sDsl[F]
     with QuestControllerAlgebra[F] {
@@ -95,7 +98,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
               s"[QuestController] Streaming paginated quests for $userIdFromRoute (page=$page, limit=$limit)"
             ) *>
               Ok(
-                questService
+                questStreamingService
                   .streamByUserId(userIdFromRoute, limit, offset)
                   .map(_.asJson.noSpaces) // Quest ⇒ JSON string
                   .evalTap(json => Logger[F].debug(s"[QuestController] → $json")) // <── log every line
@@ -124,7 +127,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
               s"[QuestController] Streaming paginated quests for $userIdFromRoute (page=$page, limit=$limit)"
             ) *>
               Ok(
-                questService
+                questStreamingService
                   .streamAll(limit, offset)
                   .map(_.asJson.noSpaces) // Quest ⇒ JSON string
                   .evalTap(json => Logger[F].debug(s"[QuestController] → $json")) // <── log every line
@@ -141,7 +144,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
       }
 
-    case req @ GET -> Root / "quest" / "reward" /"stream" / userIdFromRoute =>
+    case req @ GET -> Root / "quest" / "reward" / "stream" / userIdFromRoute =>
       extractSessionToken(req) match {
         case Some(cookieToken) =>
           withValidSession(userIdFromRoute, cookieToken) {
@@ -153,7 +156,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
               s"[QuestController] Streaming paginated quests for $userIdFromRoute (page=$page, limit=$limit)"
             ) *>
               Ok(
-                questService
+                questStreamingService
                   .streamAllWithRewards(limit, offset)
                   .map(_.asJson.noSpaces) // Quest ⇒ JSON string
                   .evalTap(json => Logger[F].debug(s"[QuestController] → $json")) // <── log every line
@@ -187,7 +190,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
               s"[QuestController] Streaming status=$status, page=$page, limit=$limit"
             ) *>
               Ok(
-                questService
+                questStreamingService
                   .streamDev(devIdFromRoute, status, limit, offset)
                   .map(_.asJson.noSpaces)
                   .evalTap(json => Logger[F].debug(s"[QuestController][/quest/stream/dev/new] → $json")) // <── log every line
@@ -221,7 +224,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
               s"[QuestController] Streaming status=$status, page=$page, limit=$limit"
             ) *>
               Ok(
-                questService
+                questStreamingService
                   .streamClient(userIdFromRoute, status, limit, offset)
                   .map(_.asJson.noSpaces)
                   .evalTap(json => Logger[F].debug(s"[QuestController][/quest/stream/new] → $json")) // <── log every line
@@ -238,29 +241,12 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
-    // TODO: change this to return a list of paginated quests
-    case req @ GET -> Root / "quest" / "all" / userIdFromRoute =>
-      extractSessionToken(req) match {
-        case Some(cookieToken) =>
-          withValidSession(userIdFromRoute, cookieToken) {
-            Logger[F].debug(s"[QuestController] GET - Authenticated for userId $userIdFromRoute") *>
-              questService.getAllQuests(userIdFromRoute).flatMap {
-                case Nil => BadRequest(ErrorResponse("NO_QUEST", "No quests found").asJson)
-                case quests => Ok(quests.asJson)
-              }
-          }
-
-        case None =>
-          Logger[F].debug(s"[QuestController] GET - Unauthorised") *>
-            Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
-      }
-
     case req @ GET -> Root / "quest" / userIdFromRoute / questId =>
       extractSessionToken(req) match {
         case Some(cookieToken) =>
           withValidSession(userIdFromRoute, cookieToken) {
             Logger[F].debug(s"[QuestController][/quest/userId/questId] GET - Authenticated for userId $userIdFromRoute") *>
-              questService.getByQuestId(questId).flatMap {
+              questCRUDService.getByQuestId(questId).flatMap {
                 case Some(quest) =>
                   Logger[F].debug(s"[QuestController][/quest/userId/questId] GET - Found quest ${quest.questId.toString()}") *>
                     Ok(quest.asJson)
@@ -279,7 +265,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
           withValidSession(userIdFromRoute, cookieToken) {
             Logger[F].debug(s"[QuestControllerImpl] POST - Creating quest") *>
               req.decode[CreateQuestPartial] { request =>
-                questService.create(request, userIdFromRoute).flatMap {
+                questCRUDService.create(request, userIdFromRoute).flatMap {
                   case Valid(response) =>
                     Logger[F].debug(s"[QuestControllerImpl] POST - Successfully created a quest") *>
                       Created(CreatedResponse(response.toString, "quest details created successfully").asJson)
@@ -298,7 +284,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
           withValidSession(userIdFromRoute, cookieToken) {
             Logger[F].debug(s"[QuestControllerImpl] PUT - Updating quest status with ID: $questId") *>
               req.decode[UpdateQuestStatusPayload] { request =>
-                questService.updateStatus(questId, request.questStatus).flatMap {
+                questCRUDService.updateStatus(questId, request.questStatus).flatMap {
                   case Valid(response) =>
                     Logger[F].debug(s"[QuestControllerImpl] PUT - Successfully updated quest status for quest id: $questId") *>
                       Ok(UpdatedResponse(UpdateSuccess.toString, s"updated quest status: ${request.questStatus} successfully, for questId: ${questId}").asJson)
@@ -317,7 +303,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
         case Some(cookieToken) =>
           withValidSession(userIdFromRoute, cookieToken) {
             req.decode[AcceptQuestPayload] { request =>
-              questService.acceptQuest(request.questId, request.devId).flatMap {
+              questCRUDService.acceptQuest(request.questId, request.devId).flatMap {
                 case Valid(response) =>
                   Logger[F].debug(s"[QuestControllerImpl] PUT - Successfully updated devId for quest id: ${request.devId}") *>
                     Ok(UpdatedResponse(UpdateSuccess.toString, s"updated devId: ${request.devId} successfully, for questId: ${request.questId}").asJson)
@@ -337,7 +323,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
           withValidSession(userIdFromRoute, cookieToken) {
             Logger[F].debug(s"[QuestControllerImpl] PUT - Updating quest with ID: $questId") *>
               req.decode[UpdateQuestPartial] { request =>
-                questService.update(questId, request).flatMap {
+                questCRUDService.update(questId, request).flatMap {
                   case Valid(response) =>
                     Logger[F].debug(s"[QuestControllerImpl] PUT - Successfully updated quest for ID: $questId") *>
                       Ok(UpdatedResponse(UpdateSuccess.toString, s"Quest $questId updated successfully").asJson)
@@ -357,7 +343,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
           withValidSession(userIdFromRoute, cookieToken) {
             Logger[F].debug(s"[QuestControllerImpl] PUT - Updating quest with ID: $questId") *>
               req.decode[CompleteQuestPayload] { request =>
-                questService.completeQuestAwardXp(questId, request.questStatus, request.rank).flatMap {
+                questCRUDService.completeQuestAwardXp(questId, request.questStatus, request.rank).flatMap {
                   case Valid(response) =>
                     Logger[F].debug(s"[QuestControllerImpl] PUT - Successfully updated quest for ID: $questId") *>
                       Ok(UpdatedResponse(UpdateSuccess.toString, s"Quest $questId updated successfully").asJson)
@@ -376,7 +362,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
         case Some(cookieToken) =>
           withValidSession(userIdFromRoute, cookieToken) {
             Logger[F].debug(s"[QuestControllerImpl] DELETE - Attempting to delete quest") *>
-              questService.delete(questId).flatMap {
+              questCRUDService.delete(questId).flatMap {
                 case Valid(response) =>
                   Logger[F].debug(s"[QuestControllerImpl] DELETE - Successfully deleted quest for $questId") *>
                     Ok(DeletedResponse(response.toString, "quest deleted successfully").asJson)
@@ -392,6 +378,10 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
 }
 
 object QuestController {
-  def apply[F[_] : Async : Concurrent](questService: QuestServiceAlgebra[F], sessionCache: SessionCacheAlgebra[F])(implicit logger: Logger[F]): QuestControllerAlgebra[F] =
-    new QuestControllerImpl[F](questService, sessionCache)
+  def apply[F[_] : Async : Concurrent](
+    questCRUDService: QuestCRUDServiceAlgebra[F],
+    questStreamingService: QuestStreamingServiceAlgebra[F],
+    sessionCache: SessionCacheAlgebra[F]
+  )(implicit logger: Logger[F]): QuestControllerAlgebra[F] =
+    new QuestControllerImpl[F](questCRUDService, questStreamingService, sessionCache)
 }
