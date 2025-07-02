@@ -40,6 +40,7 @@ trait QuestControllerAlgebra[F[_]] {
 class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
   questCRUDService: QuestCRUDServiceAlgebra[F],
   questStreamingService: QuestStreamingServiceAlgebra[F],
+
   sessionCache: SessionCacheAlgebra[F]
 ) extends Http4sDsl[F]
     with QuestControllerAlgebra[F] {
