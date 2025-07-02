@@ -9,6 +9,7 @@ case class AppConfig(
   featureSwitches: FeatureSwitches,
   devSubmission: DevSubmissionConfig,
   questConfig: QuestConfig,
+  estimationConfig: EstimationConfig,
   localAppConfig: LocalAppConfig,
   prodAppConfig: ProdAppConfig,
   integrationSpecConfig: IntegrationSpecConfig

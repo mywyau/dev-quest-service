@@ -35,7 +35,6 @@ import org.http4s.syntax.all.http4sHeaderSyntax
 import org.typelevel.ci.CIString
 import org.typelevel.log4cats.Logger
 import services.PaymentServiceAlgebra
-import services.QuestServiceAlgebra
 
 import scala.concurrent.duration.*
 

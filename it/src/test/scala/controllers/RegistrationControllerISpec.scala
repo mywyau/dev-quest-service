@@ -1,4 +1,4 @@
-package controllers.user
+package controllers
 
 import cats.effect.*
 import controllers.fragments.UserDataControllerFragments.*
@@ -70,8 +70,7 @@ class RegistrationControllerISpec(global: GlobalRead) extends IOSuite with Contr
     val transactor = transactorResource._1.xa
     val client = transactorResource._2.client
 
-    val sessionToken = 
-      "test-session-token"
+    val sessionToken = "test-session-token"
 
     def testCreateRegistration(): CreateUserData =
       CreateUserData(

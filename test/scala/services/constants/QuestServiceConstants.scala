@@ -13,9 +13,9 @@ object QuestServiceConstants {
   def testQuestRequest(clientId: String, questId: String): CreateQuestPartial =
     CreateQuestPartial(
       rank = Iron,
-      title = "",
-      description = Some(""),
-      acceptanceCriteria = "",
+      title = "a quest title",
+      description = Some("some description"),
+      acceptanceCriteria = "some acceptance criteria",
       tags = Seq(Python, Scala, TypeScript)
     )
 
@@ -25,11 +25,12 @@ object QuestServiceConstants {
       devId = devId,
       questId = questId,
       rank = Iron,
-      title = "",
-      description = Some(""),
-      acceptanceCriteria = Some(""),
+      title = "a quest title",
+      description = Some("some description"),
+      acceptanceCriteria = Some("some acceptance criteria"),
       status = Some(InProgress),
-      tags = Seq("Python", "Scala", "TypeScript")
+      tags = Seq("Python", "Scala", "TypeScript"),
+      estimated = true
     )
 
 }

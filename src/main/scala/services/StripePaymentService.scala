@@ -108,18 +108,35 @@ class StripePaymentService[F[_] : Async : Logger](
 
     val fee = (BigDecimal(amount) * platformFeePercent / 100).toLong
 
-    val form = UrlForm(
-      "payment_method_types[]" -> "card",
-      "mode" -> "payment",
-      "line_items[0][price_data][currency]" -> currency,
-      "line_items[0][price_data][unit_amount]" -> amount.toString,
-      "line_items[0][price_data][product_data][name]" -> s"Quest Payment: $questId",
-      "line_items[0][quantity]" -> "1",
-      "payment_intent_data[application_fee_amount]" -> fee.toString,
-      "payment_intent_data[transfer_data][destination]" -> developerStripeId,
-      "success_url" -> "http://localhost:3000/payment/success",
-      "cancel_url" -> "http://localhost:3000/payment/error"
-    )
+    val form = 
+      if(appConfig.featureSwitches.localTesting) {
+        UrlForm(
+          "payment_method_types[]" -> "card",
+          "mode" -> "payment",
+          "line_items[0][price_data][currency]" -> currency,
+          "line_items[0][price_data][unit_amount]" -> amount.toString,
+          "line_items[0][price_data][product_data][name]" -> s"Quest Payment: $questId",
+          "line_items[0][quantity]" -> "1",
+          "payment_intent_data[application_fee_amount]" -> fee.toString,
+          "payment_intent_data[transfer_data][destination]" -> developerStripeId,
+          "success_url" -> "http://localhost:3000/payment/success",
+          "cancel_url" -> "http://localhost:3000/payment/error"
+        )
+      } else {
+        UrlForm(
+          "payment_method_types[]" -> "card",
+          "mode" -> "payment",
+          "line_items[0][price_data][currency]" -> currency,
+          "line_items[0][price_data][unit_amount]" -> amount.toString,
+          "line_items[0][price_data][product_data][name]" -> s"Quest Payment: $questId",
+          "line_items[0][quantity]" -> "1",
+          "payment_intent_data[application_fee_amount]" -> fee.toString,
+          "payment_intent_data[transfer_data][destination]" -> developerStripeId,
+          "success_url" -> appConfig.prodAppConfig.stripeConfig.paymentSuccessUrl,
+          "cancel_url" -> appConfig.prodAppConfig.stripeConfig.paymentCancelUrl
+        )
+      }
+
 
     val req = Request[F](
       method = Method.POST,

@@ -6,7 +6,6 @@ import io.circe.parser.*
 import io.circe.syntax.EncoderOps
 import java.time.LocalDateTime
 import models.estimate.CreateEstimate
-import models.estimate.CreateEstimate
 import models.languages.*
 import models.Iron
 import models.ModelsBaseSpec
@@ -17,7 +16,8 @@ object CreateEstimateSpec extends SimpleIOSuite with ModelsBaseSpec {
   val testCreateEstimate =
     CreateEstimate(
       questId = "QUEST001",
-      rank = Iron,
+      score = 50,
+      days = 8,
       comment = Some("some comment")
     )
 
@@ -29,7 +29,8 @@ object CreateEstimateSpec extends SimpleIOSuite with ModelsBaseSpec {
       """
         |{
         |  "questId" : "QUEST001",
-        |  "rank" : "Iron",
+        |  "score" : 50,
+        |  "days" : 8,
         |  "comment" : "some comment"
         |}
         |""".stripMargin

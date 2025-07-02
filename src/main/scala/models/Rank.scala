@@ -5,6 +5,7 @@ import io.circe.Encoder
 
 sealed trait Rank
 
+case object UnknownRank extends Rank
 case object Bronze extends Rank
 case object Iron extends Rank
 case object Steel extends Rank
@@ -19,6 +20,7 @@ object Rank {
 
   def fromString(str: String): Rank =
     str match {
+      case "UnknownRank" => UnknownRank
       case "Bronze" => Bronze
       case "Iron" => Iron
       case "Steel" => Steel
@@ -33,6 +35,7 @@ object Rank {
 
   implicit val rankEncoder: Encoder[Rank] =
     Encoder.encodeString.contramap {
+      case UnknownRank => "UnknownRank"
       case Bronze => "Bronze"
       case Iron => "Iron"
       case Steel => "Steel"
@@ -46,6 +49,7 @@ object Rank {
 
   implicit val rankDecoder: Decoder[Rank] =
     Decoder.decodeString.emap {
+      case "UnknownRank" => Right(UnknownRank)
       case "Bronze" => Right(Bronze)
       case "Iron" => Right(Iron)
       case "Steel" => Right(Steel)

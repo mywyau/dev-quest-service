@@ -11,7 +11,8 @@ case class RewardData(
   questId: String,
   clientId: String,
   devId: Option[String],
-  rewardValue: BigDecimal,
+  timeRewardValue: BigDecimal,
+  completionRewardValue: BigDecimal,
   paid: RewardStatus
 )
 

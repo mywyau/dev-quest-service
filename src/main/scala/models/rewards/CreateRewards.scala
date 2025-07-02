@@ -8,7 +8,8 @@ import java.time.LocalDateTime
 
 case class CreateReward(
   questId: String,
-  rewardValue: Int
+  timeRewardValue: Int,
+  completionRewardValue: Int
 )
 
 object CreateReward {

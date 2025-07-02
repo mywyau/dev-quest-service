@@ -113,7 +113,7 @@ class RewardControllerImpl[F[_] : Async : Concurrent : Logger](
                 rewardService.updateReward(questId, request).flatMap {
                   case Valid(response) =>
                     Logger[F].debug(s"[RewardControllerImpl] PUT - Successfully updated reward status for questId: $questId") *>
-                      Ok(UpdatedResponse(UpdateSuccess.toString, s"updated reward data: ${request.rewardValue} successfully, for questId: ${questId}").asJson)
+                      Ok(UpdatedResponse(UpdateSuccess.toString, s"updated reward data: ${request.completionRewardValue} successfully, for questId: ${questId}").asJson)
                   case Invalid(errors) =>
                     Logger[F].debug(s"[RewardControllerImpl] PUT - Validation failed for reward update: ${errors.toList}") *>
                       BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)

@@ -1,4 +1,4 @@
-package repository.quest
+package repository
 
 import cats.data.Validated.Valid
 import cats.effect.IO
@@ -10,6 +10,7 @@ import java.time.LocalDateTime
 import models.database.*
 import models.database.DeleteSuccess
 import models.database.UpdateSuccess
+import models.languages.*
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
@@ -19,13 +20,12 @@ import models.InProgress
 import repositories.QuestRepositoryImpl
 import repository.fragments.QuestRepoFragments.*
 import repository.RepositoryISpecBase
+import scala.collection.immutable.ArraySeq
 import shared.TransactorResource
 import testData.TestConstants.*
 import weaver.GlobalRead
 import weaver.IOSuite
 import weaver.ResourceTag
-import models.languages.*
-import scala.collection.immutable.ArraySeq
 
 class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryISpecBase {
   type Res = QuestRepositoryImpl[IO]
@@ -68,7 +68,8 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
-        tags = ArraySeq("Python", "Scala", "Typescript")
+        tags = ArraySeq("Python", "Scala", "Typescript"),
+        estimated = true
       )
 
     for {
@@ -88,7 +89,8 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
-        tags = ArraySeq("Python", "Scala", "Typescript")
+        tags = ArraySeq("Python", "Scala", "Typescript"),
+        estimated = true
       )
 
     for {
@@ -125,7 +127,8 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         description = Some("Migrate from custom HTTP clients to use http4s and apply middleware."),
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
-        tags = ArraySeq("Python", "Scala", "Typescript")
+        tags = ArraySeq("Python", "Scala", "Typescript"),
+        estimated = true
       )
 
     for {

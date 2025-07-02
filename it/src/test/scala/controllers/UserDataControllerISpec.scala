@@ -1,4 +1,4 @@
-package controllers.user
+package controllers
 
 import cats.effect.*
 import controllers.ControllerISpecBase
@@ -55,8 +55,8 @@ class UserDataControllerISpec(global: GlobalRead) extends IOSuite with Controlle
     def testUserData(userId: String): UserData =
       UserData(
         userId = userId,
-        email = "bob_smith@gmail.com",
         username = "goku",
+        email = "bob_smith@gmail.com",
         firstName = Some("Bob"),
         lastName = Some("Smith"),
         userType = Some(Dev)
@@ -77,7 +77,6 @@ class UserDataControllerISpec(global: GlobalRead) extends IOSuite with Controlle
       }
     }
   }
-
 
   // TODO: Change to PUT endpoint, update frontend
   test(

@@ -7,7 +7,8 @@ import io.circe.generic.semiauto.deriveEncoder
 import models.RewardStatus
 
 case class UpdateRewardData(
-  rewardValue: BigDecimal
+  timeRewardValue: BigDecimal,
+  completionRewardValue: BigDecimal
 )
 
 object UpdateRewardData {
