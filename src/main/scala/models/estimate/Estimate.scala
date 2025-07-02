@@ -1,16 +1,16 @@
 package models.estimate
 
-import io.circe.Decoder
-import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.generic.semiauto.deriveEncoder
-import models.Rank
-
+import io.circe.Decoder
+import io.circe.Encoder
 import java.time.LocalDateTime
+import models.Rank
 
 case class Estimate(
   username: String,
-  rank: Rank,
+  score: Int,
+  days: Int,
   comment: Option[String]
 )
 

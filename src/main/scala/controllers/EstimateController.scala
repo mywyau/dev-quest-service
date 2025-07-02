@@ -15,9 +15,11 @@ import models.database.UpdateSuccess
 import models.estimate.*
 import models.responses.*
 import models.Completed
+import models.Dev
 import models.Failed
 import models.InProgress
 import models.NotStarted
+import models.UserType
 import org.http4s.*
 import org.http4s.circe.*
 import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
@@ -46,9 +48,22 @@ class EstimateControllerImpl[F[_] : Async : Concurrent : Logger](
       .find(_.name == "auth_session")
       .map(_.content)
 
-  private def withValidSession(userId: String, token: String)(onValid: F[Response[F]]): F[Response[F]] =
+  // private def withValidSession(userId: String, token: String)(onValid: F[Response[F]]): F[Response[F]] =
+  //   sessionCache.getSession(userId).flatMap {
+  //     case Some(userSessionJson) if userSessionJson.cookieValue == token =>
+  //       Logger[F].debug("[EstimateController][withValidSession] Found valid session for userId:") *>
+  //         onValid
+  //     case Some(_) =>
+  //       Logger[F].debug("[EstimateController][withValidSession] User session does not match reestimateed user session token value from redis.")
+  //       Forbidden("User session does not match reestimateed user session token value from redis.")
+  //     case None =>
+  //       Logger[F].debug("[EstimateController][withValidSession] Invalid or expired session")
+  //       Forbidden("Invalid or expired session")
+  //   }
+
+  private def withValidSession(userId: String, token: String, userType: UserType)(onValid: F[Response[F]]): F[Response[F]] =
     sessionCache.getSession(userId).flatMap {
-      case Some(userSessionJson) if userSessionJson.cookieValue == token =>
+      case Some(userSessionJson) if userSessionJson.cookieValue == token && UserType.fromString(userSessionJson.userType) == userType =>
         Logger[F].debug("[EstimateController][withValidSession] Found valid session for userId:") *>
           onValid
       case Some(_) =>
@@ -68,12 +83,12 @@ class EstimateControllerImpl[F[_] : Async : Concurrent : Logger](
     case req @ GET -> Root / "estimates" / devId / questId =>
       extractSessionToken(req) match {
         case Some(cookieToken) =>
-          withValidSession(devId, cookieToken) {
+          withValidSession(devId, cookieToken, Dev) {
             Logger[F].debug(s"[EstimateController][/estimates/userId/questId] GET - Authenticated for userId: $devId") *>
-              estimateService.getEstimates(devId, questId).flatMap {
+              estimateService.getEstimates(questId).flatMap {
                 case Nil =>
                   BadRequest(ErrorResponse("NO_ESTIMATES", "No estimates found").asJson)
-                case estimates =>
+                case estimates if estimates.size > 2 =>
                   Logger[F].debug(s"[EstimateController][/estimates/userId/questId] GET - Found estimate ${estimates.toString()}") *>
                     Ok(estimates.asJson)
               }
@@ -86,16 +101,17 @@ class EstimateControllerImpl[F[_] : Async : Concurrent : Logger](
     case req @ POST -> Root / "estimate" / "create" / devId =>
       extractSessionToken(req) match {
         case Some(cookieToken) =>
-          withValidSession(devId, cookieToken) {
+          withValidSession(devId, cookieToken, Dev) {
             Logger[F].debug(s"[EstimateController] POST - Creating estimate") *>
               req.decode[CreateEstimate] { request =>
-                estimateService.createEstimate(devId, request).flatMap {
-                  case Valid(response) =>
-                    Logger[F].debug(s"[EstimateController] POST - Successfully created a estimate") *>
-                      Created(CreatedResponse(response.toString, "estimate details created successfully").asJson)
-                  case Invalid(_) =>
-                    InternalServerError(ErrorResponse(code = "Code", message = "An error occurred").asJson)
-                }
+                Logger[F].debug(request.toString()) *>
+                  estimateService.createEstimate(devId, request).flatMap {
+                    case Valid(response) =>
+                      Logger[F].debug(s"[EstimateController] POST - Successfully created a estimate") *>
+                        Created(CreatedResponse(response.toString, "estimate details created successfully").asJson)
+                    case Invalid(_) =>
+                      InternalServerError(ErrorResponse(code = "Code", message = "An error occurred").asJson)
+                  }
               }
           }
         case None =>

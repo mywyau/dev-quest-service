@@ -17,15 +17,14 @@ import models.*
 import models.database.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
-import models.estimate.CreateEstimate
-import models.estimate.Estimate
+import models.estimate.*
 import org.typelevel.log4cats.Logger
 import repositories.EstimateRepositoryAlgebra
 import repositories.UserDataRepositoryAlgebra
 
 trait EstimateServiceAlgebra[F[_]] {
 
-  def getEstimates(devId: String, questId: String): F[List[Estimate]]
+  def getEstimates(questId: String): F[List[CalculatedEstimate]]
 
   def createEstimate(devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
@@ -35,13 +34,38 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
   estimateRepo: EstimateRepositoryAlgebra[F]
 ) extends EstimateServiceAlgebra[F] {
 
-  override def getEstimates(devId: String, questId: String): F[List[Estimate]] =
+  private def calculateQuestDifficultyAndRank(
+    score: Int,
+    days: BigDecimal
+  ): Rank = {
+    // Normalize score and days (e.g. max 100 score, assume 1–30 days range)
+    val normalizedScore = BigDecimal(score) / 100
+    val normalizedDays = days / 30
+
+    val weightedScore = (normalizedScore + normalizedDays) / 2
+
+    val rank =
+      weightedScore match {
+        case w if w < 0.2 => Bronze
+        case w if w < 0.4 => Iron
+        case w if w < 0.6 => Steel
+        case w if w < 0.8 => Mithril
+        case w if w < 0.95 => Adamantite
+        case _ => Runic
+      }
+
+    rank
+  }
+
+  override def getEstimates(questId: String): F[List[CalculatedEstimate]] =
     for {
       estimates <- estimateRepo.getEstimates(questId)
-      _ <- Logger[F].debug(s"[EstimateService][getEstimate] Returning ${estimates.length} estimates for quest $questId and dev $devId")
-    } yield estimates
+      calculatedEstimates = estimates.map(estimate => CalculatedEstimate(estimate.username, estimate.score, estimate.days, calculateQuestDifficultyAndRank(estimate.score, estimate.days), estimate.comment))
+      _ <- Logger[F].debug(s"[EstimateService][getEstimate] Returning ${estimates.length} estimates for quest $questId")
+    } yield calculatedEstimates
 
   override def createEstimate(devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+
     val newEstimateId = s"estimate-${UUID.randomUUID().toString}"
 
     for {

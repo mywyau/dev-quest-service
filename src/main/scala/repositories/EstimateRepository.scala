@@ -44,7 +44,7 @@ class EstimateRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
     val findQuery: F[List[Estimate]] =
       sql"""
          SELECT 
-          username, rank, comment
+          username, score, estimated_days, comment
          FROM quest_estimations
          WHERE quest_id = $questId
        """.query[Estimate].to[List].transact(transactor)
@@ -52,11 +52,16 @@ class EstimateRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
     findQuery
   }
 
-  override def createEstimation(estimateId: String, devId: String, username: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+  override def createEstimation(
+    estimateId: String,
+    devId: String,
+    username: String,
+    estimate: CreateEstimate
+  ): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
     val query =
       sql"""
-        INSERT INTO quest_estimations (estimate_id, dev_id, quest_id, username, rank, comment)
-        VALUES ($estimateId, $devId, ${estimate.questId}, ${username}, ${estimate.rank}, ${estimate.comment})
+        INSERT INTO quest_estimations (estimate_id, dev_id, quest_id, username, score, estimated_days, comment)
+        VALUES ($estimateId, $devId, ${estimate.questId}, ${username}, ${estimate.score}, ${estimate.days}, ${estimate.comment})
         ON CONFLICT (quest_id, dev_id) DO NOTHING
       """.update.run
 
