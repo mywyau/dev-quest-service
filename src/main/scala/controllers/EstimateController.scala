@@ -14,11 +14,14 @@ import io.circe.Json
 import models.database.UpdateSuccess
 import models.estimate.*
 import models.responses.*
+import models.EstimateClosed
+import models.EstimateOpen
 import models.Completed
 import models.Dev
 import models.Failed
 import models.InProgress
 import models.NotStarted
+import models.Open
 import models.UserType
 import org.http4s.*
 import org.http4s.circe.*
@@ -86,11 +89,14 @@ class EstimateControllerImpl[F[_] : Async : Concurrent : Logger](
           withValidSession(devId, cookieToken, Dev) {
             Logger[F].debug(s"[EstimateController][/estimates/userId/questId] GET - Authenticated for userId: $devId") *>
               estimateService.getEstimates(questId).flatMap {
-                case Nil =>
+                case GetEstimateResponse(EstimateOpen, Nil) =>
                   BadRequest(ErrorResponse("NO_ESTIMATES", "No estimates found").asJson)
-                case estimates if estimates.size > 2 =>
-                  Logger[F].debug(s"[EstimateController][/estimates/userId/questId] GET - Found estimate ${estimates.toString()}") *>
-                    Ok(estimates.asJson)
+                case response @ GetEstimateResponse(EstimateClosed, calculatedEstimate) =>
+                  Logger[F].debug(s"[EstimateController][/estimates/userId/questId] GET - Found estimate ${response.toString()}") *>
+                    Ok(response.asJson)
+                case response @ GetEstimateResponse(EstimateOpen, calculatedEstimate) if calculatedEstimate.size < 3 =>
+                  Logger[F].debug(s"[EstimateController][/estimates/userId/questId] GET - Found estimate ${response.toString()}") *>
+                    Ok(response.asJson)
               }
           }
         case None =>

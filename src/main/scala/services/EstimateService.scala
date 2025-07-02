@@ -1,5 +1,7 @@
 package services
 
+import cats.Monad
+import cats.NonEmptyParallel
 import cats.data.EitherT
 import cats.data.NonEmptyList
 import cats.data.Validated
@@ -9,10 +11,7 @@ import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
-import cats.Monad
-import cats.NonEmptyParallel
 import fs2.Stream
-import java.util.UUID
 import models.*
 import models.database.*
 import models.database.DatabaseErrors
@@ -22,9 +21,11 @@ import org.typelevel.log4cats.Logger
 import repositories.EstimateRepositoryAlgebra
 import repositories.UserDataRepositoryAlgebra
 
+import java.util.UUID
+
 trait EstimateServiceAlgebra[F[_]] {
 
-  def getEstimates(questId: String): F[List[CalculatedEstimate]]
+  def getEstimates(questId: String): F[GetEstimateResponse]
 
   def createEstimate(devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
@@ -57,12 +58,25 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
     rank
   }
 
-  override def getEstimates(questId: String): F[List[CalculatedEstimate]] =
+  override def getEstimates(questId: String): F[GetEstimateResponse] =
     for {
       estimates <- estimateRepo.getEstimates(questId)
-      calculatedEstimates = estimates.map(estimate => CalculatedEstimate(estimate.username, estimate.score, estimate.days, calculateQuestDifficultyAndRank(estimate.score, estimate.days), estimate.comment))
+      calculatedEstimates = estimates.map(estimate =>
+        CalculatedEstimate(
+          estimate.username,
+          estimate.score,
+          estimate.days,
+          calculateQuestDifficultyAndRank(estimate.score, estimate.days), 
+          estimate.comment
+        )      
+      )
       _ <- Logger[F].debug(s"[EstimateService][getEstimate] Returning ${estimates.length} estimates for quest $questId")
-    } yield calculatedEstimates
+    } yield {
+      if(calculatedEstimates.size >= 3)
+        GetEstimateResponse(EstimateClosed, calculatedEstimates)
+      else 
+        GetEstimateResponse(EstimateOpen, calculatedEstimates)
+    }
 
   override def createEstimate(devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
 

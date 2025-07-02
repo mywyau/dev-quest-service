@@ -1,9 +1,10 @@
 package models.estimate
 
-import io.circe.Decoder
-import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.generic.semiauto.deriveEncoder
+import io.circe.Decoder
+import io.circe.Encoder
+import models.EstimationStatus
 import models.Rank
 
 case class CalculatedEstimate(
