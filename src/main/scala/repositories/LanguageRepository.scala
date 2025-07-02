@@ -19,6 +19,8 @@ import services.LevelServiceAlgebra
 
 trait LanguageRepositoryAlgebra[F[_]] {
 
+  def getAllLanguageData(): F[List[LanguageData]]
+
   def getAllLanguages(devId: String): F[List[LanguageData]]
 
   def getLanguage(devId: String, language: Language): F[Option[LanguageData]]
@@ -36,6 +38,24 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
 
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
+
+  override def getAllLanguageData(): F[List[LanguageData]] = {
+    val findQuery: F[List[LanguageData]] =
+      sql"""
+        SELECT 
+          dev_id,
+          username,
+          language,
+          level,
+          xp
+        FROM language
+      """
+        .query[LanguageData]
+        .to[List]
+        .transact(transactor)
+
+    findQuery
+  }
 
   override def getAllLanguages(devId: String): F[List[LanguageData]] = {
     val findQuery: F[List[LanguageData]] =

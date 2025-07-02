@@ -95,6 +95,7 @@ object Main extends IOApp {
       authRoutes <- Resource.pure(authRoutes(redisHost, redisPort, transactor, appConfig))
       questsRoutes <- Resource.pure(questsRoutes(redisHost, redisPort, transactor, appConfig))
       estimateRoutes <- Resource.pure(estimateRoutes(redisHost, redisPort, transactor, appConfig))
+      hiscoreRoutes <- Resource.pure(hiscoreRoutes(transactor, appConfig))
       skillRoutes <- Resource.pure(skillRoutes(transactor, appConfig))
       languageRoutes <- Resource.pure(languageRoutes(transactor, appConfig))
       paymentRoutes <- Resource.pure(paymentRoutes(redisHost, redisPort, transactor, appConfig, client))
@@ -110,6 +111,7 @@ object Main extends IOApp {
             authRoutes <+>
             questsRoutes <+>
             estimateRoutes <+>
+            hiscoreRoutes <+>
             skillRoutes <+>
             languageRoutes <+>
             registrationRoutes <+>
