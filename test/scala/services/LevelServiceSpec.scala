@@ -18,7 +18,9 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
   test(".awardSkillXpWithLevel() - returns correct XP and level") {
 
-    val dummySkillRepo = new SkillDataRepositoryAlgebra[IO] {
+    val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
+
+      override def getAllSkillData(): IO[List[SkillData]] = ???
 
       override def getAllSkills(devId: String): IO[List[SkillData]] = IO.pure(Nil)
 
@@ -40,8 +42,9 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
         IO.pure(Valid(UpdateSuccess))
     }
 
-    val dummyLangRepo = new LanguageRepositoryAlgebra[IO] {
+    val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
 
+      override def getAllLanguageData(): IO[List[LanguageData]] = ???
       override def getAllLanguages(devId: String): IO[List[LanguageData]] = IO.pure(Nil)
       override def getLanguage(devId: String, language: Language): IO[Option[LanguageData]] = IO.pure(None)
       override def getHiscoreLanguageData(language: Language): IO[List[LanguageData]] = IO.pure(Nil)
@@ -55,7 +58,7 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
         IO.pure(Valid(UpdateSuccess))
     }
 
-    val service = new LevelServiceImpl[IO](dummySkillRepo, dummyLangRepo)
+    val service = new LevelServiceImpl[IO](mockSkillRepo, mockLangRepo)
 
     for {
       result <- service.awardSkillXpWithLevel("dev123", "mike", Questing, 1000)
@@ -64,7 +67,9 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
   test(".calculateLevel() - returns the correct level: '4', for 1000 xp") {
 
-    val dummySkillRepo = new SkillDataRepositoryAlgebra[IO] {
+    val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
+
+      override def getAllSkillData(): IO[List[SkillData]] = ???
 
       override def getAllSkills(devId: String): IO[List[SkillData]] = IO.pure(Nil)
 
@@ -86,8 +91,9 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
         IO.pure(Valid(UpdateSuccess))
     }
 
-    val dummyLangRepo = new LanguageRepositoryAlgebra[IO] {
+    val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
 
+      override def getAllLanguageData(): IO[List[LanguageData]] = ???
       override def getAllLanguages(devId: String): IO[List[LanguageData]] = IO.pure(Nil)
       override def getLanguage(devId: String, language: Language): IO[Option[LanguageData]] = IO.pure(None)
       override def getHiscoreLanguageData(language: Language): IO[List[LanguageData]] = IO.pure(Nil)
@@ -101,7 +107,7 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
         IO.pure(Valid(UpdateSuccess))
     }
 
-    val service = new LevelServiceImpl[IO](dummySkillRepo, dummyLangRepo)
+    val service = new LevelServiceImpl[IO](mockSkillRepo, mockLangRepo)
     val resultantLevel = service.calculateLevel(1000.0)
 
     IO(expect(resultantLevel == 8))
@@ -109,7 +115,9 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
   test(".calculateLevel() - returns the correct level: '97', for 10,000,000 xp") {
 
-    val dummySkillRepo = new SkillDataRepositoryAlgebra[IO] {
+    val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
+
+      override def getAllSkillData(): IO[List[SkillData]] = ???
 
       override def getAllSkills(devId: String): IO[List[SkillData]] = IO.pure(Nil)
 
@@ -131,8 +139,9 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
         IO.pure(Valid(UpdateSuccess))
     }
 
-    val dummyLangRepo = new LanguageRepositoryAlgebra[IO] {
+    val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
 
+      override def getAllLanguageData(): IO[List[LanguageData]] = ???
       override def getAllLanguages(devId: String): IO[List[LanguageData]] = IO.pure(Nil)
       override def getLanguage(devId: String, language: Language): IO[Option[LanguageData]] = IO.pure(None)
       override def getHiscoreLanguageData(language: Language): IO[List[LanguageData]] = IO.pure(Nil)
@@ -146,7 +155,7 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
         IO.pure(Valid(UpdateSuccess))
     }
 
-    val service = new LevelServiceImpl[IO](dummySkillRepo, dummyLangRepo)
+    val service = new LevelServiceImpl[IO](mockSkillRepo, mockLangRepo)
     val resultantLevel = service.calculateLevel(10000000.0)
 
     IO(expect(resultantLevel == 97))
@@ -154,7 +163,9 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
   test(".calculateLevel() - returns the correct level: '101', for 15,000,000 xp") {
 
-    val dummySkillRepo = new SkillDataRepositoryAlgebra[IO] {
+    val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
+
+      override def getAllSkillData(): IO[List[SkillData]] = ???
 
       override def getAllSkills(devId: String): IO[List[SkillData]] = IO.pure(Nil)
 
@@ -176,8 +187,9 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
         IO.pure(Valid(UpdateSuccess))
     }
 
-    val dummyLangRepo = new LanguageRepositoryAlgebra[IO] {
+    val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
 
+      override def getAllLanguageData(): IO[List[LanguageData]] = ???
       override def getAllLanguages(devId: String): IO[List[LanguageData]] = IO.pure(Nil)
       override def getLanguage(devId: String, language: Language): IO[Option[LanguageData]] = IO.pure(None)
       override def getHiscoreLanguageData(language: Language): IO[List[LanguageData]] = IO.pure(Nil)
@@ -191,7 +203,7 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
         IO.pure(Valid(UpdateSuccess))
     }
 
-    val service = new LevelServiceImpl[IO](dummySkillRepo, dummyLangRepo)
+    val service = new LevelServiceImpl[IO](mockSkillRepo, mockLangRepo)
     val resultantLevel = service.calculateLevel(15000000.0)
 
     IO(expect(resultantLevel == 101))
@@ -199,7 +211,9 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
   test(".awardSkillXpWithLevel() - returns correct XP and level") {
 
-    val dummySkillRepo = new SkillDataRepositoryAlgebra[IO] {
+    val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
+
+      override def getAllSkillData(): IO[List[SkillData]] = ???
 
       override def getAllSkills(devId: String): IO[List[SkillData]] = IO.pure(Nil)
 
@@ -221,8 +235,9 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
         IO.pure(Valid(UpdateSuccess))
     }
 
-    val dummyLangRepo = new LanguageRepositoryAlgebra[IO] {
+    val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
 
+      override def getAllLanguageData(): IO[List[LanguageData]] = ???
       override def getAllLanguages(devId: String): IO[List[LanguageData]] = IO.pure(Nil)
       override def getLanguage(devId: String, language: Language): IO[Option[LanguageData]] = IO.pure(None)
       override def getHiscoreLanguageData(language: Language): IO[List[LanguageData]] = IO.pure(Nil)
@@ -236,7 +251,7 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
         IO.pure(Valid(UpdateSuccess))
     }
 
-    val service = new LevelServiceImpl[IO](dummySkillRepo, dummyLangRepo)
+    val service = new LevelServiceImpl[IO](mockSkillRepo, mockLangRepo)
 
     for {
       result <- service.awardLanguageXpWithLevel("dev123", "mike", Python, 2000)

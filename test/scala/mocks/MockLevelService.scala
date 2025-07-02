@@ -9,11 +9,14 @@ import models.languages.*
 import models.quests.*
 import models.skills.*
 import models.users.*
+import models.hiscore.*
 import services.LevelServiceAlgebra
 
 case object MockLevelService extends LevelServiceAlgebra[IO] {
 
   override def calculateLevel(xp: BigDecimal): Int = ???
+
+  override def getTotalLevelHiscores(): IO[List[TotalLevel]] = ???
 
   override def awardSkillXpWithLevel(
     devId: String,

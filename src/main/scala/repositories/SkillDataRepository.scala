@@ -1,25 +1,26 @@
 package repositories
 
-import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
+import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
+import java.sql.Timestamp
+import java.time.LocalDateTime
 import models.database.*
 import models.skills.*
 import models.users.*
 import org.typelevel.log4cats.Logger
 import services.*
 
-import java.sql.Timestamp
-import java.time.LocalDateTime
-
 trait SkillDataRepositoryAlgebra[F[_]] {
+
+  def getAllSkillData(): F[List[SkillData]]
 
   def getAllSkills(devId: String): F[List[SkillData]]
 
@@ -39,6 +40,24 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
 
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
+
+  override def getAllSkillData(): F[List[SkillData]] = {
+    val findQuery: F[List[SkillData]] =
+      sql"""
+        SELECT 
+          dev_id,
+          username,
+          skill,
+          level,
+          xp
+        FROM skill
+      """
+        .query[SkillData]
+        .to[List]
+        .transact(transactor)
+
+    findQuery
+  }
 
   override def getAllSkills(devId: String): F[List[SkillData]] = {
     val findQuery: F[List[SkillData]] =

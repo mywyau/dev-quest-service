@@ -94,10 +94,10 @@ object Routes {
     val questRepository = QuestRepository(transactor)
     val userDataRepository = UserDataRepository(transactor)
     val skillDataRepository = SkillDataRepository(transactor)
-    val langaugeRepository = LanguageRepository(transactor)
+    val languageRepository = LanguageRepository(transactor)
     val rewardRepository = RewardRepository(transactor)
 
-    val levelService = LevelService(skillDataRepository, langaugeRepository)
+    val levelService = LevelService(skillDataRepository, languageRepository)
 
     val questCRUDService =
       QuestCRUDService(
@@ -134,6 +134,20 @@ object Routes {
     val estimateController = EstimateController(estimateService, sessionCache)
 
     estimateController.routes
+  }
+
+  def hiscoreRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](
+    transactor: HikariTransactor[F],
+    appConfig: AppConfig
+  ): HttpRoutes[F] = {
+
+    val skillDataRepository = SkillDataRepository(transactor)
+    val languageRepository = LanguageRepository(transactor)
+    val levelService = LevelService(skillDataRepository, languageRepository)
+
+    val hiscoreController = HiscoreController(levelService)
+
+    hiscoreController.routes
   }
 
   def skillRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](
