@@ -17,14 +17,16 @@ import models.database.*
 import models.languages.Language
 import models.quests.*
 import models.skills.Skill
-import models.PaidOut
 import models.NotStarted
 import models.Open
+import models.PaidOut
 import models.QuestStatus
 import models.Rank
 import org.typelevel.log4cats.Logger
 
 trait QuestRepositoryAlgebra[F[_]] {
+
+  def setFinalRank(questId: String, rank: Rank): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def countActiveQuests(devId: String): F[Int]
 
@@ -66,6 +68,30 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   implicit val localDateTimeMeta: Meta[LocalDateTime] = Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
 
   implicit val metaStringList: Meta[Seq[String]] = Meta[Array[String]].imap(_.toSeq)(_.toArray)
+
+  override def setFinalRank(questId: String, rank: Rank): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    sql"""
+      UPDATE quests
+      SET rank = $rank,
+          updated_at = NOW()
+      WHERE quest_id = $questId
+    """.update.run
+      .transact(transactor)
+      .attempt
+      .map {
+        case Right(affectedRows) if affectedRows == 1 =>
+          UpdateSuccess.validNel
+        case Right(affectedRows) if affectedRows == 0 =>
+          NotFoundError.invalidNel
+        case Left(e: java.sql.SQLIntegrityConstraintViolationException) =>
+          ConstraintViolation.invalidNel
+        case Left(e: java.sql.SQLException) =>
+          DatabaseError.invalidNel
+        case Left(ex) =>
+          UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
+        case _ =>
+          UnexpectedResultError.invalidNel
+      }
 
   override def countActiveQuests(devId: String): F[Int] =
     sql"""
@@ -166,7 +192,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
 
     findQuery
   }
-  
+
   override def create(request: CreateQuest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
     val tagArray: Array[String] = request.tags.map(_.toString).toArray
     sql"""
