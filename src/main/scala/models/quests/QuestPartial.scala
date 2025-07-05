@@ -18,7 +18,8 @@ case class QuestPartial(
   description: Option[String],
   acceptanceCriteria: Option[String],
   status: Option[QuestStatus],
-  tags: Seq[String]
+  tags: Seq[String],
+  estimated: Boolean
 )
 
 object QuestPartial {

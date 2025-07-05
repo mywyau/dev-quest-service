@@ -5,34 +5,35 @@ import cache.RedisCacheAlgebra
 import cache.SessionCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
-import cats.effect.kernel.Async
 import cats.effect.Concurrent
+import cats.effect.kernel.Async
 import cats.implicits.*
 import fs2.Stream
-import io.circe.syntax.EncoderOps
 import io.circe.Json
-import models.database.UpdateSuccess
-import models.estimate.*
-import models.responses.*
-import models.EstimateClosed
-import models.EstimateOpen
+import io.circe.syntax.EncoderOps
 import models.Completed
 import models.Dev
+import models.EstimateClosed
+import models.EstimateOpen
 import models.Failed
 import models.InProgress
 import models.NotStarted
 import models.Open
 import models.UserType
+import models.database.UpdateSuccess
+import models.estimate.*
+import models.responses.*
 import org.http4s.*
+import org.http4s.Challenge
 import org.http4s.circe.*
-import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
 import org.http4s.dsl.Http4sDsl
+import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
-import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
-import scala.concurrent.duration.*
 import services.EstimateServiceAlgebra
+
+import scala.concurrent.duration.*
 
 trait EstimateControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -50,19 +51,6 @@ class EstimateControllerImpl[F[_] : Async : Concurrent : Logger](
     req.cookies
       .find(_.name == "auth_session")
       .map(_.content)
-
-  // private def withValidSession(userId: String, token: String)(onValid: F[Response[F]]): F[Response[F]] =
-  //   sessionCache.getSession(userId).flatMap {
-  //     case Some(userSessionJson) if userSessionJson.cookieValue == token =>
-  //       Logger[F].debug("[EstimateController][withValidSession] Found valid session for userId:") *>
-  //         onValid
-  //     case Some(_) =>
-  //       Logger[F].debug("[EstimateController][withValidSession] User session does not match reestimateed user session token value from redis.")
-  //       Forbidden("User session does not match reestimateed user session token value from redis.")
-  //     case None =>
-  //       Logger[F].debug("[EstimateController][withValidSession] Invalid or expired session")
-  //       Forbidden("Invalid or expired session")
-  //   }
 
   private def withValidSession(userId: String, token: String, userType: UserType)(onValid: F[Response[F]]): F[Response[F]] =
     sessionCache.getSession(userId).flatMap {
@@ -87,16 +75,19 @@ class EstimateControllerImpl[F[_] : Async : Concurrent : Logger](
       extractSessionToken(req) match {
         case Some(cookieToken) =>
           withValidSession(devId, cookieToken, Dev) {
-            Logger[F].debug(s"[EstimateController][/estimates/userId/questId] GET - Authenticated for userId: $devId") *>
+            Logger[F].debug(s"[EstimateController][/estimates/devId/questId] GET - Authenticated for userId: $devId") *>
               estimateService.getEstimates(questId).flatMap {
-                case GetEstimateResponse(EstimateOpen, Nil) =>
-                  BadRequest(ErrorResponse("NO_ESTIMATES", "No estimates found").asJson)
+                case response @ GetEstimateResponse(EstimateOpen, Nil) =>
+                  Logger[F].debug(s"[EstimateController][/estimates/devId/questId] GET - EstimateOpen, 0 estimates returned") *>
+                    Ok(response.asJson)
                 case response @ GetEstimateResponse(EstimateClosed, calculatedEstimate) =>
-                  Logger[F].debug(s"[EstimateController][/estimates/userId/questId] GET - Found estimate ${response.toString()}") *>
+                  Logger[F].debug(s"[EstimateController][/estimates/devId/questId] GET - Found estimate ${response.toString()}") *>
                     Ok(response.asJson)
                 case response @ GetEstimateResponse(EstimateOpen, calculatedEstimate) if calculatedEstimate.size < 3 =>
-                  Logger[F].debug(s"[EstimateController][/estimates/userId/questId] GET - Found estimate ${response.toString()}") *>
+                  Logger[F].debug(s"[EstimateController][/estimates/devId/questId] GET - Found estimate ${response.toString()}") *>
                     Ok(response.asJson)
+                case _ =>
+                  BadRequest(ErrorResponse("NO_ESTIMATES", "No estimates found").asJson)
               }
           }
         case None =>
