@@ -1,8 +1,8 @@
 package services
 
 import cats.data.ValidatedNel
-import cats.effect.Sync
 import cats.effect.kernel.Async
+import cats.effect.Sync
 import cats.implicits.*
 import cats.syntax.all.*
 import models.database.*
@@ -44,8 +44,8 @@ class LevelServiceImpl[F[_] : Async : Logger](
 ) extends LevelServiceAlgebra[F] {
 
   override def calculateLevel(xp: BigDecimal): Int = {
-    val a = 1000.0
-    val b = 1.100 // 15,000,000xp == level 101
+    val a = 1500.0
+    val b = 1.100
 
     val level = Math.log((xp.toDouble + a) / a) / Math.log(b) + 1
     Math.min(level.toInt, 120)

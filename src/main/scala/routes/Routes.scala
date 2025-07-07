@@ -131,7 +131,11 @@ object Routes {
     val userDataRepository = new UserDataRepositoryImpl(transactor)
     val questRepository = QuestRepository(transactor)
     val estimateRepository = EstimateRepository(transactor)
-    val estimateService = EstimateService(appConfig, userDataRepository, estimateRepository, questRepository)
+    val skillDataRepository = SkillDataRepository(transactor)
+    val languageRepository = LanguageRepository(transactor)
+    
+    val levelService = LevelService(skillDataRepository, languageRepository)
+    val estimateService = EstimateService(appConfig, userDataRepository, estimateRepository, questRepository, levelService)
     val estimateController = EstimateController(estimateService, sessionCache)
 
     estimateController.routes

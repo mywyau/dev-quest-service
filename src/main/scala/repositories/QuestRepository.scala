@@ -23,6 +23,7 @@ import models.PaidOut
 import models.QuestStatus
 import models.Rank
 import org.typelevel.log4cats.Logger
+import models.NotEstimated
 
 trait QuestRepositoryAlgebra[F[_]] {
 
@@ -158,7 +159,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
       sql"""
         SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimated
         FROM quests
-        WHERE status = ${Open.toString()}
+        WHERE status IN (${NotEstimated.toString()}, ${Open.toString()})
         ORDER BY created_at DESC
         LIMIT $limit OFFSET $offset
       """

@@ -18,13 +18,14 @@ import models.database.*
 import models.estimate.*
 import models.languages.Language
 import models.skills.Skill
-import models.Assigned
 import models.NotStarted
 import models.Open
 import models.Rank
 import org.typelevel.log4cats.Logger
 
 trait EstimateRepositoryAlgebra[F[_]] {
+
+  def countEstimatesToday(devId: String): F[Int]
 
   def getEstimates(questId: String): F[List[Estimate]]
 
@@ -40,11 +41,19 @@ class EstimateRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
 
   implicit val metaStringList: Meta[Seq[String]] = Meta[Array[String]].imap(_.toSeq)(_.toArray)
 
+  override def countEstimatesToday(devId: String): F[Int] =
+    sql"""
+        SELECT COUNT(*) 
+        FROM quest_estimations 
+        WHERE dev_id = $devId 
+          AND created_at::date = CURRENT_DATE
+      """.query[Int].unique.transact(transactor)
+
   override def getEstimates(questId: String): F[List[Estimate]] = {
     val findQuery: F[List[Estimate]] =
       sql"""
          SELECT 
-          username, score, estimated_days, comment
+          dev_id, username, score, estimated_days, comment
          FROM quest_estimations
          WHERE quest_id = $questId
        """.query[Estimate].to[List].transact(transactor)

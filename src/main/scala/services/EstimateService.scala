@@ -14,6 +14,7 @@ import cats.syntax.all.*
 import fs2.Stream
 import models.*
 import models.database.*
+import models.users.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
 import models.estimate.*
@@ -24,6 +25,7 @@ import repositories.UserDataRepositoryAlgebra
 import java.util.UUID
 import repositories.QuestRepositoryAlgebra
 import configuration.AppConfig
+import models.skills.Reviewing
 
 trait EstimateServiceAlgebra[F[_]] {
 
@@ -32,14 +34,34 @@ trait EstimateServiceAlgebra[F[_]] {
   def createEstimate(devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def evaluateEstimates(questId: String): F[List[EvaluatedEstimate]]
+
+  def completeEstimationAwardReviewingXp(
+    questId: String,
+    rank: Rank
+  ): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
 class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
   appConfig: AppConfig,
   userDataRepo: UserDataRepositoryAlgebra[F],
   estimateRepo: EstimateRepositoryAlgebra[F],
-  questRepo: QuestRepositoryAlgebra[F] 
+  questRepo: QuestRepositoryAlgebra[F], 
+  levelService: LevelServiceAlgebra[F] 
 ) extends EstimateServiceAlgebra[F] {
+
+  def xpAmount(rank: Rank): Double =
+    rank match {
+      case Bronze => appConfig.questConfig.bronzeXp
+      case Iron => appConfig.questConfig.ironXp
+      case Steel => appConfig.questConfig.steelXp
+      case Mithril => appConfig.questConfig.mithrilXp
+      case Adamantite => appConfig.questConfig.adamantiteXp
+      case Runic => appConfig.questConfig.runicXp
+      case Demon => appConfig.questConfig.demonXp
+      case Ruinous => appConfig.questConfig.ruinousXp
+      case Aether => appConfig.questConfig.aetherXp
+      case _ => 0
+    }
 
   private def computeWeightedEstimate(score: Int, days: BigDecimal): BigDecimal = {
     val normalizedScore = BigDecimal(score) / 100
@@ -79,7 +101,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
   }
 
   // this can go in the quest/reward service
-  def calculateEstimationXP(baseXP: Int, modifier: BigDecimal): Int =
+  def calculateEstimationXP(baseXP: Double, modifier: BigDecimal): Int =
     (BigDecimal(baseXP) * (1 + modifier)).toInt.max(0)
 
 
@@ -106,7 +128,6 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
         case Some(avg) =>
           val finalRank = rankFromWeightedScore(avg)
           questRepo.setFinalRank(questId, finalRank)
-          // .map(Valid(_))
         case None =>
           Logger[F].warn(s"No estimates found for quest $questId, cannot compute rank") *>
             Concurrent[F].pure(Invalid(NonEmptyList.one(NotEnoughEstimates)))
@@ -134,45 +155,101 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
         GetEstimateResponse(EstimateOpen, calculatedEstimates)
     }
 
+  private def finalizeQuestEstimation(questId: String): F[Unit] = {
+      for {
+        estimates <- estimateRepo.getEstimates(questId)
+        maybeAvg = computeCommunityAverage(estimates)
+        _ <- maybeAvg match
+          case Some(avg) =>
+            val finalRank = rankFromWeightedScore(avg)
+            for {
+              _ <- questRepo.setFinalRank(questId, finalRank)
+              _ <- completeEstimationAwardReviewingXp(questId, finalRank).void
+            } yield ()
+          case None =>
+            Logger[F].warn(s"Unable to finalize estimation for quest $questId — no average found")
+      } yield ()
+    }  
+
   override def createEstimate(devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
     val newEstimateId = s"estimate-${UUID.randomUUID().toString}"
-  
+
+    def tooManyEstimatesError(count: Int): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    Logger[F].warn(s"[EstimateService][create] User $devId exceeded daily estimate limit ($count today)") *>
+      Concurrent[F].pure(Invalid(NonEmptyList.one(TooManyEstimatesToday)))
+
+    def finalizeIfThresholdReached: F[Unit] =
+      for {
+        estimates <- estimateRepo.getEstimates(estimate.questId)
+        _ <- if (estimates.length >= appConfig.estimationConfig.estimationThreshold)
+               finalizeQuestEstimation(estimate.questId)
+             else
+               Concurrent[F].unit
+      } yield ()
+
+    def createAndFinalize(user: UserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+      for {
+        _ <- Logger[F].debug(s"[EstimateService][create] Creating a new estimate for user ${user.username} with ID $newEstimateId")
+        result <- estimateRepo.createEstimation(newEstimateId, devId, user.username, estimate)
+        outcome <- result match {
+          case Valid(value) =>
+            for {
+              _ <- Logger[F].debug(s"[EstimateService][create] Estimate created successfully")
+              _ <- finalizeIfThresholdReached
+            } yield Valid(value)
+          case Invalid(errors) =>
+            Logger[F].error(s"[EstimateService][create] Failed to create estimate: ${errors.toList.mkString(", ")}") *>
+              Concurrent[F].pure(Invalid(errors))
+        }
+      } yield outcome
+
     for {
       userOpt <- userDataRepo.findUser(devId)
       result <- userOpt match {
         case Some(user) =>
-          Logger[F].debug(s"[EstimateService][create] Creating a new estimate for user ${user.username} with ID $newEstimateId") *>
-            estimateRepo
-              .createEstimation(newEstimateId, devId, user.username, estimate)
-              .flatMap {
-                case Valid(value) =>
-                  for {
-                    _ <- Logger[F].debug(s"[EstimateService][create] Estimate created successfully")
-                    estimates <- estimateRepo.getEstimates(estimate.questId)
-                    _ <- if (estimates.length >= appConfig.estimationConfig.estimationThreshold) {  // this value needs to go into app config
-                      computeCommunityAverage(estimates) match {
-                        case Some(avg) =>
-                          val finalRank = rankFromWeightedScore(avg)
-                          Logger[F].info(s"[EstimateService][create] Setting final rank $finalRank for quest ${estimate.questId}") *>
-                            questRepo.setFinalRank(estimate.questId, finalRank)
-                        case None =>
-                          Logger[F].warn(s"[EstimateService][create] Unable to compute average for quest ${estimate.questId}") *>
-                          Concurrent[F].pure(Invalid(NonEmptyList.one(UnableToCalculateEstimates)))
-                      }
-                    } else Concurrent[F].pure(Invalid(NonEmptyList.one(NotEnoughEstimates)))
-                  } yield Valid(value)
-  
-                case Invalid(errors) =>
-                  Logger[F].error(s"[EstimateService][create] Failed to create estimate: ${errors.toList.mkString(", ")}") *>
-                    Concurrent[F].pure(Invalid(errors))
-              }
-  
+          for {
+            todayCount <- estimateRepo.countEstimatesToday(devId)
+            result <- if (todayCount >= appConfig.estimationConfig.maxDailyReviews)
+                        tooManyEstimatesError(todayCount)
+                      else
+                        createAndFinalize(user)
+          } yield result
+
         case None =>
           Logger[F].error(s"[EstimateService][create] Could not find user with ID: $devId") *>
             Concurrent[F].pure(Invalid(NonEmptyList.one(NotFoundError)))
       }
     } yield result
   }
+
+  override def completeEstimationAwardReviewingXp(
+    questId: String,
+    rank: Rank
+  ): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+
+    val baseXp: Double = xpAmount(rank)
+
+    val result = for {
+      quest <- EitherT.fromOptionF(questRepo.findByQuestId(questId), NotFoundError: DatabaseErrors)
+
+      _ <- EitherT.liftF(questRepo.updateStatus(questId, Open))
+
+      estimates <- EitherT.liftF(estimateRepo.getEstimates(questId))
+
+      evaluated <- EitherT.liftF(evaluateEstimates(questId))
+
+      _ <- EitherT.liftF {
+        evaluated.traverse_ {
+          case EvaluatedEstimate(estimate, modifier) =>
+            val xp = calculateEstimationXP(baseXp, modifier)
+            levelService.awardSkillXpWithLevel(estimate.devId, estimate.username, Reviewing, xp)
+        }
+      }
+
+    } yield UpdateSuccess
+
+    result.value.map(_.toValidatedNel)
+  } 
 }
 
 
@@ -182,7 +259,8 @@ object EstimateService {
     appConfig: AppConfig,
     userDataRepo: UserDataRepositoryAlgebra[F],
     estimateRepo: EstimateRepositoryAlgebra[F],
-    questRepo: QuestRepositoryAlgebra[F] 
+    questRepo: QuestRepositoryAlgebra[F],
+    levelService: LevelServiceAlgebra[F] 
   ): EstimateServiceAlgebra[F] =
-    new EstimateServiceImpl[F](appConfig, userDataRepo, estimateRepo, questRepo)
+    new EstimateServiceImpl[F](appConfig, userDataRepo, estimateRepo, questRepo, levelService)
 }

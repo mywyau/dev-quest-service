@@ -305,10 +305,10 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
             req.decode[AcceptQuestPayload] { request =>
               questCRUDService.acceptQuest(request.questId, request.devId).flatMap {
                 case Valid(response) =>
-                  Logger[F].debug(s"[QuestControllerImpl] PUT - Successfully updated devId for quest id: ${request.devId}") *>
+                  Logger[F].debug(s"[QuestControllerImpl] PUT - Successfully accepted quest quest id: ${request.questId}, by devId: ${request.devId}") *>
                     Ok(UpdatedResponse(UpdateSuccess.toString, s"updated devId: ${request.devId} successfully, for questId: ${request.questId}").asJson)
                 case Invalid(errors) =>
-                  Logger[F].debug(s"[QuestControllerImpl] PUT - Validation failed for quest update: ${errors.toList}") *>
+                  Logger[F].debug(s"[QuestControllerImpl] PUT - Validation failed for user trying to accept a quest: ${errors.toList}") *>
                     BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
               }
             }

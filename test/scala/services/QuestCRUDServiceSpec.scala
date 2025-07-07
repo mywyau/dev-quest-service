@@ -26,9 +26,9 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
   test(".acceptQuest() - when the number of quests a dev has accepted is <= 5, return success") {
 
-    val existingQuestForUser = testQuest(userId1, Some(devId1), questId1)
+    val existingQuestForUser = testQuest(clientId1, Some(devId1), questId1)
 
-    val mockQuestRepository = new MockQuestRepository(countActiveQuests = 5, existingQuest = Map(businessId1 -> existingQuestForUser))
+    val mockQuestRepository = new MockQuestRepository(countActiveQuests = 5, existingQuest = Map(questId1 -> existingQuestForUser))
 
     for {
       appConfig <- configReader.loadAppConfig
@@ -39,9 +39,9 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
   test(".acceptQuest() - when the number of quests a dev has accepted is > 5, return success") {
 
-    val existingQuestForUser = testQuest(userId1, Some(devId1), questId1)
+    val existingQuestForUser = testQuest(clientId1, Some(devId1), questId1)
 
-    val mockQuestRepository = new MockQuestRepository(countActiveQuests = 6, existingQuest = Map(businessId1 -> existingQuestForUser))
+    val mockQuestRepository = new MockQuestRepository(countActiveQuests = 6, existingQuest = Map(questId1 -> existingQuestForUser))
 
     for {
       appConfig <- configReader.loadAppConfig
@@ -50,16 +50,16 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     } yield expect(result == Invalid(NonEmptyList.one(TooManyActiveQuestsError)))
   }
 
-  test(".getByQuestId() - when there is an existing quest details given a businessId should return the correct address details - Right(address)") {
+  test(".getByQuestId() - when there is an existing quest details given a questId should return the correct address details - Right(address)") {
 
-    val existingQuestForUser = testQuest(userId1, Some(devId1), questId1)
+    val existingQuestForUser = testQuest(clientId1, Some(devId1), questId1)
 
-    val mockQuestRepository = new MockQuestRepository(existingQuest = Map(businessId1 -> existingQuestForUser))
+    val mockQuestRepository = new MockQuestRepository(existingQuest = Map(questId1 -> existingQuestForUser))
 
     for {
       appConfig <- configReader.loadAppConfig
       service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockLevelService)
-      result <- service.getByQuestId(businessId1)
+      result <- service.getByQuestId(questId1)
     } yield expect(result == Some(existingQuestForUser))
   }
 
@@ -67,7 +67,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val existingQuestForUser = testQuest(clientId1, Some(devId1), questId1)
 
-    val mockQuestRepository = new MockQuestRepository(existingQuest = Map(clientId1 -> existingQuestForUser))
+    val mockQuestRepository = new MockQuestRepository(existingQuest = Map(questId1 -> existingQuestForUser))
 
     val createQuestPartial =
       CreateQuestPartial(

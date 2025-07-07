@@ -16,6 +16,7 @@ object EstimateSpec extends SimpleIOSuite with ModelsBaseSpec {
 
   val testEstimate =
     Estimate(
+      devId = "dev123",
       username = "goku",
       score = 50,
       days = 8,
@@ -29,6 +30,7 @@ object EstimateSpec extends SimpleIOSuite with ModelsBaseSpec {
     val expectedJson =
       """
         |{
+        |  "devId" : "dev123",
         |  "username" : "goku",
         |  "score" : 50,
         |  "days" : 8,
