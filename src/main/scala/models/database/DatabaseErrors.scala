@@ -33,3 +33,7 @@ case object NotFoundError extends DatabaseErrors
 case object DataTooLongError extends DatabaseErrors
 
 case object UnexpectedResultError extends DatabaseErrors
+
+case object NotEnoughEstimates extends DatabaseErrors
+
+case object UnableToCalculateEstimates extends DatabaseErrors

@@ -1,17 +1,16 @@
 package repositories
 
+import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
-import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
-import java.sql.Timestamp
-import java.time.LocalDateTime
+import models.RewardStatus
 import models.database.*
 import models.database.ConstraintViolation
 import models.database.CreateSuccess
@@ -28,8 +27,10 @@ import models.database.UnexpectedResultError
 import models.database.UnknownError
 import models.database.UpdateSuccess
 import models.rewards.*
-import models.RewardStatus
 import org.typelevel.log4cats.Logger
+
+import java.sql.Timestamp
+import java.time.LocalDateTime
 
 trait RewardRepositoryAlgebra[F[_]] {
 
@@ -60,7 +61,8 @@ class RewardRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Trans
           quest_id,
           client_id,
           dev_id, 
-          reward_value,
+          time_reward_value,
+          completion_reward_value,
           paid
         FROM reward
         WHERE quest_id = $questId
@@ -71,7 +73,7 @@ class RewardRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Trans
 
   override def streamRewardByQuest(questId: String): Stream[F, RewardData] =
     sql"""
-      SELECT quest_id, client_id, dev_id, reward_value, paid
+      SELECT quest_id, client_id, dev_id, time_reward_value, completion_reward_value, paid
       FROM reward
       WHERE quest_id = $questId
       ORDER BY created_at DESC
@@ -85,13 +87,15 @@ class RewardRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Trans
       INSERT INTO reward (
         quest_id,
         client_id,
-        reward_value
+        time_reward_value,
+        completion_reward_value
       )
       VALUES (
         ${request.questId},
         ${clientId},
-        ${request.rewardValue}
-      )
+        ${request.timeRewardValue},
+        ${request.completionRewardValue}
+      ) ON CONFLICT (quest_id, client_id) DO NOTHING
     """.update.run
       .transact(transactor)
       .attempt
@@ -141,7 +145,8 @@ class RewardRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Trans
     sql"""
       UPDATE reward
       SET
-          reward_value = ${updateRewardData.rewardValue},
+          time_reward_value = ${updateRewardData.timeRewardValue},
+          completion_reward_value = ${updateRewardData.completionRewardValue},
           updated_at = ${LocalDateTime.now()}
       WHERE quest_id = ${questId}
     """.update.run

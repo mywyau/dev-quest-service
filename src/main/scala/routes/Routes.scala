@@ -129,8 +129,9 @@ object Routes {
     val sessionCache = new SessionCacheImpl(redisHost, redisPort, appConfig)
 
     val userDataRepository = new UserDataRepositoryImpl(transactor)
+    val questRepository = QuestRepository(transactor)
     val estimateRepository = EstimateRepository(transactor)
-    val estimateService = EstimateService(userDataRepository, estimateRepository)
+    val estimateService = EstimateService(appConfig, userDataRepository, estimateRepository, questRepository)
     val estimateController = EstimateController(estimateService, sessionCache)
 
     estimateController.routes

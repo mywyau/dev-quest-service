@@ -11,11 +11,11 @@ import configuration.ConfigReader
 import configuration.ConfigReaderAlgebra
 import fs2.Stream
 import models.*
-import models.Bronze
-import models.Open
 import models.database.*
 import models.quests.*
 import models.rewards.*
+import models.Bronze
+import models.Open
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import repositories.*
 import weaver.SimpleIOSuite
@@ -32,7 +32,8 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
       acceptanceCriteria = Some("acceptance criteria"),
       rank = Bronze,
       tags = List("Scala"),
-      status = Some(Open)
+      status = Some(Open),
+      estimated = true
     )
 
   val reward =
@@ -40,45 +41,48 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
       questId = "quest123",
       clientId = "client123",
       devId = Some("dev123"),
-      rewardValue = 1000.00,
+      timeRewardValue = 100.00,
+      completionRewardValue = 1000.00,
       paid = NotPaid
     )
 
   val questRepo = new QuestRepositoryAlgebra[IO] {
-    def streamByQuestStatus(clientId: String, status: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] =
+
+    override def setFinalRank(questId: String, rank: Rank): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+
+    override def streamByQuestStatus(clientId: String, status: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] =
       Stream.emit(sampleQuest)
 
-    def streamByQuestStatusDev(devId: String, status: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] =
+    override def streamByQuestStatusDev(devId: String, status: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] =
       Stream.emit(sampleQuest.copy(devId = Some(devId)))
 
-    def streamAll(limit: Int, offset: Int): Stream[IO, QuestPartial] =
+    override def streamAll(limit: Int, offset: Int): Stream[IO, QuestPartial] =
       Stream.emits(List(sampleQuest, sampleQuest.copy(questId = "q-2")))
 
-    def streamByUserId(clientId: String, limit: Int, offset: Int): Stream[IO, QuestPartial] =
+    override def streamByUserId(clientId: String, limit: Int, offset: Int): Stream[IO, QuestPartial] =
       Stream.emit(sampleQuest)
 
-    def findByQuestId(id: String): IO[Option[QuestPartial]] = IO.pure(None)
-    def findAllByUserId(id: String): IO[List[QuestPartial]] = IO.pure(Nil)
-    def create(quest: CreateQuest): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
-    def update(id: String, request: UpdateQuestPartial): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
-    def updateStatus(id: String, status: QuestStatus): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
-    def delete(id: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
-    def countActiveQuests(devId: String): IO[Int] = IO.pure(0)
-    def acceptQuest(id: String, devId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+    override def findByQuestId(id: String): IO[Option[QuestPartial]] = IO.pure(None)
+    override def findAllByUserId(id: String): IO[List[QuestPartial]] = IO.pure(Nil)
+    override def create(quest: CreateQuest): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+    override def update(id: String, request: UpdateQuestPartial): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+    override def updateStatus(id: String, status: QuestStatus): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+    override def delete(id: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+    override def countActiveQuests(devId: String): IO[Int] = IO.pure(0)
+    override def acceptQuest(id: String, devId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
-    def deleteAllByUserId(clientId: String): IO[ValidatedNel[models.database.DatabaseErrors, models.database.DatabaseSuccess]] = ???
-    def markPaid(questId: String): cats.effect.IO[Unit] = ???
-    def validateOwnership(questId: String, clientId: String): cats.effect.IO[Unit] = ???
+    override def deleteAllByUserId(clientId: String): IO[ValidatedNel[models.database.DatabaseErrors, models.database.DatabaseSuccess]] = ???
+    override def markPaid(questId: String): cats.effect.IO[Unit] = ???
+    override def validateOwnership(questId: String, clientId: String): cats.effect.IO[Unit] = ???
   }
 
   val rewardRepo = new RewardRepositoryAlgebra[IO] {
-    def streamRewardByQuest(questId: String): Stream[IO, RewardData] = Stream.emit(reward)
-
-    def getRewardData(questId: String): IO[Option[RewardData]] = ???
-    def create(clientId: String, request: CreateReward): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
-    def update(questId: String, updateRewardData: UpdateRewardData): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
-    def updateWithDevId(questId: String, devId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
-    def delete(questId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+    override def streamRewardByQuest(questId: String): Stream[IO, RewardData] = Stream.emit(reward)
+    override def getRewardData(questId: String): IO[Option[RewardData]] = ???
+    override def create(clientId: String, request: CreateReward): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+    override def update(questId: String, updateRewardData: UpdateRewardData): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+    override def updateWithDevId(questId: String, devId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+    override def delete(questId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
   }
 
   val configReader: ConfigReaderAlgebra[IO] = ConfigReader[IO]

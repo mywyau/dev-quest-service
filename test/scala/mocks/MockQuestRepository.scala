@@ -4,15 +4,18 @@ import cats.data.Validated.Valid
 import cats.data.ValidatedNel
 import cats.effect.IO
 import fs2.Stream
-import models.QuestStatus
 import models.database.*
 import models.quests.*
+import models.QuestStatus
+import models.Rank
 import repositories.QuestRepositoryAlgebra
 
 case class MockQuestRepository(
   countActiveQuests: Int = 5,
   existingQuest: Map[String, QuestPartial] = Map.empty
 ) extends QuestRepositoryAlgebra[IO] {
+
+  override def setFinalRank(questId: String, rank: Rank): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
   override def countActiveQuests(devId: String): IO[Int] = IO(countActiveQuests)
 

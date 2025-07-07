@@ -37,11 +37,17 @@ object AppConfigConstants {
       aetherXp = 10000.00
     )
 
+  val estimateConfig =
+    EstimationConfig(
+      estimationThreshold = 5
+    )
+
   val appConfig =
     AppConfig(
       featureSwitches = featureSwitches,
       devSubmission = devSubmissionConfig,
       questConfig = questConfig,
+      estimationConfig = estimateConfig,
       localAppConfig = localAppConfig,
       prodAppConfig = prodAppConfig,
       integrationSpecConfig = integrationSpecConfig

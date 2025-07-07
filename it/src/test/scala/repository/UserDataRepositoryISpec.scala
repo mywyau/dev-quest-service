@@ -1,4 +1,4 @@
-package repository.user
+package repository
 
 import cats.data.Validated.Valid
 import cats.effect.IO
@@ -6,25 +6,26 @@ import cats.effect.Resource
 import cats.implicits.*
 import doobie.*
 import doobie.implicits.*
-import java.time.LocalDateTime
+import models.Client
+import models.Completed
+import models.Dev
+import models.InProgress
 import models.database.*
 import models.database.DeleteSuccess
 import models.database.UpdateSuccess
 import models.users.CreateUserData
 import models.users.UpdateUserType
 import models.users.UserData
-import models.Client
-import models.Completed
-import models.Dev
-import models.InProgress
 import repositories.UserDataRepositoryImpl
-import repository.fragments.UserRepoFragments.*
 import repository.RepositoryISpecBase
+import repository.fragments.UserRepoFragments.*
 import shared.TransactorResource
 import testData.TestConstants.*
 import weaver.GlobalRead
 import weaver.IOSuite
 import weaver.ResourceTag
+
+import java.time.LocalDateTime
 
 class UserDataRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryISpecBase {
   type Res = UserDataRepositoryImpl[IO]
@@ -52,7 +53,7 @@ class UserDataRepositoryISpec(global: GlobalRead) extends IOSuite with Repositor
       UserData(
         userId = "USER001",
         email = "bob_smith@gmail.com",
-        username = "goku",
+        username = "cloud",
         firstName = Some("Bob"),
         lastName = Some("Smith"),
         userType = Some(Dev)
@@ -69,18 +70,21 @@ class UserDataRepositoryISpec(global: GlobalRead) extends IOSuite with Repositor
       UserData(
         userId = "USER002",
         email = "dylan_smith@gmail.com",
-        username = "goku",
+        username = "tifa",
         firstName = Some("Dylan"),
         lastName = Some("Smith"),
         userType = Some(Dev)
       )
 
     val expectedResult =
-      orignalUser.copy(userType = Some(Dev))
+      orignalUser.copy(
+        username = "tifa2",
+        userType = Some(Dev)
+      )
 
     for {
       originalData <- userRepo.findUser("USER002")
-      result <- userRepo.updateUserType("USER002", UpdateUserType("goku", Dev))
+      result <- userRepo.updateUserType("USER002", UpdateUserType("tifa2", Dev))
       updatedUser <- userRepo.findUser("USER002")
     } yield expect.all(
       originalData == Some(orignalUser),
@@ -97,7 +101,7 @@ class UserDataRepositoryISpec(global: GlobalRead) extends IOSuite with Repositor
       UserData(
         userId = "USER003",
         email = "sam_smith@gmail.com",
-        username = "goku",
+        username = "tidus",
         firstName = Some("Sam"),
         lastName = Some("Smith"),
         userType = Some(Dev)

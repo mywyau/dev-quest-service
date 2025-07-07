@@ -63,6 +63,7 @@ class QuestCRUDServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger
       case Demon => appConfig.questConfig.demonXp
       case Ruinous => appConfig.questConfig.ruinousXp
       case Aether => appConfig.questConfig.aetherXp
+      case _ => 0
     }
 
   override def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =

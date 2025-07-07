@@ -59,8 +59,8 @@ class UserDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
       sql"""
          SELECT 
             user_id,
-            email,
             username,
+            email,
             first_name,
             last_name,
             user_type

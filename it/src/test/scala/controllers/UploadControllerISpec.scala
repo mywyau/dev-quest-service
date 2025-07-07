@@ -1,4 +1,4 @@
-package controllers.user
+package controllers
 
 import cats.effect.*
 import controllers.fragments.UserDataControllerFragments.*

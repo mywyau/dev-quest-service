@@ -92,8 +92,8 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
-        tags = ArraySeq("Python", "Scala", "Typescript")
-
+        tags = ArraySeq("Python", "Scala", "Typescript"),
+        estimated = true
       )
 
     val sessionToken = "test-session-token"
@@ -131,8 +131,8 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
-        tags = ArraySeq("Python", "Scala", "Typescript")
-
+        tags = ArraySeq("Python", "Scala", "Typescript"),
+        estimated = true
       )
 
     val sessionToken = "test-session-token"
@@ -169,7 +169,8 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         description = Some(s"Some Quest Description $id"),
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
-        tags = ArraySeq("Python", "Scala", "Typescript")
+        tags = ArraySeq("Python", "Scala", "Typescript"),
+        estimated = true
       )
 
     val expected: List[QuestPartial] = List(
@@ -219,8 +220,8 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         description = Some(s"Some Quest Description $id"),
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(NotStarted),
-        tags = ArraySeq("Python", "Scala", "Typescript")
-        
+        tags = ArraySeq("Python", "Scala", "Typescript"),
+        estimated = true
       )
 
     val expected: List[QuestPartial] = List(

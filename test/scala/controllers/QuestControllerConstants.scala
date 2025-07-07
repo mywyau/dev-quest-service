@@ -1,22 +1,24 @@
 package controllers
 
-import java.time.LocalDateTime
-import models.quests.QuestPartial
 import models.Completed
 import models.Iron
+import models.quests.QuestPartial
+
+import java.time.LocalDateTime
 
 object QuestControllerConstants {
 
   val sampleQuest1: QuestPartial =
     QuestPartial(
-      clientId = "user_1",
-      devId = Some("dev_1"),
+      clientId = "client123",
+      devId = Some("dev123"),
       questId = "quest1",
       rank = Iron,
       title = "business1",
-      description = Some(""),
-      acceptanceCriteria = Some(""),
+      description = Some("some description"),
+      acceptanceCriteria = Some("some acceptance criteria"),
       status = Some(Completed),
-      tags = Seq("Python", "Scala", "TypeScript")
+      tags = Seq("Python", "Scala", "TypeScript"),
+      estimated = true
     )
 }

@@ -1,16 +1,17 @@
 package models.users
 
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.generic.semiauto.deriveEncoder
 import io.circe.Decoder
 import io.circe.Encoder
-import java.time.LocalDateTime
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
 import models.UserType
+
+import java.time.LocalDateTime
 
 case class UserData(
   userId: String,
-  email: String,
   username: String,
+  email: String,
   firstName: Option[String],
   lastName: Option[String],
   userType: Option[UserType]

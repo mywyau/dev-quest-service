@@ -10,7 +10,8 @@ import java.time.LocalDateTime
 
 case class CreateEstimate(
   questId: String,
-  rank: Rank,
+  score: Int,
+  days: Int,
   comment: Option[String]
 )
 
