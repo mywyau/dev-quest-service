@@ -162,7 +162,7 @@ class UserDataControllerISpec(global: GlobalRead) extends IOSuite with Controlle
 
     val updateUserTypeRequest: UpdateUserType =
       UpdateUserType(
-        username = "goku",
+        username = "trunks2",
         userType = Client
       )
 

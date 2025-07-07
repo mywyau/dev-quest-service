@@ -111,7 +111,7 @@ class RegistrationControllerISpec(global: GlobalRead) extends IOSuite with Contr
 
     val updateUserTypeRequest: UpdateUserType =
       UpdateUserType(
-        username = "goku",
+        username = "videl2",
         userType = Client
       )
 
