@@ -15,6 +15,8 @@ case class MockQuestRepository(
   existingQuest: Map[String, QuestPartial] = Map.empty
 ) extends QuestRepositoryAlgebra[IO] {
 
+  override def countNotEstimatedAndOpenQuests(): IO[Int] = ???
+
   override def setFinalRank(questId: String, rank: Rank): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
   override def countActiveQuests(devId: String): IO[Int] = IO(countActiveQuests)
