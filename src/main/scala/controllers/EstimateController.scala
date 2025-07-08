@@ -5,12 +5,16 @@ import cache.RedisCacheAlgebra
 import cache.SessionCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
-import cats.effect.Concurrent
 import cats.effect.kernel.Async
+import cats.effect.Concurrent
 import cats.implicits.*
 import fs2.Stream
-import io.circe.Json
 import io.circe.syntax.EncoderOps
+import io.circe.Json
+import models.database.UpdateSuccess
+import models.estimate.*
+import models.responses.*
+import models.Client
 import models.Completed
 import models.Dev
 import models.EstimateClosed
@@ -20,20 +24,16 @@ import models.InProgress
 import models.NotStarted
 import models.Open
 import models.UserType
-import models.database.UpdateSuccess
-import models.estimate.*
-import models.responses.*
 import org.http4s.*
-import org.http4s.Challenge
 import org.http4s.circe.*
-import org.http4s.dsl.Http4sDsl
 import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
+import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
+import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
-import services.EstimateServiceAlgebra
-
 import scala.concurrent.duration.*
+import services.EstimateServiceAlgebra
 
 trait EstimateControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -52,19 +52,20 @@ class EstimateControllerImpl[F[_] : Async : Concurrent : Logger](
       .find(_.name == "auth_session")
       .map(_.content)
 
-  private def withValidSession(userId: String, token: String, userType: UserType)(onValid: F[Response[F]]): F[Response[F]] =
+  private def withValidSession(userId: String, token: String, allowedUserTypes: Set[UserType])(onValid: F[Response[F]]): F[Response[F]] =
     sessionCache.getSession(userId).flatMap {
-      case Some(userSessionJson) if userSessionJson.cookieValue == token && UserType.fromString(userSessionJson.userType) == userType =>
-        Logger[F].debug("[EstimateController][withValidSession] Found valid session for userId:") *>
+      case Some(userSessionJson)
+          if userSessionJson.cookieValue == token &&
+            allowedUserTypes.contains(UserType.fromString(userSessionJson.userType)) =>
+        Logger[F].debug(s"[EstimateController][withValidSession] Valid session for userId: $userId") *>
           onValid
       case Some(_) =>
-        Logger[F].debug("[EstimateController][withValidSession] User session does not match reestimateed user session token value from redis.")
-        Forbidden("User session does not match reestimateed user session token value from redis.")
+        Logger[F].debug("[EstimateController][withValidSession] Session token or user type mismatch.")
+        Forbidden("User session token or type mismatch.")
       case None =>
-        Logger[F].debug("[EstimateController][withValidSession] Invalid or expired session")
+        Logger[F].debug("[EstimateController][withValidSession] Session not found or expired.")
         Forbidden("Invalid or expired session")
     }
-
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
 
     case req @ GET -> Root / "estimate" / "health" =>
@@ -74,7 +75,7 @@ class EstimateControllerImpl[F[_] : Async : Concurrent : Logger](
     case req @ GET -> Root / "estimates" / devId / questId =>
       extractSessionToken(req) match {
         case Some(cookieToken) =>
-          withValidSession(devId, cookieToken, Dev) {
+          withValidSession(devId, cookieToken, Set(Dev, Client)) {
             Logger[F].debug(s"[EstimateController][/estimates/devId/questId] GET - Authenticated for userId: $devId") *>
               estimateService.getEstimates(questId).flatMap {
                 case response @ GetEstimateResponse(EstimateOpen, Nil) =>
@@ -93,12 +94,12 @@ class EstimateControllerImpl[F[_] : Async : Concurrent : Logger](
         case None =>
           Logger[F].debug(s"[EstimateController][/quest/userId/questId] GET - Unauthorised") *>
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
-      } 
+      }
 
     case req @ POST -> Root / "estimate" / "create" / devId =>
       extractSessionToken(req) match {
         case Some(cookieToken) =>
-          withValidSession(devId, cookieToken, Dev) {
+          withValidSession(devId, cookieToken, Set(Dev)) {
             Logger[F].debug(s"[EstimateController] POST - Creating estimate") *>
               req.decode[CreateEstimate] { request =>
                 Logger[F].debug(request.toString()) *>
@@ -121,7 +122,6 @@ object EstimateController {
   def apply[F[_] : Async : Concurrent](estimateService: EstimateServiceAlgebra[F], sessionCache: SessionCacheAlgebra[F])(implicit logger: Logger[F]): EstimateControllerAlgebra[F] =
     new EstimateControllerImpl[F](estimateService, sessionCache)
 }
-
 
 // Why they’re coupled in .createEstimate(). - there is a lot of validation happening here unfortunetly.
 // The user action is:
