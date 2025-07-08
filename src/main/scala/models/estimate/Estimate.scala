@@ -8,6 +8,7 @@ import java.time.LocalDateTime
 import models.Rank
 
 case class Estimate(
+  devId: String,
   username: String,
   score: Int,
   days: Int,

@@ -6,4 +6,5 @@ import pureconfig.ConfigReader
 
 case class EstimationConfig(
   estimationThreshold: Int,
+  maxDailyReviews: Int
 ) derives ConfigReader

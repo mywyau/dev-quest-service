@@ -39,13 +39,13 @@ case class MockQuestRepository(
 
   override def findAllByUserId(userId: String): IO[List[QuestPartial]] = ???
 
-  override def findByQuestId(businessId: String): IO[Option[QuestPartial]] = IO.pure(existingQuest.get(businessId))
+  override def findByQuestId(questId: String): IO[Option[QuestPartial]] = IO.pure(existingQuest.get(questId))
 
   override def create(request: CreateQuest): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = IO.pure(Valid(CreateSuccess))
 
-  override def update(businessId: String, request: UpdateQuestPartial): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = IO.pure(Valid(UpdateSuccess))
+  override def update(questId: String, request: UpdateQuestPartial): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = IO.pure(Valid(UpdateSuccess))
 
-  override def delete(businessId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+  override def delete(questId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
   override def deleteAllByUserId(userId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 }

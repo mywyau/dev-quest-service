@@ -6,6 +6,8 @@ trait DatabaseErrors
 
 case object TooManyActiveQuestsError extends DatabaseErrors
 
+case object QuestNotEstimatedError extends DatabaseErrors
+
 case class UpdateNotFound(message: String) extends DatabaseErrors
 
 case class UpdateFailure(reason: String) extends DatabaseErrors
@@ -37,3 +39,5 @@ case object UnexpectedResultError extends DatabaseErrors
 case object NotEnoughEstimates extends DatabaseErrors
 
 case object UnableToCalculateEstimates extends DatabaseErrors
+
+case object TooManyEstimatesToday extends DatabaseErrors

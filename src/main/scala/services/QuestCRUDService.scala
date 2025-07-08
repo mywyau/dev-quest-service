@@ -1,7 +1,5 @@
 package services
 
-import cats.Monad
-import cats.NonEmptyParallel
 import cats.data.EitherT
 import cats.data.Validated
 import cats.data.Validated.Invalid
@@ -10,23 +8,23 @@ import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
+import cats.Monad
+import cats.NonEmptyParallel
 import configuration.AppConfig
 import fs2.Stream
+import java.util.UUID
 import models.*
-import models.NotStarted
-import models.QuestStatus
 import models.database.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
 import models.languages.Language
 import models.quests.*
 import models.skills.Questing
+import models.NotStarted
+import models.QuestStatus
 import org.typelevel.log4cats.Logger
 import repositories.*
 import services.LevelServiceAlgebra
-
-
-import java.util.UUID
 
 trait QuestCRUDServiceAlgebra[F[_]] {
 
@@ -70,16 +68,24 @@ class QuestCRUDServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger
     questRepo.updateStatus(questId, questStatus)
 
   override def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
-
     val MAX_ACTIVE_QUESTS = appConfig.questConfig.maxActiveQuests
 
     for {
       activeCount <- questRepo.countActiveQuests(devId)
-      result <-
-        if (activeCount > MAX_ACTIVE_QUESTS)
+      questOpt <- questRepo.findByQuestId(questId)
+      result <- questOpt match {
+        case None =>
+          NotFoundError.invalidNel[DatabaseSuccess].pure[F]
+
+        case Some(quest) if activeCount > MAX_ACTIVE_QUESTS =>
           TooManyActiveQuestsError.invalidNel[DatabaseSuccess].pure[F]
-        else
+
+        case Some(quest) if quest.status.contains(NotEstimated) =>
+          QuestNotEstimatedError.invalidNel[DatabaseSuccess].pure[F]
+
+        case Some(_) =>
           questRepo.acceptQuest(questId, devId)
+      }
     } yield result
   }
 
@@ -102,7 +108,7 @@ class QuestCRUDServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger
         description = request.description,
         acceptanceCriteria = request.acceptanceCriteria,
         tags = request.tags,
-        status = Some(Open)
+        status = Some(NotEstimated)
       )
 
     Logger[F].debug(s"[QuestCRUDService][create] Creating a new quest for user $clientId with questId $newQuestId") *>

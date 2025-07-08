@@ -121,3 +121,20 @@ object EstimateController {
   def apply[F[_] : Async : Concurrent](estimateService: EstimateServiceAlgebra[F], sessionCache: SessionCacheAlgebra[F])(implicit logger: Logger[F]): EstimateControllerAlgebra[F] =
     new EstimateControllerImpl[F](estimateService, sessionCache)
 }
+
+
+// Why they’re coupled in .createEstimate(). - there is a lot of validation happening here unfortunetly.
+// The user action is:
+
+// “Dev tries to submit an estimate for a quest”
+
+// That single action needs to validate multiple things at once:
+
+// Validation	Why it must happen now
+// Dev hasn’t exceeded daily estimate cap	Global rule for XP fairness
+// Dev hasn’t estimated this quest before	Enforced at DB (fail-fast)
+// Quest hasn't already been finalized	Estimation phase might be closed
+// Estimate triggers quest finalization	Estimate might be the 5th needed one
+// XP should be awarded after finalization	That final estimate might close the process
+
+// They all naturally live in one method because that’s the core event handler for "submitting an estimate".
