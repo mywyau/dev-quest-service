@@ -232,7 +232,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
     val result = for {
       quest <- EitherT.fromOptionF(questRepo.findByQuestId(questId), NotFoundError: DatabaseErrors)
 
-      _ <- EitherT.liftF(questRepo.updateStatus(questId, Open))
+      _ <- EitherT.liftF(questRepo.updateStatus(questId, Estimated))
 
       estimates <- EitherT.liftF(estimateRepo.getEstimates(questId))
 
