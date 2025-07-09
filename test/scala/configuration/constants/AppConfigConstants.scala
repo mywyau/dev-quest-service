@@ -39,7 +39,7 @@ object AppConfigConstants {
 
   val estimateConfig =
     EstimationConfig(
-      estimationThreshold = 5,
+      estimationThreshold = 3,
       maxDailyReviews = 5
     )
 
