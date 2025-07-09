@@ -25,7 +25,7 @@ import repositories.UserDataRepositoryAlgebra
 import java.util.UUID
 import repositories.QuestRepositoryAlgebra
 import configuration.AppConfig
-import models.skills.Reviewing
+import models.skills.Estimating
 
 trait EstimateServiceAlgebra[F[_]] {
 
@@ -35,7 +35,7 @@ trait EstimateServiceAlgebra[F[_]] {
 
   def evaluateEstimates(questId: String): F[List[EvaluatedEstimate]]
 
-  def completeEstimationAwardReviewingXp(
+  def completeEstimationAwardEstimatingXp(
     questId: String,
     rank: Rank
   ): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
@@ -164,7 +164,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
             val finalRank = rankFromWeightedScore(avg)
             for {
               _ <- questRepo.setFinalRank(questId, finalRank)
-              _ <- completeEstimationAwardReviewingXp(questId, finalRank).void
+              _ <- completeEstimationAwardEstimatingXp(questId, finalRank).void
             } yield ()
           case None =>
             Logger[F].warn(s"Unable to finalize estimation for quest $questId — no average found")
@@ -222,7 +222,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
     } yield result
   }
 
-  override def completeEstimationAwardReviewingXp(
+  override def completeEstimationAwardEstimatingXp(
     questId: String,
     rank: Rank
   ): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
@@ -242,7 +242,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger]
         evaluated.traverse_ {
           case EvaluatedEstimate(estimate, modifier) =>
             val xp = calculateEstimationXP(baseXp, modifier)
-            levelService.awardSkillXpWithLevel(estimate.devId, estimate.username, Reviewing, xp)
+            levelService.awardSkillXpWithLevel(estimate.devId, estimate.username, Estimating, xp)
         }
       }
 
