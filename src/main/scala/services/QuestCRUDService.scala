@@ -30,6 +30,8 @@ trait QuestCRUDServiceAlgebra[F[_]] {
 
   def getByQuestId(questId: String): F[Option[QuestPartial]]
 
+  def countNotEstimatedAndOpenQuests(): F[Int]
+
   def create(request: CreateQuestPartial, clientId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def update(questId: String, request: UpdateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
@@ -62,6 +64,11 @@ class QuestCRUDServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger
       case Ruinous => appConfig.questConfig.ruinousXp
       case Aether => appConfig.questConfig.aetherXp
       case _ => 0
+    }
+
+  override def countNotEstimatedAndOpenQuests(): F[Int] =
+    questRepo.countNotEstimatedAndOpenQuests().flatMap { numberOfQuests =>
+      Logger[F].debug(s"[QuestCRUDService][countNotEstimatedAndOpenQuests] Total number of quests found $numberOfQuests") *> Concurrent[F].pure(numberOfQuests)
     }
 
   override def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =

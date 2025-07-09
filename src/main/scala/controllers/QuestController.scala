@@ -11,16 +11,10 @@ import cats.implicits.*
 import fs2.Stream
 import io.circe.syntax.EncoderOps
 import io.circe.Json
+import models.*
 import models.database.UpdateSuccess
 import models.quests.*
 import models.responses.*
-import models.Completed
-import models.Failed
-import models.InProgress
-import models.NotStarted
-import models.QuestStatus
-import models.Review
-import models.Submitted
 import org.http4s.*
 import org.http4s.circe.*
 import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
@@ -40,7 +34,6 @@ trait QuestControllerAlgebra[F[_]] {
 class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
   questCRUDService: QuestCRUDServiceAlgebra[F],
   questStreamingService: QuestStreamingServiceAlgebra[F],
-
   sessionCache: SessionCacheAlgebra[F]
 ) extends Http4sDsl[F]
     with QuestControllerAlgebra[F] {
@@ -85,6 +78,16 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
     case req @ GET -> Root / "quest" / "health" =>
       Logger[F].debug(s"[BaseControllerImpl] GET - Health check for backend QuestController service") *>
         Ok(GetResponse("/dev-quest-service/health", "I am alive").asJson)
+
+    case req @ GET -> Root / "quest" / "count" / "not-estimated" / "and" / "open" =>
+      Logger[F].debug(s"[QuestController][/quest/count/not-estimated/and/open] GET - Trying to get count for quests with statuses not estimated or open") *>
+        questCRUDService.countNotEstimatedAndOpenQuests().flatMap {
+          case 0 =>
+            BadRequest(ErrorResponse("NO_QUEST", "No quest found").asJson)
+          case numberOfQuests if numberOfQuests > 0 =>
+            Logger[F].debug(s"[QuestController][/quest/userId/questId] GET - Total number of quests with statuses not estimated or open: ${numberOfQuests}") *>
+              Ok(NotEstimatedOrOpenQuestCount(numberOfQuests).asJson)
+        }
 
     case req @ GET -> Root / "quest" / "stream" / userIdFromRoute =>
       extractSessionToken(req) match {

@@ -29,6 +29,8 @@ trait QuestRepositoryAlgebra[F[_]] {
 
   def setFinalRank(questId: String, rank: Rank): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
+  def countNotEstimatedAndOpenQuests(): F[Int]
+
   def countActiveQuests(devId: String): F[Int]
 
   def streamByQuestStatus(clientId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial]
@@ -94,6 +96,12 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
         case _ =>
           UnexpectedResultError.invalidNel
       }
+
+  override def countNotEstimatedAndOpenQuests(): F[Int] =
+    sql"""
+          SELECT COUNT(*) FROM quests
+          WHERE status IN ('NotEstimated', 'Open')
+        """.query[Int].unique.transact(transactor)
 
   override def countActiveQuests(devId: String): F[Int] =
     sql"""

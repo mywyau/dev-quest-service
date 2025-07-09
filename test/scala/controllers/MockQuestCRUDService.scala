@@ -8,14 +8,16 @@ import cats.effect.IO
 import cats.effect.Ref
 import cats.implicits.*
 import fs2.Stream
-import models.QuestStatus
-import models.Rank
 import models.auth.UserSession
 import models.database.*
 import models.quests.*
+import models.QuestStatus
+import models.Rank
 import services.QuestCRUDServiceAlgebra
 
 class MockQuestCRUDService(userQuestData: Map[String, QuestPartial]) extends QuestCRUDServiceAlgebra[IO] {
+
+  override def countNotEstimatedAndOpenQuests(): IO[Int] = ???
 
   override def completeQuestAwardXp(questId: String, questStatus: QuestStatus, rank: Rank): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 

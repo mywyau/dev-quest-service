@@ -48,6 +48,8 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
   val questRepo = new QuestRepositoryAlgebra[IO] {
 
+    override def countNotEstimatedAndOpenQuests(): IO[Int] = ???
+
     override def setFinalRank(questId: String, rank: Rank): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
     override def streamByQuestStatus(clientId: String, status: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] =
