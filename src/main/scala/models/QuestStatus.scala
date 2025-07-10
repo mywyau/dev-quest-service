@@ -6,6 +6,7 @@ import io.circe.Encoder
 sealed trait QuestStatus
 
 case object NotEstimated extends QuestStatus
+case object Estimated extends QuestStatus
 case object Open extends QuestStatus
 case object NotStarted extends QuestStatus
 case object InProgress extends QuestStatus
@@ -21,6 +22,7 @@ object QuestStatus {
   def fromString(str: String): QuestStatus =
     str match {
       case "NotEstimated" => NotEstimated
+      case "Estimated" => Estimated
       case "Review" => Review
       case "NotStarted" => NotStarted
       case "InProgress" => InProgress
@@ -35,6 +37,7 @@ object QuestStatus {
   implicit val questStatusEncoder: Encoder[QuestStatus] =
     Encoder.encodeString.contramap {
       case NotEstimated => "NotEstimated"
+      case Estimated => "Estimated"
       case Review => "Review"
       case NotStarted => "NotStarted"
       case InProgress => "InProgress"
@@ -48,6 +51,7 @@ object QuestStatus {
   implicit val QuestStatusDecoder: Decoder[QuestStatus] =
     Decoder.decodeString.emap {
       case "NotEstimated" => Right(NotEstimated)
+      case "Estimated" => Right(Estimated)
       case "Review" => Right(Review)
       case "NotStarted" => Right(NotStarted)
       case "InProgress" => Right(InProgress)
