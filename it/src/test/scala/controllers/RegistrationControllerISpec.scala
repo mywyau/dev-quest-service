@@ -10,9 +10,6 @@ import io.circe.Json
 import java.time.LocalDateTime
 import models.*
 import models.database.*
-import models.database.CreateSuccess
-import models.database.DeleteSuccess
-import models.database.UpdateSuccess
 import models.responses.*
 import models.users.*
 import org.http4s.*
@@ -109,9 +106,11 @@ class RegistrationControllerISpec(global: GlobalRead) extends IOSuite with Contr
 
     val sessionToken = "test-session-token"
 
-    val updateUserTypeRequest: UpdateUserType =
-      UpdateUserType(
+    val updateUserTypeRequest: Registration =
+      Registration(
         username = "videl2",
+        firstName = "bob",
+        lastName = "smith",
         userType = Client
       )
 

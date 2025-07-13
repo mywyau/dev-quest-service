@@ -37,7 +37,7 @@ object UserRepoFragments {
           updated_at
         ) VALUES
           ('USER001', 'cloud', 'bob_smith@gmail.com', 'Bob' , 'Smith',  'Dev', '2025-01-01 00:00:00', '2025-01-02 12:00:00'),
-          ('USER002', 'tifa', 'dylan_smith@gmail.com', 'Dylan' , 'Smith',  'Dev', '2025-01-01 00:00:00', '2025-01-03 09:30:00'),
+          ('USER002', '', 'dylan_smith@gmail.com', NULL, NULL,  'Dev', '2025-01-01 00:00:00', '2025-01-03 09:30:00'),
           ('USER003', 'tidus', 'sam_smith@gmail.com', 'Sam' , 'Smith',  'Dev', '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
           ('USER004', 'wakka', 'joe_smith@gmail.com', 'Joe' , 'Smith',  'Dev', '2025-01-01 00:00:00', '2025-01-04 16:45:00'),
           ('USER005', 'yuna', 'kyle_smith@gmail.com', 'Kyle' , 'Smith',  'Dev', '2025-01-01 00:00:00', '2025-01-05 11:20:00');

@@ -6,26 +6,25 @@ import cats.effect.Resource
 import cats.implicits.*
 import doobie.*
 import doobie.implicits.*
-import models.Client
-import models.Completed
-import models.Dev
-import models.InProgress
+import java.time.LocalDateTime
 import models.database.*
 import models.database.DeleteSuccess
 import models.database.UpdateSuccess
 import models.users.CreateUserData
-import models.users.UpdateUserType
+import models.users.Registration
 import models.users.UserData
+import models.Client
+import models.Completed
+import models.Dev
+import models.InProgress
 import repositories.UserDataRepositoryImpl
-import repository.RepositoryISpecBase
 import repository.fragments.UserRepoFragments.*
+import repository.RepositoryISpecBase
 import shared.TransactorResource
 import testData.TestConstants.*
 import weaver.GlobalRead
 import weaver.IOSuite
 import weaver.ResourceTag
-
-import java.time.LocalDateTime
 
 class UserDataRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryISpecBase {
   type Res = UserDataRepositoryImpl[IO]
@@ -64,27 +63,39 @@ class UserDataRepositoryISpec(global: GlobalRead) extends IOSuite with Repositor
     } yield expect(users == Option(expectedResult))
   }
 
-  test(".updateUserType() - should find and update the user's type if user_id exists for a previously created user returning UpdateSuccess response") { userRepo =>
+  test(".registerUser() - should find and update the user's type if user_id exists for a previously created user returning UpdateSuccess response") { userRepo =>
 
     val orignalUser =
       UserData(
         userId = "USER002",
         email = "dylan_smith@gmail.com",
-        username = "tifa",
+        username = "",
+        firstName = None,
+        lastName = None,
+        userType = Some(Dev)
+      )
+
+    val expectedResult =
+      UserData(
+        userId = "USER002",
+        email = "dylan_smith@gmail.com",
+        username = "tifa2",
         firstName = Some("Dylan"),
         lastName = Some("Smith"),
         userType = Some(Dev)
       )
 
-    val expectedResult =
-      orignalUser.copy(
-        username = "tifa2",
-        userType = Some(Dev)
-      )
-
     for {
       originalData <- userRepo.findUser("USER002")
-      result <- userRepo.updateUserType("USER002", UpdateUserType("tifa2", Dev))
+      result <- userRepo.registerUser(
+        "USER002",
+        Registration(
+          username = "tifa2",
+          firstName = "Dylan",
+          lastName = "Smith",
+          userType = Dev
+        )
+      )
       updatedUser <- userRepo.findUser("USER002")
     } yield expect.all(
       originalData == Some(orignalUser),

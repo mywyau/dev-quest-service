@@ -101,13 +101,13 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   override def countNotEstimatedAndOpenQuests(): F[Int] =
     sql"""
           SELECT COUNT(*) FROM quests
-          WHERE status IN ('NotEstimated', 'Open')
+          WHERE status IN ('NotEstimated', 'Open', 'Estimated')
         """.query[Int].unique.transact(transactor)
 
   override def countActiveQuests(devId: String): F[Int] =
     sql"""
           SELECT COUNT(*) FROM quests
-          WHERE dev_id = $devId AND status IN ('NotStarted', 'InProgress', 'PendingReview')
+          WHERE dev_id = $devId AND status IN ('NotStarted', 'InProgress', 'Review')
         """.query[Int].unique.transact(transactor)
 
   override def streamByQuestStatus(clientId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial] = {
