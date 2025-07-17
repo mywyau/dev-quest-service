@@ -1,12 +1,13 @@
 package controllers
 
 import cats.effect.*
-import controllers.ControllerISpecBase
 import controllers.fragments.UserDataControllerFragments.*
+import controllers.ControllerISpecBase
 import doobie.implicits.*
 import doobie.util.transactor.Transactor
-import io.circe.Json
 import io.circe.syntax.*
+import io.circe.Json
+import java.time.LocalDateTime
 import models.*
 import models.database.*
 import models.database.CreateSuccess
@@ -15,18 +16,16 @@ import models.database.UpdateSuccess
 import models.responses.*
 import models.users.*
 import org.http4s.*
-import org.http4s.Method.*
 import org.http4s.circe.*
 import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
 import org.http4s.implicits.*
+import org.http4s.Method.*
 import org.typelevel.ci.CIStringSyntax
-import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import shared.HttpClientResource
 import shared.TransactorResource
 import weaver.*
-
-import java.time.LocalDateTime
 
 class UserDataControllerISpec(global: GlobalRead) extends IOSuite with ControllerISpecBase {
 
@@ -139,39 +138,6 @@ class UserDataControllerISpec(global: GlobalRead) extends IOSuite with Controlle
         .withEntity(updateUserDataRequest.asJson)
 
     val expectedBody = UpdatedResponse(UpdateSuccess.toString, "User USER008 updated successfully")
-
-    client.run(reuser).use { response =>
-      response.as[UpdatedResponse].map { body =>
-        expect.all(
-          response.status == Status.Ok,
-          body == expectedBody
-        )
-      }
-    }
-  }
-
-  test(
-    "PUT - /dev-quest-service/user/update/type/USER003 - " +
-      "given a valid user_id should update the user type for given user - returning Updated response"
-  ) { (transactorResource, log) =>
-
-    val transactor = transactorResource._1.xa
-    val client = transactorResource._2.client
-
-    val sessionToken = "test-session-token"
-
-    val updateUserTypeRequest: UpdateUserType =
-      UpdateUserType(
-        username = "trunks2",
-        userType = Client
-      )
-
-    val reuser =
-      Request[IO](PUT, uri"http://127.0.0.1:9999/dev-quest-service/user/update/type/USER003")
-        .addCookie("auth_session", sessionToken)
-        .withEntity(updateUserTypeRequest.asJson)
-
-    val expectedBody = UpdatedResponse(UpdateSuccess.toString, "User USER003 updated successfully with type: Client")
 
     client.run(reuser).use { response =>
       response.as[UpdatedResponse].map { body =>

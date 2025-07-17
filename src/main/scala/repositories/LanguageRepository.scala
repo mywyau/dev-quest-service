@@ -1,27 +1,30 @@
 package repositories
 
+import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
-import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
-import java.sql.Timestamp
-import java.time.LocalDateTime
 import models.database.*
 import models.languages.*
 import org.typelevel.log4cats.Logger
 import services.LevelServiceAlgebra
+
+import java.sql.Timestamp
+import java.time.LocalDateTime
 
 trait LanguageRepositoryAlgebra[F[_]] {
 
   def getAllLanguageData(): F[List[LanguageData]]
 
   def getAllLanguages(devId: String): F[List[LanguageData]]
+
+  def getLanguagesForUser(username: String): F[List[LanguageData]]
 
   def getLanguage(devId: String, language: Language): F[Option[LanguageData]]
 
@@ -68,6 +71,25 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
           xp
         FROM language
         WHERE dev_id = $devId
+      """
+        .query[LanguageData]
+        .to[List]
+        .transact(transactor)
+
+    findQuery
+  }
+
+  override def getLanguagesForUser(username: String): F[List[LanguageData]] = {
+    val findQuery: F[List[LanguageData]] =
+      sql"""
+        SELECT 
+          dev_id,
+          username,
+          language,
+          level,
+          xp
+        FROM language
+        WHERE username = $username
       """
         .query[LanguageData]
         .to[List]

@@ -6,14 +6,16 @@ import io.circe.parser.*
 import io.circe.syntax.EncoderOps
 import models.Dev
 import models.ModelsBaseSpec
-import models.users.UpdateUserType
+import models.users.Registration
 import weaver.SimpleIOSuite
 
 object UpdateUserTypeSpec extends SimpleIOSuite with ModelsBaseSpec {
 
   val testUpdateUserType =
-    UpdateUserType(
+    Registration(
       username = "kaiba",
+      firstName = "bob",
+      lastName = "smith",
       userType = Dev
     )
 
@@ -25,6 +27,8 @@ object UpdateUserTypeSpec extends SimpleIOSuite with ModelsBaseSpec {
       """
         |{
         |  "username": "kaiba",
+        |  "firstName": "bob",
+        |  "lastName": "smith",
         |  "userType": "Dev"
         |}
         |""".stripMargin

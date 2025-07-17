@@ -4,7 +4,6 @@ import cats.data.Validated.Valid
 import cats.data.ValidatedNel
 import cats.effect.IO
 import fs2.Stream
-import models.QuestStatus
 import models.database.*
 import models.database.CreateSuccess
 import models.database.DatabaseErrors
@@ -12,9 +11,12 @@ import models.database.DatabaseSuccess
 import models.quests.*
 import models.skills.Skill
 import models.skills.SkillData
+import models.QuestStatus
 import repositories.SkillDataRepositoryAlgebra
 
 case object MockSkillDataRepository extends SkillDataRepositoryAlgebra[IO] {
+
+  override def getSkillsForUser(username: String): IO[List[SkillData]] = ???
 
   def getAllSkillData(): IO[List[SkillData]] = ???
 

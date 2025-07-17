@@ -12,13 +12,9 @@ import fs2.Stream
 import io.circe.syntax.EncoderOps
 import io.circe.Json
 import models.database.UpdateSuccess
-import models.responses.CreatedResponse
-import models.responses.DeletedResponse
-import models.responses.ErrorResponse
-import models.responses.GetResponse
-import models.responses.UpdatedResponse
+import models.responses.*
 import models.users.CreateUserData
-import models.users.UpdateUserType
+import models.users.Registration
 import org.http4s.*
 import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
@@ -40,7 +36,7 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
 ) extends Http4sDsl[F]
     with RegistrationControllerAlgebra[F] {
 
-  implicit val updateUserTypeDecoder: EntityDecoder[F, UpdateUserType] = jsonOf[F, UpdateUserType]
+  implicit val updateUserTypeDecoder: EntityDecoder[F, Registration] = jsonOf[F, Registration]
   implicit val createRegistrationDecoder: EntityDecoder[F, CreateUserData] = jsonOf[F, CreateUserData]
 
   private def extractBearerToken(req: Request[F]): Option[String] =
@@ -110,8 +106,8 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
         case Some(cookieToken) =>
           withValidSession(userId, cookieToken) {
             Logger[F].debug(s"[RegistrationController] PUT - Updating user type for userId: $userId") *>
-              req.decode[UpdateUserType] { request =>
-                registrationService.updateUserType(userId, request).flatMap {
+              req.decode[Registration] { request =>
+                registrationService.registerUser(userId, request).flatMap {
                   case Valid(response) =>
                     Logger[F].debug(s"[RegistrationController] PUT - Successfully updated user type for ID: $userId") *>
                       Ok(UpdatedResponse(UpdateSuccess.toString, s"User $userId updated successfully with type: ${request.userType}").asJson)

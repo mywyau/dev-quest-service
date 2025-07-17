@@ -20,6 +20,8 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
 
+      override def getSkillsForUser(username: String): IO[List[SkillData]] = ???
+
       override def getAllSkillData(): IO[List[SkillData]] = ???
 
       override def getAllSkills(devId: String): IO[List[SkillData]] = IO.pure(Nil)
@@ -43,6 +45,8 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     }
 
     val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
+
+      override def getLanguagesForUser(username: String): IO[List[LanguageData]] = ???
 
       override def getAllLanguageData(): IO[List[LanguageData]] = ???
       override def getAllLanguages(devId: String): IO[List[LanguageData]] = IO.pure(Nil)
@@ -69,6 +73,8 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
 
+      override def getSkillsForUser(username: String): IO[List[SkillData]] = ???
+
       override def getAllSkillData(): IO[List[SkillData]] = ???
 
       override def getAllSkills(devId: String): IO[List[SkillData]] = IO.pure(Nil)
@@ -92,6 +98,8 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     }
 
     val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
+
+      override def getLanguagesForUser(username: String): IO[List[LanguageData]] = ???
 
       override def getAllLanguageData(): IO[List[LanguageData]] = ???
       override def getAllLanguages(devId: String): IO[List[LanguageData]] = IO.pure(Nil)
@@ -117,6 +125,8 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
 
+      override def getSkillsForUser(username: String): IO[List[SkillData]] = ???
+
       override def getAllSkillData(): IO[List[SkillData]] = ???
 
       override def getAllSkills(devId: String): IO[List[SkillData]] = IO.pure(Nil)
@@ -140,6 +150,8 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     }
 
     val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
+
+      override def getLanguagesForUser(username: String): IO[List[LanguageData]] = ???
 
       override def getAllLanguageData(): IO[List[LanguageData]] = ???
       override def getAllLanguages(devId: String): IO[List[LanguageData]] = IO.pure(Nil)
@@ -165,6 +177,8 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
 
+      override def getSkillsForUser(username: String): IO[List[SkillData]] = ???
+
       override def getAllSkillData(): IO[List[SkillData]] = ???
 
       override def getAllSkills(devId: String): IO[List[SkillData]] = IO.pure(Nil)
@@ -188,6 +202,8 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     }
 
     val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
+
+      override def getLanguagesForUser(username: String): IO[List[LanguageData]] = ???
 
       override def getAllLanguageData(): IO[List[LanguageData]] = ???
       override def getAllLanguages(devId: String): IO[List[LanguageData]] = IO.pure(Nil)
@@ -213,6 +229,8 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
 
+      override def getSkillsForUser(username: String): IO[List[SkillData]] = ???
+
       override def getAllSkillData(): IO[List[SkillData]] = ???
 
       override def getAllSkills(devId: String): IO[List[SkillData]] = IO.pure(Nil)
@@ -236,6 +254,8 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     }
 
     val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
+
+      override def getLanguagesForUser(username: String): IO[List[LanguageData]] = ???
 
       override def getAllLanguageData(): IO[List[LanguageData]] = ???
       override def getAllLanguages(devId: String): IO[List[LanguageData]] = IO.pure(Nil)
@@ -261,6 +281,8 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
 
+      override def getSkillsForUser(username: String): IO[List[SkillData]] = ???
+
       override def getAllSkillData(): IO[List[SkillData]] = ???
 
       override def getAllSkills(devId: String): IO[List[SkillData]] = IO.pure(Nil)
@@ -284,6 +306,8 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     }
 
     val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
+
+      override def getLanguagesForUser(username: String): IO[List[LanguageData]] = ???
 
       override def getAllLanguageData(): IO[List[LanguageData]] = ???
       override def getAllLanguages(devId: String): IO[List[LanguageData]] = IO.pure(Nil)

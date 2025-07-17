@@ -19,7 +19,7 @@ import models.responses.GetResponse
 import models.responses.UpdatedResponse
 import models.users.CreateUserData
 import models.users.UpdateUserData
-import models.users.UpdateUserType
+import models.users.Registration
 import org.http4s.*
 import org.http4s.Challenge
 import org.http4s.circe.*
@@ -41,11 +41,11 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
 ) extends Http4sDsl[F]
     with UserDataControllerAlgebra[F] {
 
-  implicit val updateUserTypeDecoder: EntityDecoder[F, UpdateUserType] = jsonOf[F, UpdateUserType]
+  implicit val updateUserTypeDecoder: EntityDecoder[F, Registration] = jsonOf[F, Registration]
   implicit val updateUserDataDecoder: EntityDecoder[F, UpdateUserData] = jsonOf[F, UpdateUserData]
   implicit val createUserDataDecoder: EntityDecoder[F, CreateUserData] = jsonOf[F, CreateUserData]
 
-  private def extractSessionToken(req: Request[F]): Option[String] =
+  private def extractCookieSessionToken(req: Request[F]): Option[String] =
     req.cookies
       .find(_.name == "auth_session")
       .map(_.content)
@@ -73,7 +73,7 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
     case req @ GET -> Root / "user" / "data" / userId =>
       (
         Logger[F].debug(s"[UserDataController][/user/data/$userId] GET - Attempting to retrieve user details") *>
-          Async[F].pure(extractSessionToken(req))
+          Async[F].pure(extractCookieSessionToken(req))
       ).flatMap {
         case Some(cookieToken) =>
           withValidSession(userId, cookieToken) {
@@ -92,7 +92,7 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
       }
 
     case req @ POST -> Root / "user" / "data" / "create" / userId =>
-      extractSessionToken(req) match {
+      extractCookieSessionToken(req) match {
         case Some(headerToken) =>
           withValidSession(userId, headerToken) {
             Logger[F].debug(s"[UserDataControllerImpl] POST - Creating user") *>
@@ -111,7 +111,7 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
       }
 
     case req @ PUT -> Root / "user" / "data" / "update" / userId =>
-      extractSessionToken(req) match {
+      extractCookieSessionToken(req) match {
         case Some(headerToken) =>
           withValidSession(userId, headerToken) {
             Logger[F].debug(s"[UserDataControllerImpl] PUT - Updating user with ID: $userId") *>
@@ -130,28 +130,28 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
           Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
-    case req @ PUT -> Root / "user" / "update" / "type" / userId =>
-      extractSessionToken(req) match {
-        case Some(headerToken) =>
-          withValidSession(userId, headerToken) {
-            Logger[F].debug(s"[UserDataControllerImpl] PUT - Updating user with ID: $userId") *>
-              req.decode[UpdateUserType] { request =>
-                userService.updateUserType(userId, request).flatMap {
-                  case Valid(response) =>
-                    Logger[F].debug(s"[UserDataControllerImpl] PUT - Successfully updated user for ID: $userId") *>
-                      Ok(UpdatedResponse(UpdateSuccess.toString, s"User $userId updated successfully with type: ${request.userType}").asJson)
-                  case Invalid(errors) =>
-                    Logger[F].debug(s"[UserDataControllerImpl] PUT - Validation failed for user update: ${errors.toList}") *>
-                      BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
-                }
-              }
-          }
-        case None =>
-          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
-      }
+    // case req @ PUT -> Root / "user" / "update" / "type" / userId =>
+    //   extractSessionToken(req) match {
+    //     case Some(headerToken) =>
+    //       withValidSession(userId, headerToken) {
+    //         Logger[F].debug(s"[UserDataControllerImpl] PUT - Updating user with ID: $userId") *>
+    //           req.decode[Registration] { request =>
+    //             userService.registerUser(userId, request).flatMap {
+    //               case Valid(response) =>
+    //                 Logger[F].debug(s"[UserDataControllerImpl] PUT - Successfully updated user for ID: $userId") *>
+    //                   Ok(UpdatedResponse(UpdateSuccess.toString, s"User $userId updated successfully with type: ${request.userType}").asJson)
+    //               case Invalid(errors) =>
+    //                 Logger[F].debug(s"[UserDataControllerImpl] PUT - Validation failed for user update: ${errors.toList}") *>
+    //                   BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
+    //             }
+    //           }
+    //       }
+    //     case None =>
+    //       Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
+    //   }
 
     case req @ DELETE -> Root / "user" / "data" / "delete" / userId =>
-      extractSessionToken(req) match {
+      extractCookieSessionToken(req) match {
         case Some(headerToken) =>
           withValidSession(userId, headerToken) {
             Logger[F].debug(s"[UserDataControllerImpl] DELETE - Attempting to delete user") *>
@@ -165,7 +165,7 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
               }
           }
         case None =>
-          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Bearer token")
+          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing cookie token")
       }
   }
 }

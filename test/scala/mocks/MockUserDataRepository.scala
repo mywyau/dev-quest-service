@@ -12,7 +12,7 @@ import models.quests.*
 import models.users.CreateUserData
 import models.users.RegistrationUserDataPartial
 import models.users.UpdateUserData
-import models.users.UpdateUserType
+import models.users.Registration
 import models.users.UserData
 import models.QuestStatus
 import repositories.UserDataRepositoryAlgebra
@@ -27,7 +27,7 @@ case object MockUserDataRepository extends UserDataRepositoryAlgebra[IO] {
 
   override def updateUserData(userId: String, updateUserData: UpdateUserData): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
-  override def updateUserType(userId: String, userType: UpdateUserType): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+  override def registerUser(userId: String, userType: Registration): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
   override def deleteUser(userId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
