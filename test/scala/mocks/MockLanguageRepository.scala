@@ -14,6 +14,10 @@ import repositories.LanguageRepositoryAlgebra
 
 case object MockLanguageRepository extends LanguageRepositoryAlgebra[IO] {
 
+  override def countForLanguage(language: Language): IO[Int] = ???
+
+  override def getPaginatedLanguageData(language: Language, offset: Int, limit: Int): IO[List[LanguageData]] = ???
+
   override def getLanguagesForUser(username: String): IO[List[LanguageData]] = ???
 
   override def getAllLanguageData(): IO[List[LanguageData]] = ???

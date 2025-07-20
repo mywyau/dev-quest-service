@@ -20,6 +20,10 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
 
+      override def countForSkill(skill: Skill): IO[Int] = ???
+
+      override def getPaginatedSkillData(skill: Skill, offset: Int, limit: Int): IO[List[SkillData]] = ???
+
       override def getSkillsForUser(username: String): IO[List[SkillData]] = ???
 
       override def getAllSkillData(): IO[List[SkillData]] = ???
@@ -45,6 +49,10 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     }
 
     val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
+
+      override def countForLanguage(language: Language): IO[Int] = ???
+
+      override def getPaginatedLanguageData(language: Language, offset: Int, limit: Int): IO[List[LanguageData]] = ???
 
       override def getLanguagesForUser(username: String): IO[List[LanguageData]] = ???
 
@@ -73,6 +81,10 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
 
+      override def countForSkill(skill: Skill): IO[Int] = ???
+
+      override def getPaginatedSkillData(skill: Skill, offset: Int, limit: Int): IO[List[SkillData]] = ???
+
       override def getSkillsForUser(username: String): IO[List[SkillData]] = ???
 
       override def getAllSkillData(): IO[List[SkillData]] = ???
@@ -98,6 +110,10 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     }
 
     val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
+
+      override def countForLanguage(language: Language): IO[Int] = ???
+
+      override def getPaginatedLanguageData(language: Language, offset: Int, limit: Int): IO[List[LanguageData]] = ???
 
       override def getLanguagesForUser(username: String): IO[List[LanguageData]] = ???
 
@@ -125,6 +141,10 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
 
+      override def countForSkill(skill: Skill): IO[Int] = ???
+
+      override def getPaginatedSkillData(skill: Skill, offset: Int, limit: Int): IO[List[SkillData]] = ???
+
       override def getSkillsForUser(username: String): IO[List[SkillData]] = ???
 
       override def getAllSkillData(): IO[List[SkillData]] = ???
@@ -150,6 +170,10 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     }
 
     val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
+
+      override def countForLanguage(language: Language): IO[Int] = ???
+
+      override def getPaginatedLanguageData(language: Language, offset: Int, limit: Int): IO[List[LanguageData]] = ???
 
       override def getLanguagesForUser(username: String): IO[List[LanguageData]] = ???
 
@@ -177,6 +201,10 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
 
+      override def countForSkill(skill: Skill): IO[Int] = ???
+
+      override def getPaginatedSkillData(skill: Skill, offset: Int, limit: Int): IO[List[SkillData]] = ???
+
       override def getSkillsForUser(username: String): IO[List[SkillData]] = ???
 
       override def getAllSkillData(): IO[List[SkillData]] = ???
@@ -202,6 +230,10 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     }
 
     val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
+
+      override def countForLanguage(language: Language): IO[Int] = ???
+
+      override def getPaginatedLanguageData(language: Language, offset: Int, limit: Int): IO[List[LanguageData]] = ???
 
       override def getLanguagesForUser(username: String): IO[List[LanguageData]] = ???
 
@@ -229,6 +261,10 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
 
+      override def countForSkill(skill: Skill): IO[Int] = ???
+
+      override def getPaginatedSkillData(skill: Skill, offset: Int, limit: Int): IO[List[SkillData]] = ???
+
       override def getSkillsForUser(username: String): IO[List[SkillData]] = ???
 
       override def getAllSkillData(): IO[List[SkillData]] = ???
@@ -254,6 +290,10 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     }
 
     val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
+
+      override def countForLanguage(language: Language): IO[Int] = ???
+
+      override def getPaginatedLanguageData(language: Language, offset: Int, limit: Int): IO[List[LanguageData]] = ???
 
       override def getLanguagesForUser(username: String): IO[List[LanguageData]] = ???
 
@@ -281,6 +321,10 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
 
+      override def countForSkill(skill: Skill): IO[Int] = ???
+
+      override def getPaginatedSkillData(skill: Skill, offset: Int, limit: Int): IO[List[SkillData]] = ???
+
       override def getSkillsForUser(username: String): IO[List[SkillData]] = ???
 
       override def getAllSkillData(): IO[List[SkillData]] = ???
@@ -306,6 +350,10 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     }
 
     val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
+
+      override def countForLanguage(language: Language): IO[Int] = ???
+
+      override def getPaginatedLanguageData(language: Language, offset: Int, limit: Int): IO[List[LanguageData]] = ???
 
       override def getLanguagesForUser(username: String): IO[List[LanguageData]] = ???
 

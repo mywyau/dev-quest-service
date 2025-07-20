@@ -1,24 +1,25 @@
 package repositories
 
-import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
+import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
+import java.sql.Timestamp
+import java.time.LocalDateTime
 import models.database.*
 import models.languages.*
 import org.typelevel.log4cats.Logger
 import services.LevelServiceAlgebra
 
-import java.sql.Timestamp
-import java.time.LocalDateTime
-
 trait LanguageRepositoryAlgebra[F[_]] {
+
+  def countForLanguage(language: Language): F[Int]
 
   def getAllLanguageData(): F[List[LanguageData]]
 
@@ -29,6 +30,8 @@ trait LanguageRepositoryAlgebra[F[_]] {
   def getLanguage(devId: String, language: Language): F[Option[LanguageData]]
 
   def getHiscoreLanguageData(language: Language): F[List[LanguageData]]
+
+  def getPaginatedLanguageData(language: Language, offset: Int, limit: Int): F[List[LanguageData]]
 
   def awardLanguageXP(devId: String, username: String, language: Language, xp: BigDecimal, level: Int): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
@@ -41,6 +44,12 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
 
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
+
+  override def countForLanguage(language: Language): F[Int] =
+    sql"""
+      SELECT COUNT(*) FROM language
+      WHERE language = $language
+    """.query[Int].unique.transact(transactor)
 
   override def getAllLanguageData(): F[List[LanguageData]] = {
     val findQuery: F[List[LanguageData]] =
@@ -135,6 +144,24 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
 
     findQuery
   }
+
+  override def getPaginatedLanguageData(language: Language, offset: Int, limit: Int): F[List[LanguageData]] =
+    sql"""
+      SELECT 
+        dev_id,
+        username,
+        language,
+        level,
+        xp
+      FROM language
+      WHERE language = $language
+      ORDER BY level DESC, xp DESC
+      OFFSET $offset
+      LIMIT $limit
+    """
+      .query[LanguageData]
+      .to[List]
+      .transact(transactor)
 
   override def awardLanguageXP(devId: String, username: String, language: Language, xp: BigDecimal, level: Int): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
