@@ -1,25 +1,26 @@
 package repositories
 
-import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
+import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
+import java.sql.Timestamp
+import java.time.LocalDateTime
 import models.database.*
 import models.skills.*
 import models.users.*
 import org.typelevel.log4cats.Logger
 import services.*
 
-import java.sql.Timestamp
-import java.time.LocalDateTime
-
 trait SkillDataRepositoryAlgebra[F[_]] {
+
+  def countForSkill(skill: Skill): F[Int]
 
   def getAllSkillData(): F[List[SkillData]]
 
@@ -30,6 +31,8 @@ trait SkillDataRepositoryAlgebra[F[_]] {
   def getSkill(devId: String, skill: Skill): F[Option[SkillData]]
 
   def getHiscoreSkillData(skill: Skill): F[List[SkillData]]
+
+  def getPaginatedSkillData(skill: Skill, offset: Int, limit: Int): F[List[SkillData]]
 
   def awardSkillXP(devId: String, username: String, skill: Skill, xp: BigDecimal, level: Int): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
@@ -43,6 +46,12 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
 
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
+
+  override def countForSkill(skill: Skill): F[Int] =
+    sql"""
+      SELECT COUNT(*) FROM skill
+      WHERE skill = $skill
+    """.query[Int].unique.transact(transactor)
 
   override def getAllSkillData(): F[List[SkillData]] = {
     val findQuery: F[List[SkillData]] =
@@ -137,6 +146,24 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
 
     findQuery
   }
+
+  override def getPaginatedSkillData(skill: Skill, offset: Int, limit: Int): F[List[SkillData]] =
+    sql"""
+      SELECT 
+        dev_id,
+        username,
+        skill,
+        level,
+        xp
+      FROM skill
+      WHERE skill = $skill
+      ORDER BY level DESC, xp DESC
+      OFFSET $offset
+      LIMIT $limit
+    """
+      .query[SkillData]
+      .to[List]
+      .transact(transactor)
 
   override def awardSkillXP(devId: String, username: String, skill: Skill, xp: BigDecimal, level: Int): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
 

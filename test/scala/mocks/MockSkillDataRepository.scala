@@ -16,6 +16,10 @@ import repositories.SkillDataRepositoryAlgebra
 
 case object MockSkillDataRepository extends SkillDataRepositoryAlgebra[IO] {
 
+  override def countForSkill(skill: Skill): IO[Int] = ???
+
+  override def getPaginatedSkillData(skill: Skill, offset: Int, limit: Int): IO[List[SkillData]] = ???
+
   override def getSkillsForUser(username: String): IO[List[SkillData]] = ???
 
   def getAllSkillData(): IO[List[SkillData]] = ???

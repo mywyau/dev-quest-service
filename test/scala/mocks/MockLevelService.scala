@@ -5,14 +5,18 @@ import cats.data.ValidatedNel
 import cats.effect.IO
 import fs2.Stream
 import models.database.*
+import models.hiscore.*
 import models.languages.*
 import models.quests.*
 import models.skills.*
 import models.users.*
-import models.hiscore.*
 import services.LevelServiceAlgebra
 
 case object MockLevelService extends LevelServiceAlgebra[IO] {
+
+  override def countTotalUsers(): IO[Int] = ???
+
+  override def getPaginatedTotalLevelHiscores(offset: Int, limit: Int): IO[List[TotalLevel]] = ???
 
   override def calculateLevel(xp: BigDecimal): Int = ???
 

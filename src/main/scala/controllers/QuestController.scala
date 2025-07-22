@@ -35,8 +35,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
   questCRUDService: QuestCRUDServiceAlgebra[F],
   questStreamingService: QuestStreamingServiceAlgebra[F],
   sessionCache: SessionCacheAlgebra[F]
-) extends Http4sDsl[F]
-    with QuestControllerAlgebra[F] {
+) extends Http4sDsl[F] with QuestControllerAlgebra[F] {
 
   implicit val createDecoder: EntityDecoder[F, CreateQuestPartial] = jsonOf[F, CreateQuestPartial]
   implicit val updateDecoder: EntityDecoder[F, UpdateQuestPartial] = jsonOf[F, UpdateQuestPartial]
@@ -82,9 +81,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
     case req @ GET -> Root / "quest" / "count" / "not-estimated" / "and" / "open" =>
       Logger[F].debug(s"[QuestController][/quest/count/not-estimated/and/open] GET - Trying to get count for quests with statuses not estimated or open") *>
         questCRUDService.countNotEstimatedAndOpenQuests().flatMap {
-          case 0 =>
-            BadRequest(ErrorResponse("NO_QUEST", "No quest found").asJson)
-          case numberOfQuests if numberOfQuests > 0 =>
+          case numberOfQuests =>
             Logger[F].debug(s"[QuestController][/quest/userId/questId] GET - Total number of quests with statuses not estimated or open: ${numberOfQuests}") *>
               Ok(NotEstimatedOrOpenQuestCount(numberOfQuests).asJson)
         }

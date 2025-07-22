@@ -2,9 +2,11 @@ package services
 
 import cats.data.ValidatedNel
 import cats.effect.kernel.Async
+import cats.effect.kernel.Concurrent
 import cats.effect.Sync
 import cats.implicits.*
 import cats.syntax.all.*
+import models.auth.UserSession.decoder
 import models.database.*
 import models.hiscore.TotalLevel
 import models.languages.Language
@@ -19,9 +21,13 @@ import repositories.SkillDataRepositoryAlgebra
 
 trait LevelServiceAlgebra[F[_]] {
 
+  def countTotalUsers(): F[Int]
+
   def calculateLevel(xp: BigDecimal): Int
 
   def getTotalLevelHiscores(): F[List[TotalLevel]]
+
+  def getPaginatedTotalLevelHiscores(offset: Int, limit: Int): F[List[TotalLevel]]
 
   def awardSkillXpWithLevel(
     devId: String,
@@ -38,10 +44,13 @@ trait LevelServiceAlgebra[F[_]] {
   ): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
-class LevelServiceImpl[F[_] : Async : Logger](
+class LevelServiceImpl[F[_] : Concurrent : Logger](
   skillDataRepository: SkillDataRepositoryAlgebra[F],
   languageDataRepository: LanguageRepositoryAlgebra[F]
 ) extends LevelServiceAlgebra[F] {
+
+  override def countTotalUsers(): F[Int] =
+    getTotalLevelHiscores().map(_.size)
 
   override def calculateLevel(xp: BigDecimal): Int = {
     val a = 1500.0
@@ -96,6 +105,9 @@ class LevelServiceImpl[F[_] : Async : Logger](
       }
 
     } yield combined.sortBy(-_.totalXP.toDouble) // sort descending by XP
+
+  override def getPaginatedTotalLevelHiscores(offset: Int, limit: Int): F[List[TotalLevel]] =
+    getTotalLevelHiscores().map(_.slice(offset, offset + limit))
 
   override def awardSkillXpWithLevel(
     devId: String,

@@ -1,11 +1,11 @@
 package configuration.constants
 
+import configuration.AppConfig
 import configuration.constants.*
 import configuration.constants.IntegrationConfigConstants.*
 import configuration.constants.LocalAppConfigConstants.*
 import configuration.constants.ProdAppConfigConstants.*
 import configuration.models.*
-import configuration.AppConfig
 
 object AppConfigConstants {
 
@@ -27,14 +27,14 @@ object AppConfigConstants {
     QuestConfig(
       maxActiveQuests = 5,
       bronzeXp = 100.00,
-      ironXp = 250.00,
-      steelXp = 400.00,
-      mithrilXp = 700.00,
-      adamantiteXp = 1000.00,
-      runicXp = 1500.00,
-      demonXp = 2100.00,
-      ruinousXp = 2700.00,
-      aetherXp = 3500.00
+      ironXp = 200.00,
+      steelXp = 300.00,
+      mithrilXp = 400.00,
+      adamantiteXp = 500.00,
+      runicXp = 600.00,
+      demonXp = 700.00,
+      ruinousXp = 800.00,
+      aetherXp = 1000.00
     )
 
   val estimateConfig =

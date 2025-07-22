@@ -23,14 +23,25 @@ import repositories.LanguageRepositoryAlgebra
 
 trait LanguageServiceAlgebra[F[_]] {
 
+  def countForLanguage(langauge: Language): F[Int]
+
   def getLanguage(devId: String, language: Language): F[Option[LanguageData]]
 
   def getHiscoreLanguage(language: Language): F[List[LanguageData]]
+
+  def getPaginatedLanguageData(language: Language, offset: Int, limit: Int): F[List[LanguageData]]
+
 }
 
 class LanguageServiceImpl[F[_] : Concurrent : Monad : Logger](
   languageRepo: LanguageRepositoryAlgebra[F]
 ) extends LanguageServiceAlgebra[F] {
+
+  override def countForLanguage(langauge: Language): F[Int] =
+    languageRepo.countForLanguage(langauge).flatMap { numberOfQuests =>
+      Logger[F].debug(s"[LevelService][countForLanguage] Total number of entries found for Language: $language") *>
+        Concurrent[F].pure(numberOfQuests)
+    }
 
   override def getLanguage(devId: String, language: Language): F[Option[LanguageData]] =
     languageRepo.getLanguage(devId, language).flatMap {
@@ -44,6 +55,9 @@ class LanguageServiceImpl[F[_] : Concurrent : Monad : Logger](
 
   override def getHiscoreLanguage(language: Language): F[List[LanguageData]] =
     languageRepo.getHiscoreLanguageData(language).map(_.sortBy(_.xp)(Ordering[BigDecimal].reverse))
+
+  override def getPaginatedLanguageData(language: Language, offset: Int, limit: Int): F[List[LanguageData]] =
+    languageRepo.getPaginatedLanguageData(language, offset, limit)
 
 }
 
