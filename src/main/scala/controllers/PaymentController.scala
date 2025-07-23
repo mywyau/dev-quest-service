@@ -85,7 +85,7 @@ class PaymentControllerImpl[F[_] : Async : Concurrent : Logger](
               developerStripeId <- json.hcursor.get[String]("developerStripeId").liftTo[F]
               amountCents <- json.hcursor.get[Long]("amountCents").liftTo[F]
 
-              // 🔐 You may want to extract clientId from session/auth middleware
+              // You may want to extract clientId from session/auth middleware
               // clientId = "mock-client-id-for-now"
 
               result <- paymentService.createQuestPayment(
@@ -119,7 +119,7 @@ class PaymentControllerImpl[F[_] : Async : Concurrent : Logger](
 
     // Stripe Checkout we use this payment option
     case req @ POST -> Root / "stripe" / "checkout" / clientId / questId =>
-        extractSessionToken(req) match {
+      extractSessionToken(req) match {
         case Some(cookieToken) =>
           withValidSession(clientId, cookieToken) {
             for {
