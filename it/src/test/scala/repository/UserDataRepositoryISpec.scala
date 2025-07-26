@@ -21,7 +21,7 @@ import repositories.UserDataRepositoryImpl
 import repository.fragments.UserRepoFragments.*
 import repository.RepositoryISpecBase
 import shared.TransactorResource
-import testData.TestConstants.*
+import testData.ITestConstants.*
 import weaver.GlobalRead
 import weaver.IOSuite
 import weaver.ResourceTag

@@ -20,9 +20,10 @@ import models.InProgress
 import repositories.QuestRepositoryImpl
 import repository.fragments.QuestRepoFragments.*
 import repository.RepositoryISpecBase
+import routes.Routes.estimateRoutes
 import scala.collection.immutable.ArraySeq
 import shared.TransactorResource
-import testData.TestConstants.*
+import testData.ITestConstants.*
 import weaver.GlobalRead
 import weaver.IOSuite
 import weaver.ResourceTag
@@ -69,6 +70,7 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
         tags = ArraySeq("Python", "Scala", "Typescript"),
+        estimationCloseAt = Some(fixed_instant_2025_01_05_0000),
         estimated = true
       )
 
@@ -90,6 +92,7 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
         tags = ArraySeq("Python", "Scala", "Typescript"),
+        estimationCloseAt = Some(fixed_instant_2025_01_05_0000),
         estimated = true
       )
 
@@ -128,6 +131,7 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
         tags = ArraySeq("Python", "Scala", "Typescript"),
+        estimationCloseAt = Some(fixed_instant_2025_01_05_0000),
         estimated = true
       )
 

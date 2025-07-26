@@ -4,6 +4,7 @@ import io.circe.generic.semiauto.deriveDecoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.Decoder
 import io.circe.Encoder
+import java.time.Instant
 import java.time.LocalDateTime
 import models.languages.Language
 import models.QuestStatus
@@ -19,6 +20,7 @@ case class QuestPartial(
   acceptanceCriteria: Option[String],
   status: Option[QuestStatus],
   tags: Seq[String],
+  estimationCloseAt: Option[Instant],
   estimated: Boolean
 )
 

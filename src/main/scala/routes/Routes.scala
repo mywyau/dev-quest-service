@@ -119,7 +119,7 @@ object Routes {
     questController.routes
   }
 
-  def estimateRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger](
+  def estimateRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger : Clock](
     redisHost: String,
     redisPort: Int,
     transactor: HikariTransactor[F],

@@ -10,6 +10,7 @@ import configuration.AppConfig
 import configuration.ConfigReader
 import configuration.ConfigReaderAlgebra
 import fs2.Stream
+import java.time.Instant
 import models.*
 import models.database.*
 import models.quests.*
@@ -22,6 +23,8 @@ import weaver.SimpleIOSuite
 
 object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
+  val fixedInstant = Instant.parse("2025-07-27T12:00:00Z")
+
   val sampleQuest =
     QuestPartial(
       questId = "quest123",
@@ -33,6 +36,7 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
       rank = Bronze,
       tags = List("Scala"),
       status = Some(Open),
+      estimationCloseAt = Some(fixedInstant),
       estimated = true
     )
 
@@ -47,6 +51,10 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     )
 
   val questRepo = new QuestRepositoryAlgebra[IO] {
+
+    override def setEstimationCloseAt(questId: String, closeAt: Instant): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+
+    override def findQuestsWithExpiredEstimation(now: Instant): IO[List[QuestPartial]] = ???
 
     override def countNotEstimatedAndOpenQuests(): IO[Int] = ???
 

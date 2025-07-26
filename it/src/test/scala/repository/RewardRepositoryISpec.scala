@@ -13,7 +13,7 @@ import repositories.RewardRepositoryImpl
 import repository.RepositoryISpecBase
 import repository.fragments.RewardRepoFragments.*
 import shared.TransactorResource
-import testData.TestConstants.*
+import testData.ITestConstants.*
 import weaver.GlobalRead
 import weaver.IOSuite
 import weaver.ResourceTag
