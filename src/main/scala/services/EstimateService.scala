@@ -1,36 +1,32 @@
 package services
 
-import cats.Monad
-import cats.NonEmptyParallel
 import cats.data.EitherT
 import cats.data.NonEmptyList
 import cats.data.Validated
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
 import cats.data.ValidatedNel
+import cats.effect.Clock
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
+import cats.Monad
+import cats.NonEmptyParallel
 import configuration.AppConfig
 import fs2.Stream
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
 import models.*
 import models.database.*
-import models.database.DatabaseErrors
-import models.database.DatabaseSuccess
 import models.estimate.*
+import models.quests.QuestPartial
 import models.skills.Estimating
 import models.users.*
 import org.typelevel.log4cats.Logger
 import repositories.EstimateRepositoryAlgebra
 import repositories.QuestRepositoryAlgebra
 import repositories.UserDataRepositoryAlgebra
-
-import java.util.UUID
-import java.time.Instant
-import java.time.Duration
-import cats.effect.Clock
-import models.quests.QuestPartial
-
 
 trait EstimateServiceAlgebra[F[_]] {
 
@@ -40,18 +36,23 @@ trait EstimateServiceAlgebra[F[_]] {
 
   def evaluateEstimates(questId: String): F[List[EvaluatedEstimate]]
 
-  def completeEstimationAwardEstimatingXp(questId: String,rank: Rank): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def completeEstimationAwardEstimatingXp(questId: String, rank: Rank): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def finalizeExpiredEstimations(): F[Unit]
+  def finalizeQuestEstimation(questId: String): F[Validated[NonEmptyList[DatabaseErrors], DatabaseSuccess]]
+
+  def finalizeExpiredEstimations(): F[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]]
 }
 
 class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger : Clock](
   appConfig: AppConfig,
   userDataRepo: UserDataRepositoryAlgebra[F],
   estimateRepo: EstimateRepositoryAlgebra[F],
-  questRepo: QuestRepositoryAlgebra[F], 
-  levelService: LevelServiceAlgebra[F] 
+  questRepo: QuestRepositoryAlgebra[F],
+  levelService: LevelServiceAlgebra[F]
 ) extends EstimateServiceAlgebra[F] {
+
+  def isEstimated(quest: QuestPartial, now: Instant): Boolean =
+    quest.estimationCloseAt.exists(_.isBefore(now))
 
   def xpAmount(rank: Rank): Double =
     rank match {
@@ -80,7 +81,6 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
       Some(total / estimates.size)
     else None
 
-
   private def computeAccuracyModifier(
     userEstimate: Estimate,
     communityAvg: BigDecimal,
@@ -90,9 +90,9 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
     val error = (userWeighted - communityAvg).abs
     val modifier = (1 - (error / tolerance)).min(0.5).max(-0.5) // clamp
     modifier
-  }  
+  }
 
-  override def evaluateEstimates(questId: String): F[List[EvaluatedEstimate]] = {
+  override def evaluateEstimates(questId: String): F[List[EvaluatedEstimate]] =
     for {
       estimates <- estimateRepo.getEstimates(questId)
       communityAvgOpt = computeCommunityAverage(estimates)
@@ -102,29 +102,28 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
         case None =>
           estimates.map(e => EvaluatedEstimate(e, BigDecimal(0))) // default modifier
     } yield result
-  }
 
   // this can go in the quest/reward service
   def calculateEstimationXP(baseXP: Double, modifier: BigDecimal): Int =
     (BigDecimal(baseXP) * (1 + modifier)).toInt.max(0)
 
-
-  private def rankFromWeightedScore(weightedScore: BigDecimal): Rank = weightedScore match {
-    case w if w < 0.1 => Bronze
-    case w if w < 0.2 => Iron
-    case w if w < 0.3 => Steel
-    case w if w < 0.4 => Mithril
-    case w if w < 0.5 => Adamantite
-    case w if w < 0.7 => Runic
-    case w if w < 0.8 => Demon
-    case w if w < 0.9 => Ruinous
-    case _ => Aether
-  }
+  private def rankFromWeightedScore(weightedScore: BigDecimal): Rank =
+    weightedScore match {
+      case w if w < 0.1 => Bronze
+      case w if w < 0.2 => Iron
+      case w if w < 0.3 => Steel
+      case w if w < 0.4 => Mithril
+      case w if w < 0.5 => Adamantite
+      case w if w < 0.7 => Runic
+      case w if w < 0.8 => Demon
+      case w if w < 0.9 => Ruinous
+      case _ => Aether
+    }
 
   private def calculateQuestDifficultyAndRank(score: Int, days: BigDecimal): Rank =
     rankFromWeightedScore(computeWeightedEstimate(score, days))
 
-  def setFinalRankFromEstimates(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+  def setFinalRankFromEstimates(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     for {
       estimates <- estimateRepo.getEstimates(questId)
       maybeAvg = computeCommunityAverage(estimates)
@@ -136,75 +135,117 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
           Logger[F].warn(s"No estimates found for quest $questId, cannot compute rank") *>
             Concurrent[F].pure(Invalid(NonEmptyList.one(NotEnoughEstimates)))
     } yield result
-  }  
 
+  // private def computeEstimationCloseAt(
+  //   now: Instant,
+  //   bucketSeconds: Long,
+  //   minWindowSeconds: Long
+  // ): Instant = {
+
+  //   val minimumWindow = Duration.ofHours(minWindowHours.toLong).getSeconds
+  //   val twelveHours = Duration.ofHours(12).getSeconds
+  //   val nowEpoch = now.getEpochSecond
+
+  //   // Start at next bucket (12h aligned)
+  //   var nextBucketEpoch = ((nowEpoch / twelveHours) + 1) * twelveHours
+
+  //   // Keep moving forward until window is >= 23h
+  //   while ((nextBucketEpoch - nowEpoch) < minimumWindow)
+  //     nextBucketEpoch += twelveHours
+
+  //   Instant.ofEpochSecond(nextBucketEpoch)
+  // }
+
+  private def computeEstimationCloseAt(
+    now: Instant,
+    bucketSeconds: Long,
+    minWindowSeconds: Long
+  ): Instant = {
+    val nowEpoch = now.getEpochSecond
+    val firstBucket = ((nowEpoch / bucketSeconds) + 1) * bucketSeconds
+
+    val nextBucketEpoch = Iterator
+      .iterate(firstBucket)(_ + bucketSeconds)
+      .dropWhile(_ - nowEpoch < minWindowSeconds)
+      .next()
+
+    Instant.ofEpochSecond(nextBucketEpoch)
+  }
+
+  private def startCountDown(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+
+    val minWindowSeconds = 
+      if (appConfig.featureSwitches.localTesting) appConfig.estimationConfig.localMinimumEstimationWindowSeconds
+      else appConfig.estimationConfig.prodMinimumEstimationWindowSeconds // or make this a config param too if needed
+
+
+    val bucketSeconds =
+        if (appConfig.featureSwitches.localTesting) appConfig.estimationConfig.localBucketSeconds
+        else appConfig.estimationConfig.prodBucketSeconds 
+
+    val now = Instant.now()
+    val countdownEndsAt = computeEstimationCloseAt(now, bucketSeconds, minWindowSeconds)
+
+    for {
+      result <- questRepo.setEstimationCloseAt(questId, countdownEndsAt)
+    } yield result
+  }
 
   override def getEstimates(questId: String): F[GetEstimateResponse] =
     for {
       estimates <- estimateRepo.getEstimates(questId)
-      quest: Option[QuestPartial] <- questRepo.findByQuestId(questId)
-      questEstitmated: Boolean = quest.map(_.estimated).getOrElse(false)
+      maybeQuest: Option[QuestPartial] <- questRepo.findByQuestId(questId)
+      questEstitmated: Boolean = maybeQuest.map(quest => isEstimated(quest, Instant.now())).getOrElse(false)
       calculatedEstimates = estimates.map(estimate =>
         CalculatedEstimate(
           username = estimate.username,
           score = estimate.score,
           days = estimate.days,
-          rank = calculateQuestDifficultyAndRank(estimate.score, estimate.days), 
+          rank = calculateQuestDifficultyAndRank(estimate.score, estimate.days),
           comment = estimate.comment
-        )      
+        )
       )
       _ <- Logger[F].debug(s"[EstimateService][getEstimate] Returning ${estimates.length} estimates for quest $questId")
-    } yield {
-      if(calculatedEstimates.size >= appConfig.estimationConfig.estimationThreshold && questEstitmated) // TODO add check for if estimated
+    } yield
+      if (calculatedEstimates.size >= appConfig.estimationConfig.estimationThreshold && questEstitmated)
         GetEstimateResponse(EstimateClosed, calculatedEstimates)
-      else 
+      else
         GetEstimateResponse(EstimateOpen, calculatedEstimates)
-    }
 
-  private def finalizeQuestEstimation(questId: String): F[Unit] = {
-      for {
-        estimates <- estimateRepo.getEstimates(questId)
-        _ <- Logger[F].debug(s"Estimates found: $estimates")
-        maybeAvg = computeCommunityAverage(estimates)
-        _ <- maybeAvg match
-          case Some(avg) =>
-            val finalRank = rankFromWeightedScore(avg)
-            for {
-              _ <- questRepo.setFinalRank(questId, finalRank)
-              _ <- completeEstimationAwardEstimatingXp(questId, finalRank).void
-            } yield ()
-          case None =>
-            Logger[F].warn(s"Unable to finalize estimation for quest $questId — no average found")
-      } yield ()
-    }  
-
-
-  private def startCountDown(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
-    val countdownDurationMillis: Int = appConfig.estimationConfig.countdownDurationMillis
-    val countdownEndsAt: Instant = Instant.now().plus(Duration.ofMillis(countdownDurationMillis.toLong))
+  override def finalizeQuestEstimation(questId: String): F[Validated[NonEmptyList[DatabaseErrors], DatabaseSuccess]] =
     for {
-      result <- questRepo.setEstimationCloseAt(questId, countdownEndsAt)
+      estimates <- estimateRepo.getEstimates(questId)
+      _ <- Logger[F].debug(s"Estimates found: $estimates")
+      maybeAvg = computeCommunityAverage(estimates)
+      result: Validated[NonEmptyList[DatabaseErrors], DatabaseSuccess] <- maybeAvg match
+        case Some(avg) =>
+          val finalRank = rankFromWeightedScore(avg)
+          for {
+            _ <- questRepo.setFinalRank(questId, finalRank)
+            awardXpResult: Validated[NonEmptyList[DatabaseErrors], DatabaseSuccess] <- completeEstimationAwardEstimatingXp(questId, finalRank)
+          } yield awardXpResult
+        case None =>
+          Logger[F].warn(s"Unable to finalize estimation for quest $questId — no average found") *>
+            Concurrent[F].pure(Invalid(NonEmptyList.one(NotFoundError)))
     } yield result
-  }
 
   override def createEstimate(devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
 
     val newEstimateId = s"estimate-${UUID.randomUUID().toString}"
 
     def tooManyEstimatesError(count: Int): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
-    Logger[F].warn(s"[EstimateService][create] User $devId exceeded estimate limit ($count today)") *>
-      Concurrent[F].pure(Invalid(NonEmptyList.one(TooManyEstimatesToday)))
+      Logger[F].warn(s"[EstimateService][create] User $devId exceeded estimate limit ($count today)") *>
+        Concurrent[F].pure(Invalid(NonEmptyList.one(TooManyEstimatesToday)))
 
-    def finalizeIfThresholdReached: F[Unit] =
+    def finalizeIfThresholdReached(): F[Unit] =
       for {
         allEstimates <- estimateRepo.getEstimates(estimate.questId)
-        _ <- if (allEstimates.length == appConfig.estimationConfig.estimationThreshold)
-              //  finalizeQuestEstimation(estimate.questId)
-              startCountDown(estimate.questId).void
-             else
-               Concurrent[F].unit
+        _ <-
+          if (allEstimates.length == appConfig.estimationConfig.estimationThreshold)
+            startCountDown(estimate.questId).void
+          else
+            Concurrent[F].unit
       } yield ()
-
 
     // create needs to check if the quest has finished estimating or if estimating is locked
     def createAndFinalize(user: UserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
@@ -215,7 +256,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
           case Valid(value) =>
             for {
               _ <- Logger[F].debug(s"[EstimateService][create] Estimate created successfully")
-              _ <- finalizeIfThresholdReached
+              _ <- finalizeIfThresholdReached()
             } yield Valid(value)
           case Invalid(errors) =>
             Logger[F].error(s"[EstimateService][create] Failed to create estimate: ${errors.toList.mkString(", ")}") *>
@@ -228,7 +269,6 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
       result <- userOpt match {
         case Some(user) =>
           for {
-            // esitmationCount <- estimateRepo.countEstimates(devId)
             result <- createAndFinalize(user)
           } yield result
 
@@ -246,53 +286,51 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
 
     val baseXp: Double = xpAmount(rank)
 
-    val result = for {
-      quest <- EitherT.fromOptionF(questRepo.findByQuestId(questId), NotFoundError: DatabaseErrors)
-
-      _ <- EitherT.liftF(questRepo.updateStatus(questId, Estimated))
-
-      estimates <- EitherT.liftF(estimateRepo.getEstimates(questId))
-
-      evaluated <- EitherT.liftF(evaluateEstimates(questId))
-
-      _ <- EitherT.liftF {
-        evaluated.traverse_ {
-          case EvaluatedEstimate(estimate, modifier) =>
+    val result =
+      for {
+        dbResponse: Validated[NonEmptyList[DatabaseErrors], DatabaseSuccess] <- questRepo.updateStatus(questId, Estimated)
+        evaluated: List[EvaluatedEstimate] <- evaluateEstimates(questId)
+        _ <-
+          evaluated.traverse_ { case EvaluatedEstimate(estimate, modifier) =>
             val xp = calculateEstimationXP(baseXp, modifier)
             levelService.awardSkillXpWithLevel(estimate.devId, estimate.username, Estimating, xp)
-        }
-      }
+          }
+      } yield dbResponse
 
-    } yield UpdateSuccess
+    result
+  }
 
-    result.value.map(_.toValidatedNel)
-  } 
-
-  // This is a risk and can be a n+1 problem
-  override def finalizeExpiredEstimations(): F[Unit] = {
+  override def finalizeExpiredEstimations(): F[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]] =
     for {
       now <- Clock[F].realTimeInstant
-      expiredQuests <- questRepo.findQuestsWithExpiredEstimation(now)
-    
-      _ <- expiredQuests.traverse_ { quest =>
-        for {
-          _ <- Logger[F].info(s"Finalizing quest ${quest.questId} after countdown expiration")
-          _ <- finalizeQuestEstimation(quest.questId)
-        } yield ()
+      expiredQuestsValidation <- questRepo.findQuestsWithExpiredEstimation(now)
+      _ <- expiredQuestsValidation match {
+        case Valid(ReadSuccess(quests: List[QuestPartial])) =>
+          quests.traverse_ { quest =>
+            for {
+              _ <- Logger[F].info(s"Finalizing quest ${quest.questId} after countdown expiration")
+              _ <- finalizeQuestEstimation(quest.questId)
+            } yield ()
+          }
+        case Invalid(errors) =>
+          Logger[F]
+            .info(
+              s"[EstimateServiceImpl][finalizeExpiredEstimations] SQL error, stream task might blow up. Errors: $errors"
+            )
+            .void
       }
-    } yield ()
-  }
-}
+    } yield expiredQuestsValidation
 
+}
 
 object EstimateService {
 
-  def apply[F[_] : Concurrent : NonEmptyParallel : Logger: Clock](
+  def apply[F[_] : Concurrent : NonEmptyParallel : Logger : Clock](
     appConfig: AppConfig,
     userDataRepo: UserDataRepositoryAlgebra[F],
     estimateRepo: EstimateRepositoryAlgebra[F],
     questRepo: QuestRepositoryAlgebra[F],
-    levelService: LevelServiceAlgebra[F] 
+    levelService: LevelServiceAlgebra[F]
   ): EstimateServiceAlgebra[F] =
     new EstimateServiceImpl[F](appConfig, userDataRepo, estimateRepo, questRepo, levelService)
 }

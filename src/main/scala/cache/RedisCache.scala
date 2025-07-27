@@ -51,7 +51,7 @@ class RedisCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int, a
       result <- maybeJ match {
         case None =>
           Logger[F]
-            .info(s"[RedisCache] No session found for userId=$userId")
+            .debug(s"[RedisCache] No session found for userId=$userId")
             .as(None)
         case Some(jsonStr) =>
           Logger[F].debug(s"[RedisCache] Session JSON for userId=$userId: $jsonStr") *>
@@ -59,7 +59,7 @@ class RedisCacheImpl[F[_] : Async : Logger](redisHost: String, redisPort: Int, a
               decode[UserSession](jsonStr) match {
                 case Right(session) =>
                   Logger[F]
-                    .info(s"[RedisCache] Parsed session for userId=$userId")
+                    .debug(s"[RedisCache] Parsed session for userId=$userId")
                     .as(Some(session))
 
                 case Left(err) =>

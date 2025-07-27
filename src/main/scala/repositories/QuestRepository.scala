@@ -30,11 +30,31 @@ import org.typelevel.log4cats.Logger
 
 trait QuestRepositoryAlgebra[F[_]] {
 
-  def setFinalRank(questId: String, rank: Rank): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def deleteAllByUserId(clientId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def create(request: CreateQuest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def countNotEstimatedAndOpenQuests(): F[Int]
 
   def countActiveQuests(devId: String): F[Int]
+
+  def findAllByUserId(clientId: String): F[List[QuestPartial]]
+
+  def findByQuestId(questId: String): F[Option[QuestPartial]]
+
+  def findQuestsWithExpiredEstimation(now: Instant): F[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]]
+
+  def markPaid(questId: String): F[Unit]
+
+  def setEstimationCloseAt(questId: String, closeAt: Instant): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def setFinalRank(questId: String, rank: Rank): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def streamAll(limit: Int, offset: Int): Stream[F, QuestPartial]
 
   def streamByQuestStatus(clientId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial]
 
@@ -42,32 +62,11 @@ trait QuestRepositoryAlgebra[F[_]] {
 
   def streamByUserId(clientId: String, limit: Int, offset: Int): Stream[F, QuestPartial]
 
-  def streamAll(limit: Int, offset: Int): Stream[F, QuestPartial]
-
-  def findAllByUserId(clientId: String): F[List[QuestPartial]]
-
-  def findByQuestId(questId: String): F[Option[QuestPartial]]
-
-  def create(request: CreateQuest): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
-
   def update(questId: String, request: UpdateQuestPartial): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
-
-  def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
-
-  def deleteAllByUserId(clientId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
-
   def validateOwnership(questId: String, clientId: String): F[Unit]
-
-  def markPaid(questId: String): F[Unit]
-
-  def setEstimationCloseAt(questId: String, closeAt: Instant): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
-
-  def findQuestsWithExpiredEstimation(now: Instant): F[List[QuestPartial]]
-
 }
 
 class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends QuestRepositoryAlgebra[F] {
@@ -429,19 +428,38 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
           UnexpectedResultError.invalidNel
       }
 
-  override def findQuestsWithExpiredEstimation(now: Instant): F[List[QuestPartial]] = {
-      println(now)
-      sql"""
-        SELECT 
-           quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
-        FROM quests
-        WHERE estimation_close_at IS NOT NULL
-          AND estimation_close_at <= $now
-          AND status = 'NotEstimated'
-      """.query[QuestPartial]
-        .to[List]
-        .transact(transactor)
-    }
+  override def findQuestsWithExpiredEstimation(now: Instant): F[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]] = {
+
+    val gracePeriod = java.time.Duration.ofMinutes(30)
+    val upperBound = now.plus(gracePeriod)
+
+    sql"""
+      SELECT 
+         quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
+      FROM quests
+      WHERE estimation_close_at IS NOT NULL
+        AND estimation_close_at <= $upperBound
+        AND status = 'NotEstimated'
+    """
+      .query[QuestPartial]
+      .to[List]
+      .transact(transactor)
+      .attempt
+      .map {
+        case Right(retrievedRows) =>
+          ReadSuccess[List[QuestPartial]](retrievedRows).validNel
+        case Left(ex: java.sql.SQLException) if ex.getSQLState == "23503" =>
+          ForeignKeyViolationError.invalidNel
+        case Left(ex: java.sql.SQLException) if ex.getSQLState == "08001" =>
+          DatabaseConnectionError.invalidNel
+        case Left(ex: java.sql.SQLException) if ex.getSQLState == "22001" =>
+          DataTooLongError.invalidNel
+        case Left(ex: java.sql.SQLException) =>
+          SqlExecutionError(ex.getMessage).invalidNel
+        case Left(ex) =>
+          UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
+      }
+  }
 
 }
 

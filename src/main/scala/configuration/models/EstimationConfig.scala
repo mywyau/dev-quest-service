@@ -1,11 +1,15 @@
 package configuration.models
 
 import cats.kernel.Eq
-import pureconfig.generic.derivation.*
 import pureconfig.ConfigReader
+import pureconfig.generic.derivation.*
 
 case class EstimationConfig(
-  countdownDurationMillis: Int,
+  localBucketSeconds: Int,
+  localMinimumEstimationWindowSeconds: Int,
+  prodBucketSeconds: Int,
+  prodMinimumEstimationWindowSeconds: Int,
+  intervalMinutes: Int,
   estimationThreshold: Int,
   maxDailyReviews: Int
 ) derives ConfigReader

@@ -5,15 +5,12 @@ import cache.RedisCacheAlgebra
 import cache.SessionCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
-import cats.effect.kernel.Async
 import cats.effect.Concurrent
+import cats.effect.kernel.Async
 import cats.implicits.*
 import fs2.Stream
-import io.circe.syntax.EncoderOps
 import io.circe.Json
-import models.database.UpdateSuccess
-import models.estimate.*
-import models.responses.*
+import io.circe.syntax.EncoderOps
 import models.Client
 import models.Completed
 import models.Dev
@@ -24,16 +21,20 @@ import models.InProgress
 import models.NotStarted
 import models.Open
 import models.UserType
+import models.database.UpdateSuccess
+import models.estimate.*
+import models.responses.*
 import org.http4s.*
+import org.http4s.Challenge
 import org.http4s.circe.*
-import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
 import org.http4s.dsl.Http4sDsl
+import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
-import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
-import scala.concurrent.duration.*
 import services.EstimateServiceAlgebra
+
+import scala.concurrent.duration.*
 
 trait EstimateControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -95,6 +96,24 @@ class EstimateControllerImpl[F[_] : Async : Concurrent : Logger](
           Logger[F].debug(s"[EstimateController][/quest/userId/questId] GET - Unauthorised") *>
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
+
+    // case req @ PUT -> Root / "estimates" / "finalise" / devId / questId =>
+    //   extractSessionToken(req) match {
+    //     case Some(cookieToken) =>
+    //       withValidSession(devId, cookieToken, Set(Dev, Client)) {
+    //         Logger[F].debug(s"[EstimateController][/estimates/finalise/devId/questId] PUT - Authenticated for userId: $devId") *>
+    //           estimateService.finalizeQuestEstimation(questId).flatMap {
+    //             case Valid(response) =>
+    //               Logger[F].debug(s"[EstimateController][/estimates/finalise/devId/questId] PUT - Successfully finalised quest") *>
+    //                 Ok(UpdatedResponse(UpdateSuccess.toString, s"successfully finalised quest").asJson)
+    //             case _ =>
+    //               BadRequest(ErrorResponse("UNABLE_TO_FINALISE_ESTIMATES", "UNABLE_TO_FINALISE_ESTIMATES_MESSAGE").asJson)
+    //           }
+    //       }
+    //     case None =>
+    //       Logger[F].debug(s"[EstimateController][/estimates/finalise/devId/questId] PUT - Unauthorised") *>
+    //         Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
+    //   }
 
     case req @ POST -> Root / "estimate" / "create" / devId =>
       extractSessionToken(req) match {

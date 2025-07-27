@@ -24,14 +24,18 @@ object ProfileDataSpec extends SimpleIOSuite with ModelsBaseSpec {
         ProfileSkillData(
           skill = Questing,
           skillLevel = 50,
-          skillXp = 100000.00
+          skillXp = 100000.00,
+          nextLevel = 51,
+          nextLevelXp = 120000.00
         )
       ),
       languageData = List(
         ProfileLanguageData(
           language = Scala,
           languageLevel = 50,
-          languageXp = 100000.00
+          languageXp = 100000.00,
+          nextLevel = 51,
+          nextLevelXp = 120000.00
         )
       )
     )
@@ -48,14 +52,18 @@ object ProfileDataSpec extends SimpleIOSuite with ModelsBaseSpec {
       |    {
       |      "skill": "Questing",
       |      "skillLevel": 50,
-      |      "skillXp": 100000.0
+      |      "skillXp": 100000.0,
+      |      "nextLevel": 51,
+      |      "nextLevelXp": 120000.0
       |    }
       |  ],
       |  "languageData": [
       |    {
       |      "language": "Scala",
       |      "languageLevel": 50,
-      |      "languageXp": 100000.0
+      |      "languageXp": 100000.0,
+      |      "nextLevel": 51,
+      |      "nextLevelXp": 120000.0
       |    }
       |  ]
       |}

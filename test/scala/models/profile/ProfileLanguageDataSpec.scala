@@ -20,7 +20,9 @@ object ProfileLanguageDataSpec extends SimpleIOSuite with ModelsBaseSpec {
     ProfileLanguageData(
       language = Rust,
       languageLevel = 50,
-      languageXp = 100000.00
+      languageXp = 100000.00,
+      nextLevel = 51,
+      nextLevelXp = 120000.00
     )
 
   test("ProfileLanguageData model encodes correctly to JSON") {
@@ -31,7 +33,9 @@ object ProfileLanguageDataSpec extends SimpleIOSuite with ModelsBaseSpec {
       |{
       |  "language": "Rust",
       |  "languageLevel": 50,
-      |  "languageXp": 100000.0
+      |  "languageXp": 100000.0,
+      |  "nextLevel": 51,
+      |  "nextLevelXp": 120000.0
       |}
       |""".stripMargin
 

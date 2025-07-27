@@ -9,7 +9,9 @@ import models.skills.Skill
 case class ProfileSkillData(
   skill: Skill,
   skillLevel: Int,
-  skillXp: BigDecimal
+  skillXp: BigDecimal,
+  nextLevel: Int,
+  nextLevelXp: BigDecimal
 )
 
 object ProfileSkillData {

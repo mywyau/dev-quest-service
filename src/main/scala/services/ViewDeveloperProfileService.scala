@@ -1,7 +1,5 @@
 package services
 
-import cats.Monad
-import cats.NonEmptyParallel
 import cats.data.Validated
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
@@ -9,18 +7,19 @@ import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
-import models.UserType
+import cats.Monad
+import cats.NonEmptyParallel
 import models.database.*
 import models.languages.LanguageData
-import models.profile.DevProfileData
-import models.profile.ProfileLanguageData
-import models.profile.ProfileSkillData
 import models.skills.SkillData
 import models.users.*
+import models.view_dev_profile.DevProfileData
+import models.view_dev_profile.ViewProfileLanguageData
+import models.view_dev_profile.ViewProfileSkillData
+import models.UserType
 import org.typelevel.log4cats.Logger
 import repositories.LanguageRepositoryAlgebra
 import repositories.SkillDataRepositoryAlgebra
-import repositories.UserDataRepositoryAlgebra
 import repositories.ViewDevUserDataRepositoryAlgebra
 
 trait ViewDeveloperProfileServiceAlgebra[F[_]] {
@@ -42,12 +41,13 @@ class ViewDeveloperProfileServiceImpl[F[_] : Concurrent : Logger](
 
   override def getDevProfileData(username: String): F[Option[DevProfileData]] = {
     val result = for {
+
       userDetails: DevUserData <- OptionT(viewDevUserDataRepo.findDevUser(username))
       devSkills: List[SkillData] <- OptionT.liftF(skillRepo.getSkillsForUser(username))
       devLanguages: List[LanguageData] <- OptionT.liftF(languageRepo.getLanguagesForUser(username))
 
-      profileSkills = devSkills.map(s => ProfileSkillData(s.skill, s.level, s.xp))
-      profileLangs = devLanguages.map(l => ProfileLanguageData(l.language, l.level, l.xp))
+      profileSkills = devSkills.map(s => ViewProfileSkillData(s.skill, s.level))
+      profileLangs = devLanguages.map(l => ViewProfileLanguageData(l.language, l.level))
 
     } yield DevProfileData(
       devId = userDetails.userId,

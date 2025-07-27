@@ -84,7 +84,7 @@ class StripeRegistrationService[F[_] : Async : Logger](
   }
 
   def createAccountLink(devUserId: String)(using logger: Logger[F]): F[AccountLinkResponse] = for {
-    _ <- logger.info(s"[createAccountLink] Starting account link creation for devUserId: $devUserId")
+    _ <- logger.debug(s"[createAccountLink] Starting account link creation for devUserId: $devUserId")
 
     // Step 1: Get existing or create new Stripe account
     maybeStripeAccountDetails <- stripeAccountRepository.findStripeAccount(devUserId)
@@ -92,14 +92,14 @@ class StripeRegistrationService[F[_] : Async : Logger](
 
     stripeAccountId <- maybeStripeAccountDetails match {
       case Some(stripeAccountDetails) =>
-        logger.info(s"Found existing Stripe account for devUserId $devUserId: ${stripeAccountDetails.stripeAccountId}") *>
+        logger.debug(s"Found existing Stripe account for devUserId $devUserId: ${stripeAccountDetails.stripeAccountId}") *>
           Async[F].pure(stripeAccountDetails.stripeAccountId)
 
       case None =>
         for {
-          _ <- logger.info(s"No Stripe account found for devUserId $devUserId. Creating a new one.")
+          _ <- logger.debug(s"No Stripe account found for devUserId $devUserId. Creating a new one.")
           accountResp <- createStripeAccount()
-          _ <- logger.info(s"Created new Stripe account: ${accountResp.accountId}")
+          _ <- logger.debug(s"Created new Stripe account: ${accountResp.accountId}")
           _ <- stripeAccountRepository.saveStripeAccountId(devUserId, accountResp.accountId)
           _ <- logger.debug(s"Saved Stripe account ID ${accountResp.accountId} for devUserId $devUserId")
         } yield accountResp.accountId
@@ -118,13 +118,13 @@ class StripeRegistrationService[F[_] : Async : Logger](
       uri = baseUri / "account_links"
     ).withHeaders(authHeader).withEntity(reqBody)
 
-    _ <- logger.info(s"Sending request to Stripe to create onboarding link for account $stripeAccountId")
+    _ <- logger.debug(s"Sending request to Stripe to create onboarding link for account $stripeAccountId")
     response <- client.expect[Json](req)
     url <- response.hcursor
       .get[String]("url")
       .map(AccountLinkResponse(_))
       .liftTo[F]
-    _ <- logger.info(s"Received account onboarding link for devUserId $devUserId")
+    _ <- logger.debug(s"Received account onboarding link for devUserId $devUserId")
 
   } yield url
 
