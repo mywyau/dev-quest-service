@@ -1,9 +1,10 @@
 package testData
 
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalTime
 
-object TestConstants {
+object ITestConstants {
 
   val userId1 = "userId1"
   val userId2 = "userId2"
@@ -63,5 +64,7 @@ object TestConstants {
   val contactEmail1 = "mike@gmail.com"
   val contactNumber1 = "07402205071"
   val websiteUrl1 = "mikey.com"
+
+  val fixed_instant_2025_01_05_0000 = Instant.parse("2025-01-05T00:00:00Z")
 
 }

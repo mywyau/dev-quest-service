@@ -25,12 +25,11 @@ import org.typelevel.log4cats.Logger
 
 trait EstimateRepositoryAlgebra[F[_]] {
 
-  def countEstimatesToday(devId: String): F[Int]
+  def countEstimates(devId: String): F[Int]
 
   def getEstimates(questId: String): F[List[Estimate]]
 
   def createEstimation(estimateId: String, devId: String, username: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
-
 }
 
 class EstimateRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends EstimateRepositoryAlgebra[F] {
@@ -41,12 +40,11 @@ class EstimateRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Tra
 
   implicit val metaStringList: Meta[Seq[String]] = Meta[Array[String]].imap(_.toSeq)(_.toArray)
 
-  override def countEstimatesToday(devId: String): F[Int] =
+  override def countEstimates(devId: String): F[Int] =
     sql"""
         SELECT COUNT(*) 
         FROM quest_estimations 
-        WHERE dev_id = $devId 
-          AND created_at::date = CURRENT_DATE
+        WHERE dev_id = $devId
       """.query[Int].unique.transact(transactor)
 
   override def getEstimates(questId: String): F[List[Estimate]] = {

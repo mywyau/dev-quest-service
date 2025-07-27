@@ -4,16 +4,24 @@ import cats.data.Validated.Valid
 import cats.data.ValidatedNel
 import cats.effect.IO
 import fs2.Stream
-import models.database.*
-import models.quests.*
 import models.QuestStatus
 import models.Rank
+import models.database.*
+import models.quests.*
 import repositories.QuestRepositoryAlgebra
+
+import java.time.Instant
 
 case class MockQuestRepository(
   countActiveQuests: Int = 5,
   existingQuest: Map[String, QuestPartial] = Map.empty
 ) extends QuestRepositoryAlgebra[IO] {
+
+  def showAllUsers: IO[Map[String, QuestPartial]] = IO.pure(existingQuest)
+
+  override def setEstimationCloseAt(questId: String, closeAt: Instant): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+
+  override def findQuestsWithExpiredEstimation(now: Instant): IO[List[QuestPartial]] = ???
 
   override def countNotEstimatedAndOpenQuests(): IO[Int] = ???
 
@@ -34,8 +42,6 @@ case class MockQuestRepository(
   override def streamByQuestStatus(userId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
 
   override def streamAll(limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
-
-  def showAllUsers: IO[Map[String, QuestPartial]] = IO.pure(existingQuest)
 
   override def streamByUserId(userId: String, limit: Int, offset: Int): Stream[IO, QuestPartial] = ???
 

@@ -1,0 +1,76 @@
+Areas to Watch / Improve for Scalability
+1. PostgreSQL (RDS) Bottlenecks
+Single instance is okay for small-to-medium load, but:
+
+If read traffic grows (e.g., listing quests, viewing profiles), consider read replicas.
+
+If writes (e.g., quest submissions, XP updates) become a bottleneck, explore horizontal sharding or task queues.
+
+Use connection pooling with Doobie, and avoid N+1 queries.
+
+Regularly monitor CPU, IOPS, connections via CloudWatch.
+
+2. Backend: Scala Typelevel Stack
+fs2 / http4s / Doobie are efficient but resource-bound. Key ideas:
+
+Use bounded thread pools and timeouts to avoid stalling.
+
+Consider streaming endpoints (NDJSON / Server-Sent Events) for high-read workflows like real-time quest updates.
+
+Use Redis to cache:
+
+Quest lists
+
+Frequent reads (e.g., user XP, recent completions)
+
+Session/user state if not already
+
+3. Nuxt 3 Frontend
+Nuxt with CloudFront scales well, but:
+
+Use ISR or SSG where possible to avoid SSR bottlenecks on Fargate.
+
+Minimize client-side API calls to reduce backend load — cache on edge/CDN where appropriate.
+
+If SSR is used, consider render caching or dedicated SSR workers.
+
+🧱 Suggestions to Future-Proof Scalability
+Database:
+Add read replica in RDS to offload read traffic.
+
+Consider partitioning quest or XP-related tables if they grow fast.
+
+Use Redis-based rate limiting or cache XP computations.
+
+Backend:
+Use Redis for distributed locks or deduplication if you expect high write contention.
+
+Add metrics/log aggregation via CloudWatch or an ELK stack to spot slow endpoints.
+
+Frontend:
+If SSR demand grows, move Nuxt rendering to Lambda@Edge or separate compute from the backend service.
+
+Use edge caching aggressively on CloudFront for anonymous or rarely-changing pages.
+
+🚦 Conclusion: You're in a strong place already
+You’re already:
+
+Containerized and decoupled (Fargate)
+
+Caching with Redis
+
+On scalable AWS infra
+
+Using a fast, async-safe Scala backend
+
+Your next steps should focus on:
+
+Scaling the database (read replicas, schema planning)
+
+Monitoring (CloudWatch metrics, tracing slow queries)
+
+Caching key reads (user dashboards, quest lists)
+
+Evaluating SSR load if your frontend sees big traffic spikes
+
+Want me to help you sketch a diagram or list concrete steps (e.g., Terraform/CDK changes or backend caching)?

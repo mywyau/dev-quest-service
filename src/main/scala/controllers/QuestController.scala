@@ -248,7 +248,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
             Logger[F].debug(s"[QuestController][/quest/userId/questId] GET - Authenticated for userId $userIdFromRoute") *>
               questCRUDService.getByQuestId(questId).flatMap {
                 case Some(quest) =>
-                  Logger[F].debug(s"[QuestController][/quest/userId/questId] GET - Found quest ${quest.questId.toString()}") *>
+                  Logger[F].debug(s"[QuestController][/quest/userId/questId] GET - Found quest ${quest.asJson}") *>
                     Ok(quest.asJson)
                 case None =>
                   BadRequest(ErrorResponse("NO_QUEST", "No quest found").asJson)

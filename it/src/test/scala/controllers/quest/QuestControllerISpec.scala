@@ -19,9 +19,6 @@ import models.InProgress
 import models.NotStarted
 import models.auth.UserSession
 import models.database.*
-import models.database.CreateSuccess
-import models.database.DeleteSuccess
-import models.database.UpdateSuccess
 import models.languages.*
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
@@ -44,6 +41,7 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import shared.HttpClientResource
 import shared.TransactorResource
+import testData.ITestConstants.*
 import weaver.*
 
 import java.time.LocalDateTime
@@ -93,6 +91,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
         tags = ArraySeq("Python", "Scala", "Typescript"),
+        estimationCloseAt = Some(fixed_instant_2025_01_05_0000),
         estimated = true
       )
 
@@ -132,6 +131,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
         tags = ArraySeq("Python", "Scala", "Typescript"),
+        estimationCloseAt = Some(fixed_instant_2025_01_05_0000),
         estimated = true
       )
 
@@ -170,6 +170,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
         tags = ArraySeq("Python", "Scala", "Typescript"),
+        estimationCloseAt = Some(fixed_instant_2025_01_05_0000),
         estimated = true
       )
 
@@ -221,6 +222,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(NotStarted),
         tags = ArraySeq("Python", "Scala", "Typescript"),
+        estimationCloseAt = Some(fixed_instant_2025_01_05_0000),
         estimated = true
       )
 

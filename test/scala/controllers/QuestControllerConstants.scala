@@ -1,10 +1,11 @@
 package controllers
 
+import java.time.Instant
+import java.time.LocalDateTime
+import models.quests.QuestPartial
 import models.Completed
 import models.Iron
-import models.quests.QuestPartial
-
-import java.time.LocalDateTime
+import testData.TestConstants.*
 
 object QuestControllerConstants {
 
@@ -19,6 +20,7 @@ object QuestControllerConstants {
       acceptanceCriteria = Some("some acceptance criteria"),
       status = Some(Completed),
       tags = Seq("Python", "Scala", "TypeScript"),
+      estimationCloseAt = Some(fixed_instant_2025_07_1200),
       estimated = true
     )
 }

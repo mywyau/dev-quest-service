@@ -1,5 +1,7 @@
 package services
 
+import cats.Monad
+import cats.NonEmptyParallel
 import cats.data.EitherT
 import cats.data.Validated
 import cats.data.Validated.Invalid
@@ -8,23 +10,22 @@ import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
-import cats.Monad
-import cats.NonEmptyParallel
 import configuration.AppConfig
 import fs2.Stream
-import java.util.UUID
 import models.*
+import models.NotStarted
+import models.QuestStatus
 import models.database.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
 import models.languages.Language
 import models.quests.*
 import models.skills.Questing
-import models.NotStarted
-import models.QuestStatus
 import org.typelevel.log4cats.Logger
 import repositories.*
 import services.LevelServiceAlgebra
+
+import java.util.UUID
 
 trait QuestCRUDServiceAlgebra[F[_]] {
 
@@ -152,15 +153,9 @@ class QuestCRUDServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger
 
       _ <- EitherT.liftF(questRepo.updateStatus(questId, Completed))
 
-      devId <- EitherT.fromOption[F](
-        quest.devId,
-        ForeignKeyViolationError: DatabaseErrors
-      )
+      devId <- EitherT.fromOption[F](quest.devId,ForeignKeyViolationError: DatabaseErrors)
 
-      user <- EitherT.fromOptionF(
-        userRepo.findUser(devId),
-        NotFoundError: DatabaseErrors
-      )
+      user <- EitherT.fromOptionF(userRepo.findUser(devId),NotFoundError: DatabaseErrors)
 
       username = user.username
       tags = quest.tags
