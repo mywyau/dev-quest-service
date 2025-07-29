@@ -9,7 +9,7 @@ case class EstimationConfig(
   localMinimumEstimationWindowSeconds: Int,
   prodBucketSeconds: Int,
   prodMinimumEstimationWindowSeconds: Int,
-  intervalMinutes: Int,
+  intervalSeconds: Int,
   estimationThreshold: Int,
   maxDailyReviews: Int
 ) derives ConfigReader
