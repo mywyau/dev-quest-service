@@ -65,7 +65,7 @@ object Main extends IOApp {
 
   def estimationSchedule(appConfig: AppConfig, task: IO[Unit]): Stream[IO, Unit] =
     if (appConfig.featureSwitches.localTesting) {
-      Stream.fixedRateStartImmediately[IO](appConfig.estimationConfig.intervalMinutes.minutes).evalMap(_ => task)
+      Stream.fixedRateStartImmediately[IO](appConfig.estimationConfig.intervalSeconds.seconds).evalMap(_ => task)
     } else {
       scheduleAt6HourBuckets(task)
     }

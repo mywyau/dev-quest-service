@@ -68,20 +68,20 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
       case _ => 0
     }
 
-  private def computeWeightedEstimate(score: Int, days: BigDecimal): BigDecimal = {
+  private[services] def computeWeightedEstimate(score: Int, days: BigDecimal): BigDecimal = {
     val normalizedScore = BigDecimal(score) / 100
     val normalizedDays = (BigDecimal(math.log(days.toDouble + 1)) / math.log(31)).min(1.0)
     val alpha = BigDecimal(0.6)
     alpha * normalizedScore + (1 - alpha) * normalizedDays
   }
 
-  private def computeCommunityAverage(estimates: List[Estimate]): Option[BigDecimal] =
+  private[services] def computeCommunityAverage(estimates: List[Estimate]): Option[BigDecimal] =
     if estimates.nonEmpty then
       val total = estimates.map(e => computeWeightedEstimate(e.score, e.days)).sum
       Some(total / estimates.size)
     else None
 
-  private def computeAccuracyModifier(
+  private[services] def computeAccuracyModifier(
     userEstimate: Estimate,
     communityAvg: BigDecimal,
     tolerance: BigDecimal = 0.2
@@ -107,7 +107,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
   def calculateEstimationXP(baseXP: Double, modifier: BigDecimal): Int =
     (BigDecimal(baseXP) * (1 + modifier)).toInt.max(0)
 
-  private def rankFromWeightedScore(weightedScore: BigDecimal): Rank =
+  private[services] def rankFromWeightedScore(weightedScore: BigDecimal): Rank =
     weightedScore match {
       case w if w < 0.1 => Bronze
       case w if w < 0.2 => Iron
@@ -120,7 +120,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
       case _ => Aether
     }
 
-  private def calculateQuestDifficultyAndRank(score: Int, days: BigDecimal): Rank =
+  private[services] def calculateQuestDifficultyAndRank(score: Int, days: BigDecimal): Rank =
     rankFromWeightedScore(computeWeightedEstimate(score, days))
 
   def setFinalRankFromEstimates(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
@@ -136,27 +136,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
             Concurrent[F].pure(Invalid(NonEmptyList.one(NotEnoughEstimates)))
     } yield result
 
-  // private def computeEstimationCloseAt(
-  //   now: Instant,
-  //   bucketSeconds: Long,
-  //   minWindowSeconds: Long
-  // ): Instant = {
-
-  //   val minimumWindow = Duration.ofHours(minWindowHours.toLong).getSeconds
-  //   val twelveHours = Duration.ofHours(12).getSeconds
-  //   val nowEpoch = now.getEpochSecond
-
-  //   // Start at next bucket (12h aligned)
-  //   var nextBucketEpoch = ((nowEpoch / twelveHours) + 1) * twelveHours
-
-  //   // Keep moving forward until window is >= 23h
-  //   while ((nextBucketEpoch - nowEpoch) < minimumWindow)
-  //     nextBucketEpoch += twelveHours
-
-  //   Instant.ofEpochSecond(nextBucketEpoch)
-  // }
-
-  private def computeEstimationCloseAt(
+  private[services] def computeEstimationCloseAt(
     now: Instant,
     bucketSeconds: Long,
     minWindowSeconds: Long
@@ -172,16 +152,15 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
     Instant.ofEpochSecond(nextBucketEpoch)
   }
 
-  private def startCountDown(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+  private[services] def startCountDown(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
 
-    val minWindowSeconds = 
+    val minWindowSeconds =
       if (appConfig.featureSwitches.localTesting) appConfig.estimationConfig.localMinimumEstimationWindowSeconds
       else appConfig.estimationConfig.prodMinimumEstimationWindowSeconds // or make this a config param too if needed
 
-
     val bucketSeconds =
-        if (appConfig.featureSwitches.localTesting) appConfig.estimationConfig.localBucketSeconds
-        else appConfig.estimationConfig.prodBucketSeconds 
+      if (appConfig.featureSwitches.localTesting) appConfig.estimationConfig.localBucketSeconds
+      else appConfig.estimationConfig.prodBucketSeconds
 
     val now = Instant.now()
     val countdownEndsAt = computeEstimationCloseAt(now, bucketSeconds, minWindowSeconds)
