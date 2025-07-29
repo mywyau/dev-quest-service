@@ -61,7 +61,7 @@ class RegistrationServiceImpl[F[_] : Concurrent : Monad : Logger](
           createUserWithLogging
         case Some(value) =>
           Logger[F].debug(s"[RegistrationService] User already created with ID: ${value.userId}") *>
-            Concurrent[F].pure(Valid(ReadSuccess))
+            Concurrent[F].pure(Valid(ReadSuccess(value)))
       }
   }
 

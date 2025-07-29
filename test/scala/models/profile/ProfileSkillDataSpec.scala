@@ -19,7 +19,9 @@ object ProfileSkillDataSpec extends SimpleIOSuite with ModelsBaseSpec {
     ProfileSkillData(
       skill = Questing,
       skillLevel = 50,
-      skillXp = 100000.00
+      skillXp = 100000.00,
+      nextLevel = 51,
+      nextLevelXp = 120000.00
     )
 
   test("ProfileSkillData model encodes correctly to JSON") {
@@ -30,7 +32,9 @@ object ProfileSkillDataSpec extends SimpleIOSuite with ModelsBaseSpec {
       |{
       |  "skill": "Questing",
       |  "skillLevel": 50,
-      |  "skillXp": 100000.0
+      |  "skillXp": 100000.0,
+      |  "nextLevel": 51,
+      |  "nextLevelXp": 120000.0
       |}
       |""".stripMargin
 

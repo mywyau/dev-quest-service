@@ -1,5 +1,6 @@
 import cats.effect.*
 import cats.implicits.*
+import cats.syntax.all.*
 import cats.NonEmptyParallel
 import com.comcast.ip4s.*
 import configuration.AppConfig
@@ -7,11 +8,14 @@ import configuration.ConfigReader
 import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts
 import fs2.Stream
-import tasks.EstimateServiceBuilder
 import infrastructure.Database
 import infrastructure.Redis
 import infrastructure.Server
+import java.time.*
+import java.time.temporal.ChronoUnit
 import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneId
 import middleware.Middleware.throttleMiddleware
 import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
@@ -30,41 +34,41 @@ import repositories.*
 import routes.Routes.*
 import scala.concurrent.duration.*
 import scala.concurrent.duration.DurationInt
-import services.* // or wherever your EstimateServiceImpl is
+import services.*
+import tasks.EstimateServiceBuilder
 
 object Main extends IOApp {
 
   implicit def logger[F[_] : Sync]: Logger[F] = Slf4jLogger.getLogger[F]
 
-  // def redisAddress[F[_] : Async](appConfig: AppConfig): Resource[F, (String, Int)] = {
-  //   val redisHost = sys.env.getOrElse("REDIS_HOST", appConfig.localAppConfig.redisConfig.host)
-  //   val redisPort = sys.env.get("REDIS_PORT").flatMap(_.toIntOption).getOrElse(appConfig.localAppConfig.redisConfig.port)
+  def scheduleAt6HourBuckets[F[_] : Temporal](task: F[Unit]): Stream[F, Unit] = {
 
-  //   Resource.eval(Async[F].pure((redisHost, redisPort)))
-  // }
+    def computeNextDelay: F[FiniteDuration] = Temporal[F].realTimeInstant.map { now =>
+      val zone = ZoneId.systemDefault()
+      val localNow: LocalDateTime = now.atZone(zone).toLocalDateTime
 
-  // def transactorResource[F[_] : Async](appConfig: AppConfig): Resource[F, HikariTransactor[F]] = {
+      // Define the 6-hour bucket times
+      val buckets = List(0, 6, 12, 18).map(h => localNow.toLocalDate.atTime(LocalTime.of(h, 0)))
+      val nextBucket = buckets.find(localNow.isBefore).getOrElse(localNow.toLocalDate.plusDays(1).atTime(0, 0))
 
-  //   val dbHost = sys.env.getOrElse("DB_HOST", appConfig.localAppConfig.postgresqlConfig.host)
-  //   val dbUser = sys.env.getOrElse("DB_USER", appConfig.localAppConfig.postgresqlConfig.username)
-  //   val dbPassword = sys.env.getOrElse("DB_PASSWORD", appConfig.localAppConfig.postgresqlConfig.password)
-  //   val dbName = sys.env.getOrElse("DB_NAME", appConfig.localAppConfig.postgresqlConfig.dbName)
-  //   val dbPort = sys.env.getOrElse("DB_PORT", appConfig.localAppConfig.postgresqlConfig.port.toString)
+      val delay = java.time.Duration.between(localNow, nextBucket)
+      FiniteDuration(delay.toMillis, MILLISECONDS)
+    }
 
-  //   val dbUrl = s"jdbc:postgresql://$dbHost:$dbPort/$dbName"
-  //   val driverClassName = "org.postgresql.Driver"
+    // Start at next 6h bucket, then every 6 hours
+    Stream.eval(computeNextDelay).flatMap { initialDelay =>
+      Stream.sleep_[F](initialDelay) ++
+        Stream.eval(task) ++
+        Stream.fixedRateStartImmediately[F](6.hours).evalMap(_ => task)
+    }
+  }
 
-  //   for {
-  //     ce <- ExecutionContexts.fixedThreadPool(32)
-  //     xa <- HikariTransactor.newHikariTransactor[F](
-  //       driverClassName,
-  //       dbUrl,
-  //       dbUser,
-  //       dbPassword,
-  //       ce
-  //     )
-  //   } yield xa
-  // }
+  def estimationSchedule(appConfig: AppConfig, task: IO[Unit]): Stream[IO, Unit] =
+    if (appConfig.featureSwitches.localTesting) {
+      Stream.fixedRateStartImmediately[IO](appConfig.estimationConfig.intervalMinutes.minutes).evalMap(_ => task)
+    } else {
+      scheduleAt6HourBuckets(task)
+    }
 
   def createHttpRoutes[F[_] : Concurrent : Temporal : NonEmptyParallel : Async](
     redisHost: String,
@@ -142,26 +146,8 @@ object Main extends IOApp {
     } yield throttledRoutes
   }
 
-  // def createServer[F[_] : Async](
-  //   host: Host,
-  //   port: Port,
-  //   httpRoutes: HttpRoutes[F]
-  // ): Resource[F, Unit] = {
-  //   EmberServerBuilder
-  //     .default[F]
-  //     .withHost(host)
-  //     .withPort(port)
-  //     .withHttpApp(httpRoutes.orNotFound)
-  //     .build
-  //     .void
-  // }
-
   override def run(args: List[String]): IO[ExitCode] = {
     val configReader = ConfigReader[IO]
-
-    // def estimationFinalizer[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Clock]: Stream[IO, Unit] =
-    //   Stream.awakeEvery[IO](30.seconds) >>
-    //     Stream.eval(estimateService(transactor, appConfig).finalizeExpiredEstimations())
 
     val serverAndFinalizer =
       for {
@@ -171,7 +157,7 @@ object Main extends IOApp {
           IO.raiseError(new RuntimeException(s"Failed to load app configuration: ${e.getMessage}", e))
         })
 
-        _ <- Resource.eval(Logger[IO].info(s"Loaded configuration: $appConfig"))
+        _ <- Resource.eval(Logger[IO].debug(s"Loaded configuration: $appConfig"))
 
         host <- Resource.eval(
           IO.fromOption(Host.fromString(appConfig.localAppConfig.serverConfig.host))(
@@ -185,18 +171,12 @@ object Main extends IOApp {
           )
         )
 
-        // transactor <- transactorResource[IO](appConfig)
-        // redisAddress <- redisAddress[IO](appConfig)
-
         transactor <- Database.transactor[IO](appConfig)
         redisAddress <- Redis.address[IO](appConfig)
 
-        
-        // estimateService = Tasks.estimateService(transactor, appConfig)
+        // Background stream: estimation finalizer every 5mins
         estimateService = EstimateServiceBuilder.build(transactor, appConfig)
-        // Background stream: estimation finalizer every 1s
-        estimationFinalizer = Stream.awakeEvery[IO](1.seconds) >>
-          Stream.eval(estimateService.finalizeExpiredEstimations())
+        estimationFinalizer =   Stream.eval(estimateService.finalizeExpiredEstimations().void) ++ estimationSchedule(appConfig, estimateService.finalizeExpiredEstimations().void)
 
         httpRoutes <- createHttpRoutes[IO](
           redisAddress._1,
@@ -206,17 +186,12 @@ object Main extends IOApp {
           appConfig
         )
         _ <- Server.create[IO](host, port, httpRoutes)
-      } yield estimationFinalizer
-
-    // Actual execution (run forever)
-    // serverResource
-    //   .use { _ =>
-    //     estimationFinalizer.compile.drain
-    //   }
-    //   .as(ExitCode.Success)
+      }
+      // yield ()
+      yield estimationFinalizer
 
     serverAndFinalizer.use(_.compile.drain).as(ExitCode.Success)
-
+    // serverAndFinalizer.use(_ => IO.never).as(ExitCode.Success)
   }
 
 }

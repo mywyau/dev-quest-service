@@ -53,7 +53,7 @@ object CacheSharedResource extends GlobalResource with BaseAppConfig {
     fa: RedisCommands[IO, String, String] => IO[A]
   ): IO[A] = {
     val redisUri = s"redis://$redisHost:$redisPort"
-    Logger[IO].info(s"[SessionCache] Uri: $redisUri") *>
+    Logger[IO].debug(s"[SessionCache] Uri: $redisUri") *>
       Redis[IO].utf8(redisUri).use(fa)
   }
 

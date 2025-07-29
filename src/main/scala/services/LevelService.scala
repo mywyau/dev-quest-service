@@ -1,9 +1,9 @@
 package services
 
 import cats.data.ValidatedNel
+import cats.effect.Sync
 import cats.effect.kernel.Async
 import cats.effect.kernel.Concurrent
-import cats.effect.Sync
 import cats.implicits.*
 import cats.syntax.all.*
 import models.auth.UserSession.decoder
@@ -49,16 +49,43 @@ class LevelServiceImpl[F[_] : Concurrent : Logger](
   languageDataRepository: LanguageRepositoryAlgebra[F]
 ) extends LevelServiceAlgebra[F] {
 
+  private def generateLevelThresholds(): Vector[Int] = {
+    val maxLevel = 99
+    val totalXP = 15000000
+    val linearLevels = 90 // one less than before to leave room for 9 curved levels
+    val linearBudget = totalXP * 0.7
+    val curveLevels = maxLevel - linearLevels
+    val curveBudget = totalXP * 0.3
+
+    val linearGains: Vector[Double] = {
+      val raw = (1 to linearLevels).map(_ * 1000.0).toVector
+      val scale = linearBudget / raw.sum
+      raw.map(_ * scale)
+    }
+
+    val linearThresholds = linearGains.scanLeft(0.0)(_ + _).drop(1)
+
+    val curveGains: Vector[Double] = {
+      val base = 100000.0
+      val exponent = 1.3
+      val raw = (1 to curveLevels).map(i => Math.pow(base + i * 10000, exponent)).toVector
+      val scale = curveBudget / raw.sum
+      raw.map(_ * scale)
+    }
+
+    val curveThresholds: Vector[Double] = curveGains.scanLeft(linearThresholds.last)(_ + _).drop(1)
+
+    // Combine both parts and start at level 1 (0 XP for level 1)
+    ((0.0 +: linearThresholds) ++ curveThresholds).take(99).map(_.toInt)
+  }
+
+  val levelThresholds: Vector[Int] = generateLevelThresholds()
+
   override def countTotalUsers(): F[Int] =
     getTotalLevelHiscores().map(_.size)
 
-  override def calculateLevel(xp: BigDecimal): Int = {
-    val a = 1500.0
-    val b = 1.100
-
-    val level = Math.log((xp.toDouble + a) / a) / Math.log(b) + 1
-    Math.min(level.toInt, 120)
-  }
+  override def calculateLevel(xp: BigDecimal): Int =
+    levelThresholds.lastIndexWhere(threshold => xp >= threshold) + 1
 
   override def getTotalLevelHiscores(): F[List[TotalLevel]] =
     for {
@@ -120,7 +147,11 @@ class LevelServiceImpl[F[_] : Concurrent : Logger](
       currentXp = maybeSkill.map(_.xp).getOrElse(BigDecimal(0))
       newTotalXp = currentXp + xpToAdd
       newLevel = calculateLevel(newTotalXp)
-      result <- skillDataRepository.awardSkillXP(devId, username, skill, newTotalXp, newLevel)
+      // 👇 Place the new level calculation logic here
+      nextLevel = newLevel + 1
+      nextLevelXp = levelThresholds.lift(newLevel).getOrElse(levelThresholds.last)
+
+      result <- skillDataRepository.awardSkillXP(devId, username, skill, newTotalXp, newLevel, nextLevel, nextLevelXp)
     } yield result
 
   override def awardLanguageXpWithLevel(
@@ -134,7 +165,9 @@ class LevelServiceImpl[F[_] : Concurrent : Logger](
       currentXp = maybeSkill.map(_.xp).getOrElse(BigDecimal(0))
       newTotalXp = currentXp + xpToAdd
       newLevel = calculateLevel(newTotalXp)
-      result <- languageDataRepository.awardLanguageXP(devId, username, language, newTotalXp, newLevel)
+      nextLevel = newLevel + 1
+      nextLevelXp = levelThresholds.lift(newLevel).getOrElse(levelThresholds.last)
+      result <- languageDataRepository.awardLanguageXP(devId, username, language, newTotalXp, newLevel, nextLevel, nextLevelXp)
     } yield result
 }
 

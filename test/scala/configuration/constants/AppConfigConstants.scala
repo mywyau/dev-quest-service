@@ -39,7 +39,11 @@ object AppConfigConstants {
 
   val estimateConfig =
     EstimationConfig(
-      countdownDurationMillis = 60000,
+      localBucketSeconds = 21600,
+      localMinimumEstimationWindowSeconds = 72000,
+      prodBucketSeconds = 21600,
+      prodMinimumEstimationWindowSeconds = 72000,
+      intervalMinutes = 5,
       estimationThreshold = 3,
       maxDailyReviews = 5
     )

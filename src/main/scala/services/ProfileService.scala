@@ -14,9 +14,11 @@ import java.util.UUID
 import models.database.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
+import models.languages.DevLanguageData
 import models.profile.ProfileData
 import models.profile.ProfileLanguageData
 import models.profile.ProfileSkillData
+import models.skills.DevSkillData
 import models.skills.Skill
 import models.skills.SkillData
 import models.users.*
@@ -35,27 +37,28 @@ class ProfileServiceImpl[F[_] : Concurrent : Monad : Logger](
   languageRepo: LanguageRepositoryAlgebra[F]
 ) extends ProfileServiceAlgebra[F] {
 
-  override def getSkillAndLanguageData(devId: String): F[List[ProfileData]] = for {
-    userSkills <- skillRepo.getAllSkills(devId)
-    userLanguages <- languageRepo.getAllLanguages(devId)
+  override def getSkillAndLanguageData(devId: String): F[List[ProfileData]] =
+    for {
+      userSkills: List[DevSkillData] <- skillRepo.getAllSkills(devId)
+      userLanguages: List[DevLanguageData] <- languageRepo.getAllLanguages(devId)
 
-    allUsernames = (userSkills.map(_.username) ++ userLanguages.map(_.username)).distinct
-    username = allUsernames match {
-      case single :: Nil => Some(single)
-      case _ => None
-    }
+      allUsernames = (userSkills.map(_.username) ++ userLanguages.map(_.username)).distinct
+      username = allUsernames match {
+        case single :: Nil => Some(single)
+        case _ => None
+      }
 
-    profileSkillData = userSkills.map(s => ProfileSkillData(s.skill, s.level, s.xp))
-    profileLanguageData = userLanguages.map(l => ProfileLanguageData(l.language, l.level, l.xp))
+      profileSkillData = userSkills.map(skill => ProfileSkillData(skill.skill, skill.level, skill.xp, skill.nextLevel, skill.nextLevelXp))
+      profileLanguageData = userLanguages.map(language => ProfileLanguageData(language.language, language.level, language.xp, language.nextLevel, language.nextLevelXp))
 
-  } yield List(
-    ProfileData(
-      devId = devId,
-      username = username,
-      skillData = profileSkillData,
-      languageData = profileLanguageData
+    } yield List(
+      ProfileData(
+        devId = devId,
+        username = username,
+        skillData = profileSkillData,
+        languageData = profileLanguageData
+      )
     )
-  )
 
 }
 

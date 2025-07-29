@@ -34,8 +34,8 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
       description = Some("Do something"),
       acceptanceCriteria = Some("acceptance criteria"),
       rank = Bronze,
-      tags = List("Scala"),
       status = Some(Open),
+      tags = List("Scala"),
       estimationCloseAt = Some(fixedInstant),
       estimated = true
     )
@@ -54,7 +54,7 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     override def setEstimationCloseAt(questId: String, closeAt: Instant): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
-    override def findQuestsWithExpiredEstimation(now: Instant): IO[List[QuestPartial]] = ???
+    override def findQuestsWithExpiredEstimation(now: Instant): IO[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]] = ???
 
     override def countNotEstimatedAndOpenQuests(): IO[Int] = ???
 

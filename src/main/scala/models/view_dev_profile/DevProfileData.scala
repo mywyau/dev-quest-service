@@ -1,20 +1,17 @@
-package models.profile
+package models.view_dev_profile
 
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.generic.semiauto.deriveEncoder
 import io.circe.Decoder
 import io.circe.Encoder
-import models.languages.Language
-import models.languages.LanguageData
-import models.skills.Skill
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
 
 case class DevProfileData(
   devId: String,
   username: String,
   email: String,
   mobile: String,
-  skillData: List[ProfileSkillData],
-  languageData: List[ProfileLanguageData]
+  skillData: List[ViewProfileSkillData],
+  languageData: List[ViewProfileLanguageData]
 )
 
 object DevProfileData {

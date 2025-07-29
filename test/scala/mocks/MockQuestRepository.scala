@@ -21,7 +21,7 @@ case class MockQuestRepository(
 
   override def setEstimationCloseAt(questId: String, closeAt: Instant): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
-  override def findQuestsWithExpiredEstimation(now: Instant): IO[List[QuestPartial]] = ???
+  override def findQuestsWithExpiredEstimation(now: Instant): IO[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]] = ???
 
   override def countNotEstimatedAndOpenQuests(): IO[Int] = ???
 

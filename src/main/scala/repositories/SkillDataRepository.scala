@@ -1,22 +1,23 @@
 package repositories
 
+import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
-import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
-import java.sql.Timestamp
-import java.time.LocalDateTime
 import models.database.*
 import models.skills.*
 import models.users.*
 import org.typelevel.log4cats.Logger
 import services.*
+
+import java.sql.Timestamp
+import java.time.LocalDateTime
 
 trait SkillDataRepositoryAlgebra[F[_]] {
 
@@ -24,7 +25,7 @@ trait SkillDataRepositoryAlgebra[F[_]] {
 
   def getAllSkillData(): F[List[SkillData]]
 
-  def getAllSkills(devId: String): F[List[SkillData]]
+  def getAllSkills(devId: String): F[List[DevSkillData]]
 
   def getSkillsForUser(username: String): F[List[SkillData]]
 
@@ -34,7 +35,15 @@ trait SkillDataRepositoryAlgebra[F[_]] {
 
   def getPaginatedSkillData(skill: Skill, offset: Int, limit: Int): F[List[SkillData]]
 
-  def awardSkillXP(devId: String, username: String, skill: Skill, xp: BigDecimal, level: Int): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def awardSkillXP(
+    devId: String,
+    username: String,
+    skill: Skill,
+    xp: BigDecimal,
+    level: Int,
+    nextLevel: Int,
+    nextLevelXp: BigDecimal
+  ): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
 }
 
@@ -90,8 +99,8 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
     findQuery
   }
 
-  override def getAllSkills(devId: String): F[List[SkillData]] = {
-    val findQuery: F[List[SkillData]] =
+  override def getAllSkills(devId: String): F[List[DevSkillData]] = {
+    val findQuery: F[List[DevSkillData]] =
       sql"""
         SELECT 
           dev_id,
@@ -102,7 +111,7 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
         FROM skill
         WHERE dev_id = $devId
       """
-        .query[SkillData]
+        .query[DevSkillData]
         .to[List]
         .transact(transactor)
 
@@ -165,17 +174,19 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
       .to[List]
       .transact(transactor)
 
-  override def awardSkillXP(devId: String, username: String, skill: Skill, xp: BigDecimal, level: Int): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+  override def awardSkillXP(devId: String, username: String, skill: Skill, xp: BigDecimal, level: Int, nextLevel: Int, nextLevelXp: BigDecimal): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
 
     val query =
       sql"""
-      INSERT INTO skill (dev_id, username, skill, xp, level)
-      VALUES ($devId, $username, ${skill.toString}, $xp, $level)
-      ON CONFLICT (dev_id, skill)
-      DO UPDATE SET
-        xp = skill.xp + $xp,
-        level = $level
-    """.update.run
+        INSERT INTO skill (dev_id, username, skill, xp, level, next_level, next_level_xp)
+        VALUES ($devId, $username, ${skill.toString}, $xp, $level, $nextLevel, $nextLevelXp)
+        ON CONFLICT (dev_id, skill)
+        DO UPDATE SET
+          xp = skill.xp + $xp,
+          level = $level,
+          next_level = $nextLevel,
+          next_level_xp = $nextLevelXp
+      """.update.run
 
     query.transact(transactor).attempt.map {
       case Right(affectedRows) if affectedRows == 1 =>
