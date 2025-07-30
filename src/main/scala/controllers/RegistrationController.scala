@@ -11,6 +11,7 @@ import cats.implicits.*
 import fs2.Stream
 import io.circe.syntax.EncoderOps
 import io.circe.Json
+import models.*
 import models.database.UpdateSuccess
 import models.responses.*
 import models.users.CreateUserData
@@ -64,7 +65,7 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
       Logger[F].debug(s"[RegistrationController] GET - Health check for backend RegistrationController service") *>
         Ok(GetResponse("dev-quest-service/registration/health", "I am alive - RegistrationController").asJson)
 
-    case req @ GET -> Root/  "registration" / "user" / "data" / userId =>
+    case req @ GET -> Root / "registration" / "user" / "data" / userId =>
       extractSessionToken(req) match {
         case Some(cookieToken) =>
           withValidSession(userId, cookieToken) {
@@ -112,8 +113,9 @@ class RegistrationControllerImpl[F[_] : Async : Concurrent : Logger](
                     Logger[F].debug(s"[RegistrationController] PUT - Successfully updated user type for ID: $userId") *>
                       Ok(UpdatedResponse(UpdateSuccess.toString, s"User $userId updated successfully with type: ${request.userType}").asJson)
                   case Invalid(errors) =>
-                    Logger[F].debug(s"[RegistrationController] PUT - Validation failed for user update: ${errors.toList}") *>
-                      BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
+                    val apiErrors = errors.toList.map(ApiError.from)
+                    Logger[F].debug(s"[RegistrationController] PUT - Validation failed for user update: $apiErrors") *>
+                      BadRequest(apiErrors.asJson)
                 }
               }
           }

@@ -22,7 +22,9 @@ trait RewardServiceAlgebra[F[_]] {
 
   def getReward(questId: String): F[Option[RewardData]]
 
-  def createReward(clientId: String, request: CreateReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def createCompletionReward(clientId: String, request: CreateCompletionReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def createTimeReward(clientId: String, request: CreateTimeReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def updateReward(questId: String, request: UpdateRewardData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
@@ -41,9 +43,9 @@ class RewardServiceImpl[F[_] : Concurrent : Monad : Logger](
           Concurrent[F].pure(None)
     }
 
-  override def createReward(clientId: String, request: CreateReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def createCompletionReward(clientId: String, request: CreateCompletionReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     Logger[F].debug(s"[RewardService][createReward] Creating a new reward data for quest with questId ${request.questId}") *>
-      rewardRepo.create(clientId, request).flatMap {
+      rewardRepo.createCompletionReward(clientId, request).flatMap {
         case Valid(value) =>
           Logger[F].debug(s"[RewardService][createReward] Successfully created reward data for quest with questId: ${request.questId}") *>
             Concurrent[F].pure(Valid(value))
@@ -51,6 +53,17 @@ class RewardServiceImpl[F[_] : Concurrent : Monad : Logger](
           Logger[F].error(s"[RewardService][createReward] Failed to create reward data. Errors: ${errors.toList.mkString(", ")}") *>
             Concurrent[F].pure(Invalid(errors))
       }
+
+  override def createTimeReward(clientId: String, request: CreateTimeReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    Logger[F].debug(s"[RewardService][createTimeReward] Creating new time reward data for quest with questId ${request.questId}") *>
+      rewardRepo.createTimeReward(clientId, request).flatMap {
+        case Valid(value) =>
+          Logger[F].debug(s"[RewardService][createTimeReward] Successfully created time reward data for quest with questId: ${request.questId}") *>
+            Concurrent[F].pure(Valid(value))
+        case Invalid(errors) =>
+          Logger[F].error(s"[RewardService][createTimeReward] Failed to create time reward data. Errors: ${errors.toList.mkString(", ")}") *>
+            Concurrent[F].pure(Invalid(errors))
+      }   
 
   override def updateReward(questId: String, request: UpdateRewardData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     Logger[F].debug(s"[RewardService][createReward] Updating reward data for quest with questId ${questId}") *>

@@ -7,16 +7,14 @@ import io.circe.Encoder
 import java.time.LocalDateTime
 import models.RewardStatus
 
-case class RewardData(
+case class TimeRewardData(
   questId: String,
   clientId: String,
   devId: Option[String],
-  timeRewardValue: Option[BigDecimal],
-  completionRewardValue: Option[BigDecimal],
-  paid: RewardStatus
+  timeRewardValue: BigDecimal
 )
 
-object RewardData {
-  implicit val encoder: Encoder[RewardData] = deriveEncoder[RewardData]
-  implicit val decoder: Decoder[RewardData] = deriveDecoder[RewardData]
+object TimeRewardData {
+  implicit val encoder: Encoder[TimeRewardData] = deriveEncoder[TimeRewardData]
+  implicit val decoder: Decoder[TimeRewardData] = deriveDecoder[TimeRewardData]
 }

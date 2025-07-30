@@ -14,7 +14,6 @@ import io.circe.Json
 import models.database.UpdateSuccess
 import models.responses.*
 import models.rewards.*
-import models.rewards.CreateReward
 import models.Completed
 import models.Failed
 import models.InProgress
@@ -40,8 +39,9 @@ class RewardControllerImpl[F[_] : Async : Concurrent : Logger](
 ) extends Http4sDsl[F]
     with RewardControllerAlgebra[F] {
 
-  implicit val createDecoder: EntityDecoder[F, CreateReward] = jsonOf[F, CreateReward]
-  implicit val updateDecoder: EntityDecoder[F, UpdateRewardData] = jsonOf[F, UpdateRewardData]
+  implicit val createTimeRewardDecoder: EntityDecoder[F, CreateTimeReward] = jsonOf[F, CreateTimeReward]
+  implicit val createCompletionRewardDecoder: EntityDecoder[F, CreateCompletionReward] = jsonOf[F, CreateCompletionReward]
+  implicit val updateRewardDataDecoder: EntityDecoder[F, UpdateRewardData] = jsonOf[F, UpdateRewardData]
 
   private def extractSessionToken(req: Request[F]): Option[String] =
     req.cookies
@@ -75,7 +75,7 @@ class RewardControllerImpl[F[_] : Async : Concurrent : Logger](
               rewardService.getReward(questId).flatMap {
                 case Some(rewardData) =>
                   Ok(rewardData.asJson)
-                case reward =>
+                case _ =>
                   BadRequest(ErrorResponse("NO_Reward", "No reward found").asJson)
               }
           }
@@ -85,16 +85,35 @@ class RewardControllerImpl[F[_] : Async : Concurrent : Logger](
             Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
-    case req @ POST -> Root / "reward" / "create" / clientId =>
+    case req @ PUT -> Root / "reward" / "create" / "complete" / "bonus" / clientId =>
       extractSessionToken(req) match {
         case Some(cookieToken) =>
           withValidSession(clientId, cookieToken) {
-            Logger[F].debug(s"[RewardControllerImpl] POST - Creating reward") *>
-              req.decode[CreateReward] { reward =>
-                rewardService.createReward(clientId, reward).flatMap {
+            Logger[F].debug(s"[RewardControllerImpl] POST - Creating complete bonus reward") *>
+              req.decode[CreateCompletionReward] { reward =>
+                rewardService.createCompletionReward(clientId, reward).flatMap {
                   case Valid(response) =>
-                    Logger[F].debug(s"[RewardControllerImpl] POST - Successfully created a reward") *>
-                      Created(CreatedResponse(response.toString, "reward details created successfully").asJson)
+                    Logger[F].debug(s"[RewardControllerImpl] POST - Successfully created a complete bonus reward") *>
+                      Created(CreatedResponse(response.toString, "complete bonus reward details created successfully").asJson)
+                  case Invalid(_) =>
+                    InternalServerError(ErrorResponse(code = "Code", message = "An error occurred").asJson)
+                }
+              }
+          }
+        case None =>
+          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
+      }
+
+    case req @ PUT -> Root / "reward" / "create" / "time" / clientId =>
+      extractSessionToken(req) match {
+        case Some(cookieToken) =>
+          withValidSession(clientId, cookieToken) {
+            Logger[F].debug(s"[RewardControllerImpl] POST - Creating time reward") *>
+              req.decode[CreateTimeReward] { reward =>
+                rewardService.createTimeReward(clientId, reward).flatMap {
+                  case Valid(response) =>
+                    Logger[F].debug(s"[RewardControllerImpl] POST - Successfully created a time reward") *>
+                      Created(CreatedResponse(response.toString, "time reward details created successfully").asJson)
                   case Invalid(_) =>
                     InternalServerError(ErrorResponse(code = "Code", message = "An error occurred").asJson)
                 }

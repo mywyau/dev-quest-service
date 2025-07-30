@@ -1,22 +1,22 @@
 package repositories
 
-import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
+import cats.Monad
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
-import models.RewardStatus
+import java.sql.Timestamp
+import java.time.LocalDateTime
 import models.database.*
 import models.database.ConstraintViolation
 import models.database.CreateSuccess
 import models.database.DataTooLongError
 import models.database.DatabaseConnectionError
-import models.database.DatabaseError
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
 import models.database.DeleteSuccess
@@ -27,10 +27,8 @@ import models.database.UnexpectedResultError
 import models.database.UnknownError
 import models.database.UpdateSuccess
 import models.rewards.*
+import models.RewardStatus
 import org.typelevel.log4cats.Logger
-
-import java.sql.Timestamp
-import java.time.LocalDateTime
 
 trait RewardRepositoryAlgebra[F[_]] {
 
@@ -38,7 +36,9 @@ trait RewardRepositoryAlgebra[F[_]] {
 
   def streamRewardByQuest(questId: String): Stream[F, RewardData]
 
-  def create(clientId: String, request: CreateReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def createCompletionReward(clientId: String, request: CreateCompletionReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def createTimeReward(clientId: String, request: CreateTimeReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def update(questId: String, updateRewardData: UpdateRewardData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
@@ -82,20 +82,22 @@ class RewardRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Trans
       .stream
       .transact(transactor)
 
-  override def create(clientId: String, request: CreateReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def createCompletionReward(clientId: String, request: CreateCompletionReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       INSERT INTO reward (
         quest_id,
         client_id,
-        time_reward_value,
         completion_reward_value
       )
       VALUES (
         ${request.questId},
         ${clientId},
-        ${request.timeRewardValue},
         ${request.completionRewardValue}
-      ) ON CONFLICT (quest_id, client_id) DO NOTHING
+      ) ON CONFLICT (quest_id, client_id) 
+      DO UPDATE SET 
+        quest_id = ${request.questId},
+        client_id = ${clientId},
+        completion_reward_value = ${request.completionRewardValue}
     """.update.run
       .transact(transactor)
       .attempt
@@ -105,7 +107,40 @@ class RewardRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Trans
         case Left(e: java.sql.SQLIntegrityConstraintViolationException) =>
           ConstraintViolation.invalidNel
         case Left(e: java.sql.SQLException) =>
-          DatabaseError.invalidNel
+          DatabaseConnectionError.invalidNel
+        case Left(ex) =>
+          UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
+        case _ =>
+          UnexpectedResultError.invalidNel
+      }
+
+  override def createTimeReward(clientId: String, request: CreateTimeReward): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    sql"""
+      INSERT INTO reward (
+        quest_id,
+        client_id,
+        time_reward_value
+      )
+      VALUES (
+        ${request.questId},
+        ${clientId},
+        ${request.timeRewardValue}
+      ) 
+      ON CONFLICT (quest_id, client_id) 
+      DO UPDATE SET 
+        quest_id = ${request.questId},
+        client_id = ${clientId},
+        time_reward_value = ${request.timeRewardValue}
+    """.update.run
+      .transact(transactor)
+      .attempt
+      .map {
+        case Right(affectedRows) if affectedRows == 1 =>
+          CreateSuccess.validNel
+        case Left(e: java.sql.SQLIntegrityConstraintViolationException) =>
+          ConstraintViolation.invalidNel
+        case Left(e: java.sql.SQLException) =>
+          DatabaseConnectionError.invalidNel
         case Left(ex) =>
           UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
         case _ =>

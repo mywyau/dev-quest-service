@@ -97,7 +97,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
         case Left(e: java.sql.SQLIntegrityConstraintViolationException) =>
           ConstraintViolation.invalidNel
         case Left(e: java.sql.SQLException) =>
-          DatabaseError.invalidNel
+          DatabaseConnectionError.invalidNel
         case Left(ex) =>
           UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
         case _ =>
@@ -235,7 +235,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
         case Left(e: java.sql.SQLIntegrityConstraintViolationException) =>
           ConstraintViolation.invalidNel
         case Left(e: java.sql.SQLException) =>
-          DatabaseError.invalidNel
+          DatabaseConnectionError.invalidNel
         case Left(ex) =>
           UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
         case _ =>

@@ -47,8 +47,8 @@ class RewardRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryI
         questId = "QUEST001",
         clientId = "CLIENT001",
         devId = Some("DEV001"),
-        timeRewardValue = 10.5,
-        completionRewardValue = 100.00,
+        timeRewardValue = Some(10.5),
+        completionRewardValue = Some(100.00),
         paid = NotPaid
       )
 
@@ -64,15 +64,15 @@ class RewardRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryI
         questId = "QUEST002",
         clientId = "CLIENT002",
         devId = Some("DEV002"),
-        timeRewardValue = 20.0,
-        completionRewardValue = 200.0,
+        timeRewardValue = Some(20.0),
+        completionRewardValue = Some(200.0),
         paid = NotPaid
       )
 
     val expectedResult =
       originalReward.copy(
-        timeRewardValue = 100.00,
-        completionRewardValue = 2000
+        timeRewardValue = Some(100.00),
+        completionRewardValue = Some(200),
         )
 
     for {
@@ -81,7 +81,7 @@ class RewardRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryI
         "QUEST002",
         UpdateRewardData(
           timeRewardValue = 100.00,
-          completionRewardValue = 2000
+          completionRewardValue = 200,
         )
       )
       updatedReward <- rewardRepo.getRewardData("QUEST002")
