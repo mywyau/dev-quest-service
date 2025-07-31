@@ -21,6 +21,7 @@ import models.database.DatabaseSuccess
 import models.languages.Language
 import models.quests.*
 import models.skills.Questing
+import models.work_time.HoursOfWork
 import org.typelevel.log4cats.Logger
 import repositories.*
 import services.LevelServiceAlgebra
@@ -44,6 +45,8 @@ trait QuestCRUDServiceAlgebra[F[_]] {
   def acceptQuest(questId: String, devId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+
+  def createHoursOfWork(questId: String, request: HoursOfWork): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
 class QuestCRUDServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
@@ -153,9 +156,9 @@ class QuestCRUDServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger
 
       _ <- EitherT.liftF(questRepo.updateStatus(questId, Completed))
 
-      devId <- EitherT.fromOption[F](quest.devId,ForeignKeyViolationError: DatabaseErrors)
+      devId <- EitherT.fromOption[F](quest.devId, ForeignKeyViolationError: DatabaseErrors)
 
-      user <- EitherT.fromOptionF(userRepo.findUser(devId),NotFoundError: DatabaseErrors)
+      user <- EitherT.fromOptionF(userRepo.findUser(devId), NotFoundError: DatabaseErrors)
 
       username = user.username
       tags = quest.tags
@@ -178,6 +181,16 @@ class QuestCRUDServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger
           Concurrent[F].pure(Valid(value))
       case Invalid(errors) =>
         Logger[F].error(s"[QuestCRUDService][delete] Failed to delete quest with ID: $questId. Errors: ${errors.toList.mkString(", ")}") *>
+          Concurrent[F].pure(Invalid(errors))
+    }
+
+  override def createHoursOfWork(questId: String, request: HoursOfWork): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    questRepo.createHoursOfWork(questId, request).flatMap {
+      case Valid(value) =>
+        Logger[F].debug(s"[QuestCRUDService][createHoursOfWork] Successfully added/updated the number hours of work for the quest: $questId") *>
+          Concurrent[F].pure(Valid(value))
+      case Invalid(errors) =>
+        Logger[F].error(s"[QuestCRUDService][createHoursOfWork] Failed to add/update the number hours of work for the quest ID: $questId. Errors: ${errors.toList.mkString(", ")}") *>
           Concurrent[F].pure(Invalid(errors))
     }
 }

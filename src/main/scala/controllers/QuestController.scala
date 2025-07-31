@@ -5,27 +5,29 @@ import cache.RedisCacheAlgebra
 import cache.SessionCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
-import cats.effect.kernel.Async
 import cats.effect.Concurrent
+import cats.effect.kernel.Async
 import cats.implicits.*
 import fs2.Stream
-import io.circe.syntax.EncoderOps
 import io.circe.Json
+import io.circe.syntax.EncoderOps
 import models.*
 import models.database.UpdateSuccess
 import models.quests.*
 import models.responses.*
 import org.http4s.*
+import org.http4s.Challenge
 import org.http4s.circe.*
-import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
 import org.http4s.dsl.Http4sDsl
+import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
-import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
-import scala.concurrent.duration.*
 import services.QuestCRUDServiceAlgebra
 import services.QuestStreamingServiceAlgebra
+
+import scala.concurrent.duration.*
+import models.work_time.HoursOfWork
 
 trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -35,8 +37,10 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
   questCRUDService: QuestCRUDServiceAlgebra[F],
   questStreamingService: QuestStreamingServiceAlgebra[F],
   sessionCache: SessionCacheAlgebra[F]
-) extends Http4sDsl[F] with QuestControllerAlgebra[F] {
+) extends Http4sDsl[F]
+    with QuestControllerAlgebra[F] {
 
+  implicit val hoursOfWorkDecoder: EntityDecoder[F, HoursOfWork] = jsonOf[F, HoursOfWork]
   implicit val createDecoder: EntityDecoder[F, CreateQuestPartial] = jsonOf[F, CreateQuestPartial]
   implicit val updateDecoder: EntityDecoder[F, UpdateQuestPartial] = jsonOf[F, UpdateQuestPartial]
   implicit val updateQuestStatusPayloadDecoder: EntityDecoder[F, UpdateQuestStatusPayload] = jsonOf[F, UpdateQuestStatusPayload]
@@ -80,10 +84,9 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
 
     case req @ GET -> Root / "quest" / "count" / "not-estimated" / "and" / "open" =>
       Logger[F].debug(s"[QuestController][/quest/count/not-estimated/and/open] GET - Trying to get count for quests with statuses not estimated or open") *>
-        questCRUDService.countNotEstimatedAndOpenQuests().flatMap {
-          case numberOfQuests =>
-            Logger[F].debug(s"[QuestController][/quest/userId/questId] GET - Total number of quests with statuses not estimated or open: ${numberOfQuests}") *>
-              Ok(NotEstimatedOrOpenQuestCount(numberOfQuests).asJson)
+        questCRUDService.countNotEstimatedAndOpenQuests().flatMap { case numberOfQuests =>
+          Logger[F].debug(s"[QuestController][/quest/userId/questId] GET - Total number of quests with statuses not estimated or open: ${numberOfQuests}") *>
+            Ok(NotEstimatedOrOpenQuestCount(numberOfQuests).asJson)
         }
 
     case req @ GET -> Root / "quest" / "stream" / userIdFromRoute =>
@@ -349,6 +352,26 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
                       Ok(UpdatedResponse(UpdateSuccess.toString, s"Quest $questId updated successfully").asJson)
                   case Invalid(errors) =>
                     Logger[F].debug(s"[QuestControllerImpl] PUT - Validation failed for quest update: ${errors.toList}") *>
+                      BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
+                }
+              }
+          }
+        case None =>
+          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
+      }
+
+    case req @ PUT -> Root / "quest" / "upsert" / "hours-of-work" / userIdFromRoute / questId =>
+      extractSessionToken(req) match {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
+            Logger[F].debug(s"[QuestControllerImpl] PUT - Upserting hours of work for quest with ID: $questId") *>
+              req.decode[HoursOfWork] { request =>
+                questCRUDService.createHoursOfWork(questId, request).flatMap {
+                  case Valid(response) =>
+                    Logger[F].debug(s"[QuestControllerImpl] PUT - Successfully upserted hours of work for quest for ID: $questId") *>
+                      Ok(UpdatedResponse(UpdateSuccess.toString, s"Quest $questId updated successfully").asJson)
+                  case Invalid(errors) =>
+                    Logger[F].debug(s"[QuestControllerImpl] PUT - Validation failed for upserting hours of work for quest, errors: ${errors.toList}") *>
                       BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
                 }
               }

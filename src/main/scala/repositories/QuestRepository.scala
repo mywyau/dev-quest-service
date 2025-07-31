@@ -19,6 +19,7 @@ import models.database.*
 import models.languages.Language
 import models.quests.*
 import models.skills.Skill
+import models.work_time.*
 import models.Estimated
 import models.NotEstimated
 import models.NotStarted
@@ -67,6 +68,8 @@ trait QuestRepositoryAlgebra[F[_]] {
   def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def validateOwnership(questId: String, clientId: String): F[Unit]
+
+  def createHoursOfWork(questId: String, request: HoursOfWork): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
 class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends QuestRepositoryAlgebra[F] {
@@ -119,7 +122,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   override def streamByQuestStatus(clientId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
       sql"""
-        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
+        SELECT quest_id, client_id, dev_id, rank, title, hours_of_work, description, acceptance_criteria, status, tags, estimation_close_at, estimated
         FROM quests
         WHERE status = $questStatus 
           AND client_id = $clientId  
@@ -137,7 +140,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   override def streamByQuestStatusDev(devId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
       sql"""
-        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
+        SELECT quest_id, client_id, dev_id, rank, title, hours_of_work, description, acceptance_criteria, status, tags, estimation_close_at, estimated
         FROM quests
         WHERE status = $questStatus 
           AND dev_id = $devId  
@@ -155,7 +158,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   override def streamByUserId(clientId: String, limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
       sql"""
-        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
+        SELECT quest_id, client_id, dev_id, rank, title, hours_of_work, description, acceptance_criteria, status, tags, estimation_close_at, estimated
         FROM quests
         WHERE client_id = $clientId
         ORDER BY created_at DESC
@@ -172,7 +175,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   override def streamAll(limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
       sql"""
-        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
+        SELECT quest_id, client_id, dev_id, rank, title, hours_of_work, description, acceptance_criteria, status, tags, estimation_close_at, estimated
         FROM quests
         WHERE status IN (${NotEstimated.toString()}, ${Open.toString()}, ${Estimated.toString()})
         ORDER BY created_at DESC
@@ -190,7 +193,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
     val findQuery: F[List[QuestPartial]] =
       sql"""
          SELECT 
-           quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
+           quest_id, client_id, dev_id, rank, title, hours_of_work, description, acceptance_criteria, status, tags, estimation_close_at, estimated
          FROM quests
          WHERE client_id = $clientId
        """.query[QuestPartial].to[List].transact(transactor)
@@ -202,7 +205,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
     val findQuery: F[Option[QuestPartial]] =
       sql"""
          SELECT 
-           quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
+           quest_id, client_id, dev_id, rank, title, hours_of_work, description, acceptance_criteria, status, tags, estimation_close_at, estimated
          FROM quests
          WHERE quest_id = $questId
        """.query[QuestPartial].option.transact(transactor)
@@ -435,7 +438,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
 
     sql"""
       SELECT 
-         quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
+         quest_id, client_id, dev_id, rank, title, hours_of_work, description, acceptance_criteria, status, tags, estimation_close_at, estimated
       FROM quests
       WHERE estimation_close_at IS NOT NULL
         AND estimation_close_at <= $upperBound
@@ -460,6 +463,34 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
           UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
       }
   }
+
+  override def createHoursOfWork(questId: String, request: HoursOfWork): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    sql"""
+      INSERT INTO quests (
+        quest_id,
+        hours_of_work
+      ) VALUES (
+        ${questId},
+        ${request.hoursOfWork}
+      ) ON CONFLICT (quest_id, hours_of_work) 
+      DO UPDATE SET 
+        quest_id = ${questId},
+        hours_of_work = ${request.hoursOfWork}
+    """.update.run
+      .transact(transactor)
+      .attempt
+      .map {
+        case Right(affectedRows) if affectedRows == 1 =>
+          CreateSuccess.validNel
+        case Left(e: java.sql.SQLIntegrityConstraintViolationException) =>
+          ConstraintViolation.invalidNel
+        case Left(e: java.sql.SQLException) =>
+          DatabaseConnectionError.invalidNel
+        case Left(ex) =>
+          UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
+        case _ =>
+          UnexpectedResultError.invalidNel
+      }
 
 }
 

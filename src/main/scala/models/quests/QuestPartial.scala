@@ -16,6 +16,7 @@ case class QuestPartial(
   devId: Option[String],
   rank: Rank,
   title: String,
+  hoursOfWork: Option[Double],
   description: Option[String],
   acceptanceCriteria: Option[String],
   status: Option[QuestStatus],
