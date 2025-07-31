@@ -45,8 +45,8 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
       questId = "quest123",
       clientId = "client123",
       devId = Some("dev123"),
-      timeRewardValue = 100.00,
-      completionRewardValue = 1000.00,
+      timeRewardValue = Some(100.00),
+      completionRewardValue = Some(1000.00),
       paid = NotPaid
     )
 
@@ -87,9 +87,11 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
   }
 
   val rewardRepo = new RewardRepositoryAlgebra[IO] {
+
     override def streamRewardByQuest(questId: String): Stream[IO, RewardData] = Stream.emit(reward)
     override def getRewardData(questId: String): IO[Option[RewardData]] = ???
-    override def create(clientId: String, request: CreateReward): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+    override def createCompletionReward(clientId: String, request: CreateCompletionReward): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
+    override def createTimeReward(clientId: String, request: CreateTimeReward): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
     override def update(questId: String, updateRewardData: UpdateRewardData): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
     override def updateWithDevId(questId: String, devId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
     override def delete(questId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???

@@ -17,7 +17,6 @@ import models.database.ConstraintViolation
 import models.database.CreateSuccess
 import models.database.DataTooLongError
 import models.database.DatabaseConnectionError
-import models.database.DatabaseError
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
 import models.database.DeleteSuccess
@@ -85,7 +84,7 @@ class StripeAccountRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor
         case Left(e: java.sql.SQLIntegrityConstraintViolationException) =>
           ConstraintViolation.invalidNel
         case Left(e: java.sql.SQLException) =>
-          DatabaseError.invalidNel
+          DatabaseConnectionError.invalidNel
         case Left(ex) =>
           UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
         case _ =>

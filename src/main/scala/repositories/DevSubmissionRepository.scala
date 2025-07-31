@@ -108,7 +108,7 @@ class DevSubmissionRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor
         case Left(_: java.sql.SQLIntegrityConstraintViolationException) =>
           ConstraintViolation.invalidNel
         case Left(_: java.sql.SQLException) =>
-          DatabaseError.invalidNel
+          DatabaseConnectionError.invalidNel
         case Left(ex) =>
           UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
         case _ =>
