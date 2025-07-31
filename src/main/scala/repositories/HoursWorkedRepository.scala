@@ -45,7 +45,7 @@ class HoursWorkedRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: 
     val findQuery: F[Option[HoursOfWork]] =
       sql"""
          SELECT 
-           hours_of_work, 
+           hours_of_work
          FROM quest_hours
          WHERE quest_id = $questId
        """.query[HoursOfWork].option.transact(transactor)
@@ -53,22 +53,27 @@ class HoursWorkedRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: 
     findQuery
   }
 
-  override def upsertHoursOfWork(clientId: String, questId: String, request: HoursOfWork): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def upsertHoursOfWork(
+    clientId: String,
+    questId: String,
+    request: HoursOfWork
+  ): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
-      INSERT INTO quest_hours (
-        quest_id,
-        client_id,
-        hours_of_work
-      ) VALUES (
-        ${questId},
-        ${clientId},
-        ${request.hoursOfWork}
-      ) ON CONFLICT (quest_id, hours_of_work) 
-      DO UPDATE SET 
-        quest_id = ${questId},
-        client_id = ${clientId},
-        hours_of_work = ${request.hoursOfWork}
-    """.update.run
+    INSERT INTO quest_hours (
+      quest_id,
+      client_id,
+      hours_of_work
+    ) VALUES (
+      $questId,
+      $clientId,
+      ${request.hoursOfWork}
+    )
+    ON CONFLICT (quest_id)
+    DO UPDATE SET 
+      client_id = EXCLUDED.client_id,
+      hours_of_work = EXCLUDED.hours_of_work,
+      updated_at = CURRENT_TIMESTAMP
+  """.update.run
       .transact(transactor)
       .attempt
       .map {

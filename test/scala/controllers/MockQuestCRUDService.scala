@@ -11,11 +11,16 @@ import fs2.Stream
 import models.auth.UserSession
 import models.database.*
 import models.quests.*
+import models.work_time.HoursOfWork
 import models.QuestStatus
 import models.Rank
 import services.QuestCRUDServiceAlgebra
 
 class MockQuestCRUDService(userQuestData: Map[String, QuestPartial]) extends QuestCRUDServiceAlgebra[IO] {
+
+  override def getHoursOfWork(questId: String): IO[Option[HoursOfWork]] = ???
+
+  override def upsertHoursOfWork(clientId: String, questId: String, request: HoursOfWork): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
   override def countNotEstimatedAndOpenQuests(): IO[Int] = ???
 

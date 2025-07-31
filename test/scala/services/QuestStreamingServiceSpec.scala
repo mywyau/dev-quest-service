@@ -15,6 +15,7 @@ import models.*
 import models.database.*
 import models.quests.*
 import models.rewards.*
+import models.work_time.HoursOfWork
 import models.Bronze
 import models.Open
 import org.typelevel.log4cats.slf4j.Slf4jLogger
@@ -50,7 +51,9 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
       paid = NotPaid
     )
 
-  val mockQuestRepo = new QuestStreamingRepositoryAlgebra[IO] {
+  val mockQuestRepo = new QuestRepositoryAlgebra[IO] {
+
+    override def createHoursOfWork(clientId: String, questId: String, request: HoursOfWork): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
     override def setEstimationCloseAt(questId: String, closeAt: Instant): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
