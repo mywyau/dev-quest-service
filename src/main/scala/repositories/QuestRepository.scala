@@ -19,6 +19,7 @@ import models.database.*
 import models.languages.Language
 import models.quests.*
 import models.skills.Skill
+import models.work_time.*
 import models.Estimated
 import models.NotEstimated
 import models.NotStarted
@@ -67,6 +68,8 @@ trait QuestRepositoryAlgebra[F[_]] {
   def updateStatus(questId: String, questStatus: QuestStatus): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def validateOwnership(questId: String, clientId: String): F[Unit]
+
+  def createHoursOfWork(clientId:String, questId: String, request: HoursOfWork): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
 class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends QuestRepositoryAlgebra[F] {
@@ -460,6 +463,37 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
           UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
       }
   }
+
+  override def createHoursOfWork(clientId:String, questId: String, request: HoursOfWork): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    sql"""
+      INSERT INTO quests (
+        quest_id,
+        client_id,
+        hours_of_work
+      ) VALUES (
+        ${questId},
+        ${clientId},
+        ${request.hoursOfWork}
+      ) ON CONFLICT (quest_id, hours_of_work) 
+      DO UPDATE SET 
+        quest_id = ${questId},
+        client_id = ${clientId},
+        hours_of_work = ${request.hoursOfWork}
+    """.update.run
+      .transact(transactor)
+      .attempt
+      .map {
+        case Right(affectedRows) if affectedRows == 1 =>
+          CreateSuccess.validNel
+        case Left(e: java.sql.SQLIntegrityConstraintViolationException) =>
+          ConstraintViolation.invalidNel
+        case Left(e: java.sql.SQLException) =>
+          DatabaseConnectionError.invalidNel
+        case Left(ex) =>
+          UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
+        case _ =>
+          UnexpectedResultError.invalidNel
+      }
 
 }
 

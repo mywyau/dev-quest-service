@@ -92,6 +92,7 @@ object Routes {
 
     val sessionCache = new SessionCacheImpl(redisHost, redisPort, appConfig)
     val questRepository = QuestRepository(transactor)
+    val hoursWorkedRepository = HoursWorkedRepository(transactor)
     val userDataRepository = UserDataRepository(transactor)
     val skillDataRepository = SkillDataRepository(transactor)
     val languageRepository = LanguageRepository(transactor)
@@ -104,6 +105,7 @@ object Routes {
         appConfig,
         questRepository,
         userDataRepository,
+        hoursWorkedRepository,
         levelService
       )
 
@@ -133,7 +135,7 @@ object Routes {
     val estimateRepository = EstimateRepository(transactor)
     val skillDataRepository = SkillDataRepository(transactor)
     val languageRepository = LanguageRepository(transactor)
-    
+
     val levelService = LevelService(skillDataRepository, languageRepository)
     val estimateService = EstimateService(appConfig, userDataRepository, estimateRepository, questRepository, levelService)
     val estimateController = EstimateController(estimateService, sessionCache)

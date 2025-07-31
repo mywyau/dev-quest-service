@@ -15,6 +15,7 @@ import models.*
 import models.database.*
 import models.quests.*
 import models.rewards.*
+import models.work_time.HoursOfWork
 import models.Bronze
 import models.Open
 import org.typelevel.log4cats.slf4j.Slf4jLogger
@@ -50,7 +51,9 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
       paid = NotPaid
     )
 
-  val questRepo = new QuestRepositoryAlgebra[IO] {
+  val mockQuestRepo = new QuestRepositoryAlgebra[IO] {
+
+    override def createHoursOfWork(clientId: String, questId: String, request: HoursOfWork): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
     override def setEstimationCloseAt(questId: String, closeAt: Instant): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
@@ -86,7 +89,7 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
     override def validateOwnership(questId: String, clientId: String): cats.effect.IO[Unit] = ???
   }
 
-  val rewardRepo = new RewardRepositoryAlgebra[IO] {
+  val mockewardRepo = new RewardRepositoryAlgebra[IO] {
 
     override def streamRewardByQuest(questId: String): Stream[IO, RewardData] = Stream.emit(reward)
     override def getRewardData(questId: String): IO[Option[RewardData]] = ???
@@ -103,7 +106,7 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestStreamingServiceImpl[IO](appConfig, questRepo, rewardRepo)
+      service = QuestStreamingServiceImpl[IO](appConfig, mockQuestRepo, mockewardRepo)
       results <- service.streamClient("client123", Open, 10, 0).compile.toList
     } yield expect(results.exists(_.questId == "quest123"))
   }
@@ -112,7 +115,7 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestStreamingServiceImpl[IO](appConfig, questRepo, rewardRepo)
+      service = QuestStreamingServiceImpl[IO](appConfig, mockQuestRepo, mockewardRepo)
       results <- service.streamAll(10, 0).compile.toList
     } yield expect(results.length == 2)
   }
@@ -121,7 +124,7 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestStreamingServiceImpl[IO](appConfig, questRepo, rewardRepo)
+      service = QuestStreamingServiceImpl[IO](appConfig, mockQuestRepo, mockewardRepo)
       results <- service.streamAllWithRewards(10, 0).compile.toList
     } yield expect(results.forall(_.reward.contains(reward)))
   }

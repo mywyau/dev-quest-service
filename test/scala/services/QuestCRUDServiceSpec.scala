@@ -23,6 +23,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
   val configReader: ConfigReaderAlgebra[IO] = ConfigReader[IO]
   val mockUserDataRepository = MockUserDataRepository
   val mockLevelService = MockLevelService
+  val mockHoursWorkedRepository = MockHoursWorkedRepository
 
   test(".acceptQuest() - when the number of quests a dev has accepted is <= 5, return success") {
 
@@ -32,7 +33,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockLevelService)
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService)
       result <- service.acceptQuest(questId1, devId1)
     } yield expect(result == Valid(UpdateSuccess))
   }
@@ -45,7 +46,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockLevelService)
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService)
       result <- service.acceptQuest(questId1, devId1)
     } yield expect(result == Invalid(NonEmptyList.one(TooManyActiveQuestsError)))
   }
@@ -58,7 +59,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockLevelService)
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService)
       result <- service.getByQuestId(questId1)
     } yield expect(result == Some(existingQuestForUser))
   }
@@ -80,7 +81,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockLevelService)
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService)
       result <- service.create(createQuestPartial, clientId1)
     } yield expect(result == Valid(CreateSuccess))
   }
@@ -101,7 +102,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockLevelService)
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService)
       result <- service.update(questId1, updateQuestPartial)
     } yield expect(result == Valid(UpdateSuccess))
   }
@@ -122,7 +123,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockLevelService)
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService)
       result <- service.update(questId1, updateQuestPartial)
     } yield expect(result == Valid(UpdateSuccess))
   }
@@ -135,7 +136,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockLevelService)
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService)
       result <- service.updateStatus(questId1, Completed)
     } yield expect(result == Valid(UpdateSuccess))
   }
