@@ -5,29 +5,28 @@ import cache.RedisCacheAlgebra
 import cache.SessionCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
-import cats.effect.Concurrent
 import cats.effect.kernel.Async
+import cats.effect.Concurrent
 import cats.implicits.*
 import fs2.Stream
-import io.circe.Json
 import io.circe.syntax.EncoderOps
+import io.circe.Json
 import models.*
 import models.database.UpdateSuccess
 import models.quests.*
 import models.responses.*
+import models.work_time.HoursOfWork
 import org.http4s.*
-import org.http4s.Challenge
 import org.http4s.circe.*
-import org.http4s.dsl.Http4sDsl
 import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
+import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
+import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
+import scala.concurrent.duration.*
 import services.QuestCRUDServiceAlgebra
 import services.QuestStreamingServiceAlgebra
-
-import scala.concurrent.duration.*
-import models.work_time.HoursOfWork
 
 trait QuestControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]
@@ -366,7 +365,7 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
           withValidSession(userIdFromRoute, cookieToken) {
             Logger[F].debug(s"[QuestControllerImpl] PUT - Upserting hours of work for quest with ID: $questId") *>
               req.decode[HoursOfWork] { request =>
-                questCRUDService.createHoursOfWork(questId, request).flatMap {
+                questCRUDService.upsertHoursOfWork(userIdFromRoute, questId, request).flatMap {
                   case Valid(response) =>
                     Logger[F].debug(s"[QuestControllerImpl] PUT - Successfully upserted hours of work for quest for ID: $questId") *>
                       Ok(UpdatedResponse(UpdateSuccess.toString, s"Quest $questId updated successfully").asJson)
@@ -374,6 +373,24 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
                     Logger[F].debug(s"[QuestControllerImpl] PUT - Validation failed for upserting hours of work for quest, errors: ${errors.toList}") *>
                       BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = errors.toList.mkString(", ")).asJson)
                 }
+              }
+          }
+        case None =>
+          Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
+      }
+
+    case req @ GET -> Root / "quest" / "hours-of-work" / userIdFromRoute / questId =>
+      extractSessionToken(req) match {
+        case Some(cookieToken) =>
+          withValidSession(userIdFromRoute, cookieToken) {
+            Logger[F].debug(s"[QuestController] GET - Trying to get the hours worked for quest id: $questId") *>
+              questCRUDService.getHoursOfWork(questId).flatMap {
+                case Some(hoursWorked) =>
+                  Logger[F].debug(s"[QuestController] GET - Successfully retrieved the hours worked for quest id: $questId") *>
+                    Ok(hoursWorked.asJson)
+                case _ =>
+                  Logger[F].debug(s"[QuestController] GET - Unable to retrieve the hours worked for quest id: $questId") *>
+                    BadRequest(ErrorResponse(code = "VALIDATION_ERROR", message = "").asJson)
               }
           }
         case None =>

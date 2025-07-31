@@ -1,7 +1,5 @@
 package services
 
-import cats.Monad
-import cats.NonEmptyParallel
 import cats.data.EitherT
 import cats.data.Validated
 import cats.data.Validated.Invalid
@@ -10,11 +8,12 @@ import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
+import cats.Monad
+import cats.NonEmptyParallel
 import configuration.AppConfig
 import fs2.Stream
+import java.util.UUID
 import models.*
-import models.NotStarted
-import models.QuestStatus
 import models.database.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
@@ -22,11 +21,11 @@ import models.languages.Language
 import models.quests.*
 import models.skills.Questing
 import models.work_time.HoursOfWork
+import models.NotStarted
+import models.QuestStatus
 import org.typelevel.log4cats.Logger
 import repositories.*
 import services.LevelServiceAlgebra
-
-import java.util.UUID
 
 trait QuestCRUDServiceAlgebra[F[_]] {
 
@@ -46,13 +45,16 @@ trait QuestCRUDServiceAlgebra[F[_]] {
 
   def delete(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def createHoursOfWork(questId: String, request: HoursOfWork): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def getHoursOfWork(questId: String): F[Option[HoursOfWork]]
+
+  def upsertHoursOfWork(clientId: String, questId: String, request: HoursOfWork): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
 class QuestCRUDServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger](
   appConfig: AppConfig,
   questRepo: QuestRepositoryAlgebra[F],
   userRepo: UserDataRepositoryAlgebra[F],
+  hoursWorkedRepo: HoursWorkedRepositoryAlgebra[F],
   levelService: LevelServiceAlgebra[F]
 ) extends QuestCRUDServiceAlgebra[F] {
 
@@ -184,13 +186,16 @@ class QuestCRUDServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger
           Concurrent[F].pure(Invalid(errors))
     }
 
-  override def createHoursOfWork(questId: String, request: HoursOfWork): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
-    questRepo.createHoursOfWork(questId, request).flatMap {
+  override def getHoursOfWork(questId: String): F[Option[HoursOfWork]] =
+    hoursWorkedRepo.getHoursOfWork(questId)
+
+  override def upsertHoursOfWork(clientId: String, questId: String, request: HoursOfWork): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    hoursWorkedRepo.upsertHoursOfWork(clientId, questId, request).flatMap {
       case Valid(value) =>
-        Logger[F].debug(s"[QuestCRUDService][createHoursOfWork] Successfully added/updated the number hours of work for the quest: $questId") *>
+        Logger[F].debug(s"[QuestCRUDService][upsertHoursOfWork] Successfully added/updated the number hours of work for the quest: $questId") *>
           Concurrent[F].pure(Valid(value))
       case Invalid(errors) =>
-        Logger[F].error(s"[QuestCRUDService][createHoursOfWork] Failed to add/update the number hours of work for the quest ID: $questId. Errors: ${errors.toList.mkString(", ")}") *>
+        Logger[F].error(s"[QuestCRUDService][upsertHoursOfWork] Failed to add/update the number hours of work for the quest ID: $questId. Errors: ${errors.toList.mkString(", ")}") *>
           Concurrent[F].pure(Invalid(errors))
     }
 }
@@ -201,7 +206,8 @@ object QuestCRUDService {
     appConfig: AppConfig,
     questRepo: QuestRepositoryAlgebra[F],
     userRepo: UserDataRepositoryAlgebra[F],
+    hoursWorkedRepo: HoursWorkedRepositoryAlgebra[F],
     levelService: LevelServiceAlgebra[F]
   ): QuestCRUDServiceAlgebra[F] =
-    new QuestCRUDServiceImpl[F](appConfig, questRepo, userRepo, levelService)
+    new QuestCRUDServiceImpl[F](appConfig, questRepo, userRepo, hoursWorkedRepo, levelService)
 }
