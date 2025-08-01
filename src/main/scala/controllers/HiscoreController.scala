@@ -46,7 +46,6 @@ class HiscoreControllerImpl[F[_] : Async : Concurrent : Logger](
             Ok(HiscoreCount(numberOfEntries).asJson)
         }
 
-    // TODO: change this to return a list of paginated skills
     case GET -> Root / "hiscore" / "total-level" :? PageParam(maybePage) +& LimitParam(maybeLimit) =>
       val page = maybePage.getOrElse(1)
       val limit = maybeLimit.getOrElse(50)
