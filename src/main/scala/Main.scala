@@ -1,7 +1,7 @@
+import cats.NonEmptyParallel
 import cats.effect.*
 import cats.implicits.*
 import cats.syntax.all.*
-import cats.NonEmptyParallel
 import com.comcast.ip4s.*
 import configuration.AppConfig
 import configuration.ConfigReader
@@ -11,31 +11,32 @@ import fs2.Stream
 import infrastructure.Database
 import infrastructure.Redis
 import infrastructure.Server
-import java.time.*
-import java.time.temporal.ChronoUnit
-import java.time.Instant
-import java.time.LocalTime
-import java.time.ZoneId
 import middleware.Middleware.throttleMiddleware
+import org.http4s.HttpRoutes
+import org.http4s.Method
+import org.http4s.Uri
 import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.headers.Origin
 import org.http4s.implicits.*
-import org.http4s.server.middleware.CORS
 import org.http4s.server.Router
-import org.http4s.HttpRoutes
-import org.http4s.Method
-import org.http4s.Uri
+import org.http4s.server.middleware.CORS
 import org.typelevel.ci.CIString
-import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import repositories.*
 import routes.Routes.*
-import scala.concurrent.duration.*
-import scala.concurrent.duration.DurationInt
 import services.*
 import tasks.EstimateServiceBuilder
+
+import java.time.*
+import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
+import scala.concurrent.duration.*
+import scala.concurrent.duration.DurationInt
 
 object Main extends IOApp {
 
@@ -106,6 +107,7 @@ object Main extends IOApp {
     for {
       baseRoutes <- Resource.pure(baseRoutes())
       authRoutes <- Resource.pure(authRoutes(redisHost, redisPort, transactor, appConfig))
+      devBidRoutes <- Resource.pure(devBidRoutes(redisHost, redisPort, transactor, appConfig))
       questsRoutes <- Resource.pure(questsRoutes(redisHost, redisPort, transactor, appConfig))
       estimateRoutes <- Resource.pure(estimateRoutes(redisHost, redisPort, transactor, appConfig))
       hiscoreRoutes <- Resource.pure(hiscoreRoutes(transactor, appConfig))
@@ -122,6 +124,7 @@ object Main extends IOApp {
         "/dev-quest-service" -> (
           baseRoutes <+>
             authRoutes <+>
+            devBidRoutes <+>
             questsRoutes <+>
             estimateRoutes <+>
             hiscoreRoutes <+>
@@ -176,7 +179,7 @@ object Main extends IOApp {
 
         // Background stream: estimation finalizer every 5mins
         estimateService = EstimateServiceBuilder.build(transactor, appConfig)
-        estimationFinalizer =   Stream.eval(estimateService.finalizeExpiredEstimations().void) ++ estimationSchedule(appConfig, estimateService.finalizeExpiredEstimations().void)
+        estimationFinalizer = Stream.eval(estimateService.finalizeExpiredEstimations().void) ++ estimationSchedule(appConfig, estimateService.finalizeExpiredEstimations().void)
 
         httpRoutes <- createHttpRoutes[IO](
           redisAddress._1,

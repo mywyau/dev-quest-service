@@ -397,6 +397,9 @@ class QuestControllerImpl[F[_] : Async : Concurrent : Logger](
           Unauthorized(`WWW-Authenticate`(Challenge("Bearer", "api")), "Missing Cookie")
       }
 
+      
+
+
     case req @ DELETE -> Root / "quest" / userIdFromRoute / questId =>
       extractSessionToken(req) match {
         case Some(cookieToken) =>
