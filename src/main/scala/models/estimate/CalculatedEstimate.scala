@@ -10,7 +10,7 @@ import models.Rank
 case class CalculatedEstimate(
   username: String,
   score: Int,
-  days: Int,
+  hours: BigDecimal,
   rank: Rank,
   comment: Option[String]
 )

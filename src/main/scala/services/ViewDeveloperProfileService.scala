@@ -18,8 +18,8 @@ import models.view_dev_profile.ViewProfileLanguageData
 import models.view_dev_profile.ViewProfileSkillData
 import models.UserType
 import org.typelevel.log4cats.Logger
-import repositories.LanguageRepositoryAlgebra
-import repositories.SkillDataRepositoryAlgebra
+import repositories.DevLanguageRepositoryAlgebra
+import repositories.DevSkillRepositoryAlgebra
 import repositories.ViewDevUserDataRepositoryAlgebra
 
 trait ViewDeveloperProfileServiceAlgebra[F[_]] {
@@ -35,8 +35,8 @@ import repositories.*
 
 class ViewDeveloperProfileServiceImpl[F[_] : Concurrent : Logger](
   viewDevUserDataRepo: ViewDevUserDataRepositoryAlgebra[F],
-  skillRepo: SkillDataRepositoryAlgebra[F],
-  languageRepo: LanguageRepositoryAlgebra[F]
+  skillRepo: DevSkillRepositoryAlgebra[F],
+  languageRepo: DevLanguageRepositoryAlgebra[F]
 ) extends ViewDeveloperProfileServiceAlgebra[F] {
 
   override def getDevProfileData(username: String): F[Option[DevProfileData]] = {
@@ -66,8 +66,8 @@ object ViewDeveloperProfileService {
 
   def apply[F[_] : Concurrent : NonEmptyParallel : Logger](
     viewDevUserDataRepo: ViewDevUserDataRepositoryAlgebra[F],
-    skillRepo: SkillDataRepositoryAlgebra[F],
-    languageRepo: LanguageRepositoryAlgebra[F]
+    skillRepo: DevSkillRepositoryAlgebra[F],
+    languageRepo: DevLanguageRepositoryAlgebra[F]
   ): ViewDeveloperProfileServiceAlgebra[F] =
     new ViewDeveloperProfileServiceImpl[F](viewDevUserDataRepo, skillRepo, languageRepo)
 }

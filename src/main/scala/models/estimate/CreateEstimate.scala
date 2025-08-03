@@ -11,7 +11,7 @@ import java.time.LocalDateTime
 case class CreateEstimate(
   questId: String,
   score: Int,
-  days: Int,
+  hours: Int,
   comment: Option[String]
 )
 

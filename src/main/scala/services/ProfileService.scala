@@ -24,8 +24,8 @@ import models.skills.SkillData
 import models.users.*
 import models.UserType
 import org.typelevel.log4cats.Logger
-import repositories.LanguageRepositoryAlgebra
-import repositories.SkillDataRepositoryAlgebra
+import repositories.DevLanguageRepositoryAlgebra
+import repositories.DevSkillRepositoryAlgebra
 
 trait ProfileServiceAlgebra[F[_]] {
 
@@ -33,8 +33,8 @@ trait ProfileServiceAlgebra[F[_]] {
 }
 
 class ProfileServiceImpl[F[_] : Concurrent : Monad : Logger](
-  skillRepo: SkillDataRepositoryAlgebra[F],
-  languageRepo: LanguageRepositoryAlgebra[F]
+  skillRepo: DevSkillRepositoryAlgebra[F],
+  languageRepo: DevLanguageRepositoryAlgebra[F]
 ) extends ProfileServiceAlgebra[F] {
 
   override def getSkillAndLanguageData(devId: String): F[List[ProfileData]] =
@@ -51,6 +51,7 @@ class ProfileServiceImpl[F[_] : Concurrent : Monad : Logger](
       profileSkillData = userSkills.map(skill => ProfileSkillData(skill.skill, skill.level, skill.xp, skill.nextLevel, skill.nextLevelXp))
       profileLanguageData = userLanguages.map(language => ProfileLanguageData(language.language, language.level, language.xp, language.nextLevel, language.nextLevelXp))
 
+      _ <- Logger[F].debug(s"[ProfileServiceImpl][getSkillAndLanguageData] Retrieved skills: $profileSkillData and languages: $profileLanguageData")   
     } yield List(
       ProfileData(
         devId = devId,
@@ -65,8 +66,8 @@ class ProfileServiceImpl[F[_] : Concurrent : Monad : Logger](
 object ProfileService {
 
   def apply[F[_] : Concurrent : NonEmptyParallel : Logger](
-    skillRepo: SkillDataRepositoryAlgebra[F],
-    languageRepo: LanguageRepositoryAlgebra[F]
+    skillRepo: DevSkillRepositoryAlgebra[F],
+    languageRepo: DevLanguageRepositoryAlgebra[F]
   ): ProfileServiceAlgebra[F] =
     new ProfileServiceImpl[F](skillRepo, languageRepo)
 }

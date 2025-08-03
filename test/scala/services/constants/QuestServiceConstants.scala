@@ -33,8 +33,6 @@ object QuestServiceConstants {
       acceptanceCriteria = Some("some acceptance criteria"),
       status = Some(InProgress),
       tags = Seq("Python", "Scala", "TypeScript"),
-      // estimationCloseAt = Some(Instant.now().plus(2, java.time.temporal.ChronoUnit.DAYS)),
-      estimationCloseAt = Some(fixed_instant_2025_07_1200),
       estimated = true
     )
   }

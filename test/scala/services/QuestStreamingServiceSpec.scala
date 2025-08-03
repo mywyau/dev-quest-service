@@ -10,17 +10,18 @@ import configuration.AppConfig
 import configuration.ConfigReader
 import configuration.ConfigReaderAlgebra
 import fs2.Stream
-import java.time.Instant
 import models.*
+import models.Bronze
+import models.Open
 import models.database.*
 import models.quests.*
 import models.rewards.*
 import models.work_time.HoursOfWork
-import models.Bronze
-import models.Open
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import repositories.*
 import weaver.SimpleIOSuite
+
+import java.time.Instant
 
 object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
@@ -37,7 +38,6 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
       rank = Bronze,
       status = Some(Open),
       tags = List("Scala"),
-      estimationCloseAt = Some(fixedInstant),
       estimated = true
     )
 
@@ -55,9 +55,7 @@ object QuestStreamingServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     override def createHoursOfWork(clientId: String, questId: String, request: HoursOfWork): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
-    override def setEstimationCloseAt(questId: String, closeAt: Instant): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
-
-    override def findQuestsWithExpiredEstimation(now: Instant): IO[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]] = ???
+    override def findNotEstimatedQuests(): IO[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]] = ???
 
     override def countNotEstimatedAndOpenQuests(): IO[Int] = ???
 

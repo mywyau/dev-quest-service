@@ -17,7 +17,7 @@ object CreateEstimateSpec extends SimpleIOSuite with ModelsBaseSpec {
     CreateEstimate(
       questId = "QUEST001",
       score = 50,
-      days = 8,
+      hours = 8,
       comment = Some("some comment")
     )
 
@@ -30,7 +30,7 @@ object CreateEstimateSpec extends SimpleIOSuite with ModelsBaseSpec {
         |{
         |  "questId" : "QUEST001",
         |  "score" : 50,
-        |  "days" : 8,
+        |  "hours" : 8,
         |  "comment" : "some comment"
         |}
         |""".stripMargin

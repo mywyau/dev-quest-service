@@ -19,7 +19,7 @@ import models.skills.SkillData
 import models.users.*
 import models.UserType
 import org.typelevel.log4cats.Logger
-import repositories.SkillDataRepositoryAlgebra
+import repositories.DevSkillRepositoryAlgebra
 
 trait SkillDataServiceAlgebra[F[_]] {
 
@@ -32,7 +32,7 @@ trait SkillDataServiceAlgebra[F[_]] {
 }
 
 class SkillDataServiceImpl[F[_] : Concurrent : Monad : Logger](
-  skillRepo: SkillDataRepositoryAlgebra[F]
+  skillRepo: DevSkillRepositoryAlgebra[F]
 ) extends SkillDataServiceAlgebra[F] {
 
   override def countForSkill(skill: Skill): F[Int] =
@@ -51,6 +51,6 @@ class SkillDataServiceImpl[F[_] : Concurrent : Monad : Logger](
 
 object SkillDataService {
 
-  def apply[F[_] : Concurrent : NonEmptyParallel : Logger](skillRepo: SkillDataRepositoryAlgebra[F]): SkillDataServiceAlgebra[F] =
+  def apply[F[_] : Concurrent : NonEmptyParallel : Logger](skillRepo: DevSkillRepositoryAlgebra[F]): SkillDataServiceAlgebra[F] =
     new SkillDataServiceImpl[F](skillRepo)
 }

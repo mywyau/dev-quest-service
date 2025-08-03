@@ -47,11 +47,9 @@ trait QuestRepositoryAlgebra[F[_]] {
 
   def findByQuestId(questId: String): F[Option[QuestPartial]]
 
-  def findQuestsWithExpiredEstimation(now: Instant): F[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]]
+  def findNotEstimatedQuests(): F[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]]
 
   def markPaid(questId: String): F[Unit]
-
-  def setEstimationCloseAt(questId: String, closeAt: Instant): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def setFinalRank(questId: String, rank: Rank): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
@@ -69,7 +67,7 @@ trait QuestRepositoryAlgebra[F[_]] {
 
   def validateOwnership(questId: String, clientId: String): F[Unit]
 
-  def createHoursOfWork(clientId:String, questId: String, request: HoursOfWork): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
+  def createHoursOfWork(clientId: String, questId: String, request: HoursOfWork): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
 class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends QuestRepositoryAlgebra[F] {
@@ -122,7 +120,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   override def streamByQuestStatus(clientId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
       sql"""
-        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
+        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimated
         FROM quests
         WHERE status = $questStatus 
           AND client_id = $clientId  
@@ -140,7 +138,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   override def streamByQuestStatusDev(devId: String, questStatus: QuestStatus, limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
       sql"""
-        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
+        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimated
         FROM quests
         WHERE status = $questStatus 
           AND dev_id = $devId  
@@ -158,7 +156,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   override def streamByUserId(clientId: String, limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
       sql"""
-        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
+        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimated
         FROM quests
         WHERE client_id = $clientId
         ORDER BY created_at DESC
@@ -175,7 +173,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
   override def streamAll(limit: Int, offset: Int): Stream[F, QuestPartial] = {
     val queryStream: Stream[F, QuestPartial] =
       sql"""
-        SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
+            SELECT quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimated
         FROM quests
         WHERE status IN (${NotEstimated.toString()}, ${Open.toString()}, ${Estimated.toString()})
         ORDER BY created_at DESC
@@ -193,7 +191,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
     val findQuery: F[List[QuestPartial]] =
       sql"""
          SELECT 
-           quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
+           quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimated
          FROM quests
          WHERE client_id = $clientId
        """.query[QuestPartial].to[List].transact(transactor)
@@ -205,7 +203,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
     val findQuery: F[Option[QuestPartial]] =
       sql"""
          SELECT 
-           quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
+           quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimated
          FROM quests
          WHERE quest_id = $questId
        """.query[QuestPartial].option.transact(transactor)
@@ -404,44 +402,41 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
       case _ => new Exception(s"Failed to mark quest [$questId] as paid. Quest not found or update failed.").raiseError[F, Unit]
     }
 
-  override def setEstimationCloseAt(questId: String, closeAt: Instant): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
-    sql"""
-        UPDATE quests
-        SET estimation_close_at = $closeAt
-        WHERE quest_id = $questId;
-      """.update.run
-      .transact(transactor)
-      .attempt
-      .map {
-        case Right(affectedRows) if affectedRows == 1 =>
-          UpdateSuccess.validNel
-        case Right(affectedRows) if affectedRows == 0 =>
-          NotFoundError.invalidNel
-        case Left(ex: java.sql.SQLException) if ex.getSQLState == "23503" =>
-          ForeignKeyViolationError.invalidNel // Foreign key constraint violation
-        case Left(ex: java.sql.SQLException) if ex.getSQLState == "08001" =>
-          DatabaseConnectionError.invalidNel // Database connection issue
-        case Left(ex: java.sql.SQLException) if ex.getSQLState == "22001" =>
-          DataTooLongError.invalidNel // Data length exceeds column limit
-        case Left(ex: java.sql.SQLException) =>
-          SqlExecutionError(ex.getMessage).invalidNel // General SQL execution error
-        case Left(ex) =>
-          UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
-        case _ =>
-          UnexpectedResultError.invalidNel
-      }
+  // override def setEstimationCloseAt(questId: String, closeAt: Instant): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  //   sql"""
+  //       UPDATE quests
+  //       SET estimation_close_at = $closeAt
+  //       WHERE quest_id = $questId;
+  //     """.update.run
+  //     .transact(transactor)
+  //     .attempt
+  //     .map {
+  //       case Right(affectedRows) if affectedRows == 1 =>
+  //         UpdateSuccess.validNel
+  //       case Right(affectedRows) if affectedRows == 0 =>
+  //         NotFoundError.invalidNel
+  //       case Left(ex: java.sql.SQLException) if ex.getSQLState == "23503" =>
+  //         ForeignKeyViolationError.invalidNel // Foreign key constraint violation
+  //       case Left(ex: java.sql.SQLException) if ex.getSQLState == "08001" =>
+  //         DatabaseConnectionError.invalidNel // Database connection issue
+  //       case Left(ex: java.sql.SQLException) if ex.getSQLState == "22001" =>
+  //         DataTooLongError.invalidNel // Data length exceeds column limit
+  //       case Left(ex: java.sql.SQLException) =>
+  //         SqlExecutionError(ex.getMessage).invalidNel // General SQL execution error
+  //       case Left(ex) =>
+  //         UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
+  //       case _ =>
+  //         UnexpectedResultError.invalidNel
+  //     }
 
-  override def findQuestsWithExpiredEstimation(now: Instant): F[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]] = {
-
-    val gracePeriod = java.time.Duration.ofMinutes(30)
-    val upperBound = now.plus(gracePeriod)
+  override def findNotEstimatedQuests(): F[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]] = {
 
     sql"""
       SELECT 
-         quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimation_close_at, estimated
+         quest_id, client_id, dev_id, rank, title, description, acceptance_criteria, status, tags, estimated
       FROM quests
-      WHERE estimation_close_at IS NOT NULL
-        AND estimation_close_at <= $upperBound
+      WHERE 
+        estimated = FALSE
         AND status = 'NotEstimated'
     """
       .query[QuestPartial]
@@ -464,7 +459,7 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
       }
   }
 
-  override def createHoursOfWork(clientId:String, questId: String, request: HoursOfWork): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+  override def createHoursOfWork(clientId: String, questId: String, request: HoursOfWork): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
       INSERT INTO quests (
         quest_id,

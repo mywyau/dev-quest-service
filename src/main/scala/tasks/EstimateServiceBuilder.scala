@@ -1,17 +1,16 @@
 package tasks
 
-import cats.NonEmptyParallel
 import cats.effect.*
+import cats.NonEmptyParallel
 import configuration.AppConfig
 import controllers.*
 import doobie.hikari.HikariTransactor
+import java.net.URI
 import org.http4s.client.Client
 import org.typelevel.log4cats.Logger
 import repositories.*
 import services.*
 import services.LevelService
-
-import java.net.URI
 
 object EstimateServiceBuilder {
 
@@ -23,11 +22,12 @@ object EstimateServiceBuilder {
     val userDataRepository = new UserDataRepositoryImpl(transactor)
     val questRepository = QuestRepository(transactor)
     val estimateRepository = EstimateRepository(transactor)
-    val skillDataRepository = SkillDataRepository(transactor)
-    val languageRepository = LanguageRepository(transactor)
+    val estimationExpirationRepository = EstimationExpirationRepository(transactor)
+    val skillDataRepository = DevSkillRepository(transactor)
+    val languageRepository = DevLanguageRepository(transactor)
 
     val levelService = LevelService(skillDataRepository, languageRepository)
-    val estimateService = EstimateService(appConfig, userDataRepository, estimateRepository, questRepository, levelService)
+    val estimateService = EstimateService(appConfig, userDataRepository, estimateRepository, estimationExpirationRepository, questRepository, levelService)
 
     estimateService
   }

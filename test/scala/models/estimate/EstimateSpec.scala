@@ -19,7 +19,7 @@ object EstimateSpec extends SimpleIOSuite with ModelsBaseSpec {
       devId = "dev123",
       username = "goku",
       score = 50,
-      days = 8,
+      hours = 8.5,
       comment = Some("a comment")
     )
 
@@ -33,7 +33,7 @@ object EstimateSpec extends SimpleIOSuite with ModelsBaseSpec {
         |  "devId" : "dev123",
         |  "username" : "goku",
         |  "score" : 50,
-        |  "days" : 8,
+        |  "hours" : 8.5,
         |  "comment" : "a comment"
         |}
         |""".stripMargin

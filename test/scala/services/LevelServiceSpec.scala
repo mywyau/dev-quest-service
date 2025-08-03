@@ -16,7 +16,7 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
   val logger = Slf4jLogger.getLogger[IO]
 
-  val mockSkillRepo = new SkillDataRepositoryAlgebra[IO] {
+  val mockSkillRepo = new DevSkillRepositoryAlgebra[IO] {
 
     override def countForSkill(skill: Skill): IO[Int] = ???
 
@@ -48,7 +48,7 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
       IO.pure(Valid(UpdateSuccess))
   }
 
-  val mockLangRepo = new LanguageRepositoryAlgebra[IO] {
+  val mockLangRepo = new DevLanguageRepositoryAlgebra[IO] {
 
     override def countForLanguage(language: Language): IO[Int] = ???
 

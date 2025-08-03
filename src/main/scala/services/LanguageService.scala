@@ -19,7 +19,8 @@ import models.languages.LanguageData
 import models.users.*
 import models.UserType
 import org.typelevel.log4cats.Logger
-import repositories.LanguageRepositoryAlgebra
+import repositories.DevLanguageRepository
+import repositories.DevLanguageRepositoryAlgebra
 
 trait LanguageServiceAlgebra[F[_]] {
 
@@ -34,7 +35,7 @@ trait LanguageServiceAlgebra[F[_]] {
 }
 
 class LanguageServiceImpl[F[_] : Concurrent : Monad : Logger](
-  languageRepo: LanguageRepositoryAlgebra[F]
+  languageRepo: DevLanguageRepositoryAlgebra[F]
 ) extends LanguageServiceAlgebra[F] {
 
   override def countForLanguage(langauge: Language): F[Int] =
@@ -63,6 +64,6 @@ class LanguageServiceImpl[F[_] : Concurrent : Monad : Logger](
 
 object LanguageService {
 
-  def apply[F[_] : Concurrent : NonEmptyParallel : Logger](languageRepo: LanguageRepositoryAlgebra[F]): LanguageServiceAlgebra[F] =
+  def apply[F[_] : Concurrent : NonEmptyParallel : Logger](languageRepo: DevLanguageRepositoryAlgebra[F]): LanguageServiceAlgebra[F] =
     new LanguageServiceImpl[F](languageRepo)
 }
