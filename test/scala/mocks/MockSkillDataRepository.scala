@@ -8,9 +8,9 @@ import models.QuestStatus
 import models.database.*
 import models.quests.*
 import models.skills.*
-import repositories.SkillDataRepositoryAlgebra
+import repositories.DevSkillRepositoryAlgebra
 
-case object MockSkillDataRepository extends SkillDataRepositoryAlgebra[IO] {
+case object MockDevSkillRepository extends DevSkillRepositoryAlgebra[IO] {
 
   override def countForSkill(skill: Skill): IO[Int] = ???
 

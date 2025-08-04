@@ -85,7 +85,7 @@ class EstimateControllerImpl[F[_] : Async : Concurrent : Logger](
                 case response @ GetEstimateResponse(EstimateClosed, calculatedEstimate) =>
                   Logger[F].debug(s"[EstimateController][/estimates/devId/questId] GET - Found estimate ${response.toString()}") *>
                     Ok(response.asJson)
-                case response @ GetEstimateResponse(EstimateOpen, calculatedEstimate) if calculatedEstimate.size < 3 =>
+                case response @ GetEstimateResponse(EstimateOpen, calculatedEstimate) =>
                   Logger[F].debug(s"[EstimateController][/estimates/devId/questId] GET - Found estimate ${response.toString()}") *>
                     Ok(response.asJson)
                 case _ =>

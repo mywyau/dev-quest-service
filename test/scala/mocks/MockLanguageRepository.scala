@@ -6,9 +6,9 @@ import cats.effect.IO
 import fs2.Stream
 import models.database.*
 import models.languages.*
-import repositories.LanguageRepositoryAlgebra
+import repositories.DevLanguageRepositoryAlgebra
 
-case object MockLanguageRepository extends LanguageRepositoryAlgebra[IO] {
+case object MockLanguageRepository extends DevLanguageRepositoryAlgebra[IO] {
 
   override def countForLanguage(language: Language): IO[Int] = ???
 

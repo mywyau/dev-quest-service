@@ -20,7 +20,6 @@ object QuestControllerConstants {
       acceptanceCriteria = Some("some acceptance criteria"),
       status = Some(Completed),
       tags = Seq("Python", "Scala", "TypeScript"),
-      estimationCloseAt = Some(fixed_instant_2025_07_1200),
       estimated = true
     )
 }

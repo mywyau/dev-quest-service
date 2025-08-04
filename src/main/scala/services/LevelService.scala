@@ -14,10 +14,10 @@ import models.languages.LanguageData
 import models.skills.Skill
 import models.skills.SkillData
 import org.typelevel.log4cats.Logger
-import repositories.LanguageRepository
-import repositories.LanguageRepositoryAlgebra
-import repositories.SkillDataRepository
-import repositories.SkillDataRepositoryAlgebra
+import repositories.DevLanguageRepositoryAlgebra
+import repositories.DevLanguageRepository
+import repositories.DevSkillRepository
+import repositories.DevSkillRepositoryAlgebra
 
 trait LevelServiceAlgebra[F[_]] {
 
@@ -45,8 +45,8 @@ trait LevelServiceAlgebra[F[_]] {
 }
 
 class LevelServiceImpl[F[_] : Concurrent : Logger](
-  skillDataRepository: SkillDataRepositoryAlgebra[F],
-  languageDataRepository: LanguageRepositoryAlgebra[F]
+  skillDataRepository: DevSkillRepositoryAlgebra[F],
+  devLanguageRepository: DevLanguageRepositoryAlgebra[F]
 ) extends LevelServiceAlgebra[F] {
 
   private def generateLevelThresholds(): Vector[Int] = {
@@ -90,7 +90,7 @@ class LevelServiceImpl[F[_] : Concurrent : Logger](
   override def getTotalLevelHiscores(): F[List[TotalLevel]] =
     for {
       skillData: List[SkillData] <- skillDataRepository.getAllSkillData()
-      languageData: List[LanguageData] <- languageDataRepository.getAllLanguageData()
+      languageData: List[LanguageData] <- devLanguageRepository.getAllLanguageData()
 
       // Group and sum skill data
       skillTotals = skillData
@@ -150,7 +150,6 @@ class LevelServiceImpl[F[_] : Concurrent : Logger](
       // 👇 Place the new level calculation logic here
       nextLevel = newLevel + 1
       nextLevelXp = levelThresholds.lift(newLevel).getOrElse(levelThresholds.last)
-
       result <- skillDataRepository.awardSkillXP(devId, username, skill, newTotalXp, newLevel, nextLevel, nextLevelXp)
     } yield result
 
@@ -161,20 +160,20 @@ class LevelServiceImpl[F[_] : Concurrent : Logger](
     xpToAdd: BigDecimal
   ): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     for {
-      maybeSkill <- languageDataRepository.getLanguage(devId, language)
+      maybeSkill <- devLanguageRepository.getLanguage(devId, language)
       currentXp = maybeSkill.map(_.xp).getOrElse(BigDecimal(0))
       newTotalXp = currentXp + xpToAdd
       newLevel = calculateLevel(newTotalXp)
       nextLevel = newLevel + 1
       nextLevelXp = levelThresholds.lift(newLevel).getOrElse(levelThresholds.last)
-      result <- languageDataRepository.awardLanguageXP(devId, username, language, newTotalXp, newLevel, nextLevel, nextLevelXp)
+      result <- devLanguageRepository.awardLanguageXP(devId, username, language, newTotalXp, newLevel, nextLevel, nextLevelXp)
     } yield result
 }
 
 object LevelService {
 
   def apply[F[_] : Async : Logger](
-    skillRepo: SkillDataRepositoryAlgebra[F],
-    languageRepo: LanguageRepositoryAlgebra[F]
+    skillRepo: DevSkillRepositoryAlgebra[F],
+    languageRepo: DevLanguageRepositoryAlgebra[F]
   ): LevelServiceAlgebra[F] = new LevelServiceImpl[F](skillRepo, languageRepo)
 }

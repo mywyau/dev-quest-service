@@ -18,7 +18,7 @@ import services.LevelServiceAlgebra
 import java.sql.Timestamp
 import java.time.LocalDateTime
 
-trait LanguageRepositoryAlgebra[F[_]] {
+trait DevLanguageRepositoryAlgebra[F[_]] {
 
   def countForLanguage(language: Language): F[Int]
 
@@ -45,9 +45,9 @@ trait LanguageRepositoryAlgebra[F[_]] {
   ): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 }
 
-class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
+class DevLanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
   transactor: Transactor[F]
-) extends LanguageRepositoryAlgebra[F] {
+) extends DevLanguageRepositoryAlgebra[F] {
 
   implicit val languageMeta: Meta[Language] = Meta[String].timap(Language.fromString)(_.toString)
 
@@ -56,7 +56,7 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
 
   override def countForLanguage(language: Language): F[Int] =
     sql"""
-      SELECT COUNT(*) FROM language
+      SELECT COUNT(*) FROM dev_languages
       WHERE language = $language
     """.query[Int].unique.transact(transactor)
 
@@ -69,7 +69,7 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
           language,
           level,
           xp
-        FROM language
+        FROM dev_languages
       """
         .query[LanguageData]
         .to[List]
@@ -89,7 +89,7 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
           xp,
           next_level,
           next_level_xp
-        FROM language
+        FROM dev_languages
         WHERE dev_id = $devId
       """
         .query[DevLanguageData]
@@ -108,7 +108,7 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
           language,
           level,
           xp,
-        FROM language
+        FROM dev_languages
         WHERE username = $username
       """
         .query[LanguageData]
@@ -127,7 +127,7 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
           language,
           level,
           xp
-        FROM language
+        FROM dev_languages
         WHERE dev_id = $devId AND language = $language
       """
         .query[LanguageData]
@@ -146,7 +146,7 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
           language,
           level,
           xp
-        FROM language
+        FROM dev_languages
         WHERE language = $language
       """
         .query[LanguageData]
@@ -164,7 +164,7 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
         language,
         level,
         xp
-      FROM language
+      FROM dev_languages
       WHERE language = $language
       ORDER BY level DESC, xp DESC
       OFFSET $offset
@@ -176,11 +176,11 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
 
   override def awardLanguageXP(devId: String, username: String, language: Language, xp: BigDecimal, level: Int, nextLevel: Int, nextLevelXp: BigDecimal): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
-      INSERT INTO language (dev_id, username, language, xp, level, next_level, next_level_xp)
+      INSERT INTO dev_languages (dev_id, username, language, xp, level, next_level, next_level_xp)
       VALUES ($devId, $username, ${language.toString()}, $xp, $level, $nextLevel, $nextLevelXp)
       ON CONFLICT (dev_id, language)
       DO UPDATE SET 
-        xp = language.xp + $xp,
+        xp = dev_languages.xp + $xp,
         level = $level,
         next_level = $nextLevel,
         next_level_xp = $nextLevelXp
@@ -204,9 +204,9 @@ class LanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
     }
 }
 
-object LanguageRepository {
+object DevLanguageRepository {
   def apply[F[_] : Concurrent : Monad : Logger](
     transactor: Transactor[F]
-  ): LanguageRepositoryAlgebra[F] =
-    new LanguageRepositoryImpl[F](transactor)
+  ): DevLanguageRepositoryAlgebra[F] =
+    new DevLanguageRepositoryImpl[F](transactor)
 }

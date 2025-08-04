@@ -23,11 +23,11 @@ import models.skills.Questing
 import models.NotStarted
 import models.QuestStatus
 import org.typelevel.log4cats.Logger
-import repositories.LanguageRepositoryAlgebra
+import repositories.DevLanguageRepository
 import repositories.QuestRepositoryAlgebra
 import repositories.RewardRepositoryAlgebra
-import repositories.SkillDataRepository
-import repositories.SkillDataRepositoryAlgebra
+import repositories.DevSkillRepository
+import repositories.DevSkillRepositoryAlgebra
 import repositories.UserDataRepositoryAlgebra
 import services.LevelServiceAlgebra
 

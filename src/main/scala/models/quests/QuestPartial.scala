@@ -20,7 +20,6 @@ case class QuestPartial(
   acceptanceCriteria: Option[String],
   status: Option[QuestStatus],
   tags: Seq[String],
-  estimationCloseAt: Option[Instant],
   estimated: Boolean
 )
 

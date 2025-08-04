@@ -19,7 +19,7 @@ import services.*
 import java.sql.Timestamp
 import java.time.LocalDateTime
 
-trait SkillDataRepositoryAlgebra[F[_]] {
+trait DevSkillRepositoryAlgebra[F[_]] {
 
   def countForSkill(skill: Skill): F[Int]
 
@@ -47,9 +47,9 @@ trait SkillDataRepositoryAlgebra[F[_]] {
 
 }
 
-class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
+class DevSkillRepositoryImpl[F[_] : Concurrent : Monad : Logger](
   transactor: Transactor[F]
-) extends SkillDataRepositoryAlgebra[F] {
+) extends DevSkillRepositoryAlgebra[F] {
 
   implicit val skillMeta: Meta[Skill] = Meta[String].timap(Skill.fromString)(_.toString)
 
@@ -58,7 +58,7 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
 
   override def countForSkill(skill: Skill): F[Int] =
     sql"""
-      SELECT COUNT(*) FROM skill
+      SELECT COUNT(*) FROM dev_skills
       WHERE skill = $skill
     """.query[Int].unique.transact(transactor)
 
@@ -71,7 +71,7 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
           skill,
           level,
           xp
-        FROM skill
+        FROM dev_skills
       """
         .query[SkillData]
         .to[List]
@@ -89,7 +89,7 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
           skill,
           level,
           xp
-        FROM skill
+        FROM dev_skills
         WHERE username = $username
       """
         .query[SkillData]
@@ -107,8 +107,10 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
           username,
           skill,
           level,
-          xp
-        FROM skill
+          xp,
+          next_level,
+          next_level_xp
+        FROM dev_skills
         WHERE dev_id = $devId
       """
         .query[DevSkillData]
@@ -127,7 +129,7 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
           skill,
           level,
           xp
-        FROM skill
+        FROM dev_skills
         WHERE dev_id = $devId AND skill = $skill
       """
         .query[SkillData]
@@ -146,7 +148,7 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
           skill,
           level,
           xp
-        FROM skill
+        FROM dev_skills
         WHERE skill = $skill
       """
         .query[SkillData]
@@ -164,7 +166,7 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
         skill,
         level,
         xp
-      FROM skill
+      FROM dev_skills
       WHERE skill = $skill
       ORDER BY level DESC, xp DESC
       OFFSET $offset
@@ -178,11 +180,11 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
 
     val query =
       sql"""
-        INSERT INTO skill (dev_id, username, skill, xp, level, next_level, next_level_xp)
+        INSERT INTO dev_skills (dev_id, username, skill, xp, level, next_level, next_level_xp)
         VALUES ($devId, $username, ${skill.toString}, $xp, $level, $nextLevel, $nextLevelXp)
         ON CONFLICT (dev_id, skill)
         DO UPDATE SET
-          xp = skill.xp + $xp,
+          xp = dev_skills.xp + $xp,
           level = $level,
           next_level = $nextLevel,
           next_level_xp = $nextLevelXp
@@ -210,11 +212,11 @@ class SkillDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](
 
 }
 
-object SkillDataRepository {
+object DevSkillRepository {
   def apply[F[_] : Concurrent : Monad : Logger](
     transactor: Transactor[F]
-  ): SkillDataRepositoryAlgebra[F] =
-    new SkillDataRepositoryImpl[F](
+  ): DevSkillRepositoryAlgebra[F] =
+    new DevSkillRepositoryImpl[F](
       transactor
     )
 }

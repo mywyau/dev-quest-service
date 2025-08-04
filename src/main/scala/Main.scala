@@ -27,6 +27,10 @@ import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import repositories.*
 import routes.Routes.*
+import routes.HiscoreRoutes.*
+import routes.AuthRoutes.*
+import routes.RegistrationRoutes.*
+import routes.UploadRoutes.*
 import services.*
 import tasks.EstimateServiceBuilder
 
@@ -110,6 +114,7 @@ object Main extends IOApp {
       devBidRoutes <- Resource.pure(devBidRoutes(redisHost, redisPort, transactor, appConfig))
       questsRoutes <- Resource.pure(questsRoutes(redisHost, redisPort, transactor, appConfig))
       estimateRoutes <- Resource.pure(estimateRoutes(redisHost, redisPort, transactor, appConfig))
+      estimationExpirationRoutes <- Resource.pure(estimationExpirationRoutes(redisHost, redisPort, transactor, appConfig))
       hiscoreRoutes <- Resource.pure(hiscoreRoutes(transactor, appConfig))
       skillRoutes <- Resource.pure(skillRoutes(transactor, appConfig))
       languageRoutes <- Resource.pure(languageRoutes(transactor, appConfig))
@@ -127,6 +132,7 @@ object Main extends IOApp {
             devBidRoutes <+>
             questsRoutes <+>
             estimateRoutes <+>
+            estimationExpirationRoutes <+>
             hiscoreRoutes <+>
             skillRoutes <+>
             languageRoutes <+>
@@ -179,7 +185,7 @@ object Main extends IOApp {
 
         // Background stream: estimation finalizer every 5mins
         estimateService = EstimateServiceBuilder.build(transactor, appConfig)
-        estimationFinalizer = Stream.eval(estimateService.finalizeExpiredEstimations().void) ++ estimationSchedule(appConfig, estimateService.finalizeExpiredEstimations().void)
+        estimationFinalizer = Stream.eval(estimateService.finalizeExpiredEstimations().void) ++ estimationSchedule(appConfig, estimateService.finalizeExpiredEstimations())
 
         httpRoutes <- createHttpRoutes[IO](
           redisAddress._1,

@@ -11,5 +11,5 @@ case class EstimationConfig(
   prodMinimumEstimationWindowSeconds: Int,
   intervalSeconds: Int,
   estimationThreshold: Int,
-  maxDailyReviews: Int
+  maxDailyEstimates: Int
 ) derives ConfigReader

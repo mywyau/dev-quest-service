@@ -11,7 +11,7 @@ case class Estimate(
   devId: String,
   username: String,
   score: Int,
-  days: Int,
+  hours: BigDecimal,
   comment: Option[String]
 )
 

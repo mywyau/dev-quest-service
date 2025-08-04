@@ -70,7 +70,6 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
         tags = ArraySeq("Python", "Scala", "Typescript"),
-        estimationCloseAt = Some(fixed_instant_2025_01_05_0000),
         estimated = true
       )
 
@@ -92,7 +91,6 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
         tags = ArraySeq("Python", "Scala", "Typescript"),
-        estimationCloseAt = Some(fixed_instant_2025_01_05_0000),
         estimated = true
       )
 
@@ -131,7 +129,6 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
         tags = ArraySeq("Python", "Scala", "Typescript"),
-        estimationCloseAt = Some(fixed_instant_2025_01_05_0000),
         estimated = true
       )
 

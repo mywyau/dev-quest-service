@@ -91,7 +91,6 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
         tags = ArraySeq("Python", "Scala", "Typescript"),
-        estimationCloseAt = Some(fixed_instant_2025_01_05_0000),
         estimated = true
       )
 
@@ -131,7 +130,6 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
         tags = ArraySeq("Python", "Scala", "Typescript"),
-        estimationCloseAt = Some(fixed_instant_2025_01_05_0000),
         estimated = true
       )
 
@@ -170,7 +168,6 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(InProgress),
         tags = ArraySeq("Python", "Scala", "Typescript"),
-        estimationCloseAt = Some(fixed_instant_2025_01_05_0000),
         estimated = true
       )
 
@@ -222,7 +219,6 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         acceptanceCriteria = Some("Some acceptance criteria"),
         status = Some(NotStarted),
         tags = ArraySeq("Python", "Scala", "Typescript"),
-        estimationCloseAt = Some(fixed_instant_2025_01_05_0000),
         estimated = true
       )
 

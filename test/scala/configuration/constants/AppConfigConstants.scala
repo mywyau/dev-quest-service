@@ -45,7 +45,7 @@ object AppConfigConstants {
       prodMinimumEstimationWindowSeconds = 72000,
       intervalSeconds = 30,
       estimationThreshold = 3,
-      maxDailyReviews = 5
+      maxDailyEstimates = 5
     )
 
   val appConfig =

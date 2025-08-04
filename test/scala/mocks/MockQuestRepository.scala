@@ -4,13 +4,14 @@ import cats.data.Validated.Valid
 import cats.data.ValidatedNel
 import cats.effect.IO
 import fs2.Stream
-import java.time.Instant
+import models.QuestStatus
+import models.Rank
 import models.database.*
 import models.quests.*
 import models.work_time.HoursOfWork
-import models.QuestStatus
-import models.Rank
 import repositories.QuestRepositoryAlgebra
+
+import java.time.Instant
 
 case class MockQuestRepository(
   countActiveQuests: Int = 5,
@@ -21,11 +22,9 @@ case class MockQuestRepository(
 
   def showAllUsers: IO[Map[String, QuestPartial]] = IO.pure(existingQuest)
 
-  override def setEstimationCloseAt(questId: String, closeAt: Instant): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
-
-  override def findQuestsWithExpiredEstimation(now: Instant): IO[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]] = ???
-
   override def countNotEstimatedAndOpenQuests(): IO[Int] = ???
+
+  override def findNotEstimatedQuests(): IO[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]] = ???
 
   override def setFinalRank(questId: String, rank: Rank): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = ???
 
