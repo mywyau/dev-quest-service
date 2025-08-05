@@ -180,11 +180,12 @@ class DevLanguageRepositoryImpl[F[_] : Concurrent : Monad : Logger](
       VALUES ($devId, $username, ${language.toString()}, $xp, $level, $nextLevel, $nextLevelXp)
       ON CONFLICT (dev_id, language)
       DO UPDATE SET 
-        xp = dev_languages.xp + $xp,
+        xp = $xp,
         level = $level,
         next_level = $nextLevel,
         next_level_xp = $nextLevelXp
-    """.update.run.transact(transactor).attempt.map {
+    """.update.run
+    .transact(transactor).attempt.map {
       case Right(affectedRows) if affectedRows == 1 =>
         UpdateSuccess.validNel
       case Right(affectedRows) if affectedRows == 0 =>

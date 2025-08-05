@@ -292,7 +292,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
             s"Awarding $xp XP to ${estimate.username} (devId=${estimate.devId}) for Estimating. " +
               s"BaseXP=$baseXp, Modifier=$modifier, Score=${estimate.score}, Hours=${estimate.hours}"
           ) *>
-            levelService.awardSkillXpWithLevel(estimate.devId, estimate.username, Estimating, xp)
+            levelService.awardSkillXpWithLevel(devId = estimate.devId, username = estimate.username, skill = Estimating, xpToAdd = xp)
         }
       } yield dbResponse
 

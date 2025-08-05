@@ -26,15 +26,15 @@ object AppConfigConstants {
   val questConfig =
     QuestConfig(
       maxActiveQuests = 5,
-      bronzeXp = 100.00,
-      ironXp = 200.00,
-      steelXp = 300.00,
-      mithrilXp = 400.00,
-      adamantiteXp = 500.00,
-      runicXp = 600.00,
-      demonXp = 700.00,
-      ruinousXp = 800.00,
-      aetherXp = 1000.00
+      bronzeXp = 1000.00,
+      ironXp = 2000.00,
+      steelXp = 3000.00,
+      mithrilXp = 4000.00,
+      adamantiteXp = 5000.00,
+      runicXp = 6000.00,
+      demonXp = 7000.00,
+      ruinousXp = 8000.00,
+      aetherXp = 10000.00
     )
 
   val estimateConfig =

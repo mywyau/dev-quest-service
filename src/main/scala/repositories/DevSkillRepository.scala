@@ -176,7 +176,15 @@ class DevSkillRepositoryImpl[F[_] : Concurrent : Monad : Logger](
       .to[List]
       .transact(transactor)
 
-  override def awardSkillXP(devId: String, username: String, skill: Skill, xp: BigDecimal, level: Int, nextLevel: Int, nextLevelXp: BigDecimal): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+  override def awardSkillXP(
+    devId: String,
+    username: String,
+    skill: Skill,
+    xp: BigDecimal,
+    level: Int,
+    nextLevel: Int,
+    nextLevelXp: BigDecimal
+  ): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
 
     val query =
       sql"""
@@ -184,7 +192,7 @@ class DevSkillRepositoryImpl[F[_] : Concurrent : Monad : Logger](
         VALUES ($devId, $username, ${skill.toString}, $xp, $level, $nextLevel, $nextLevelXp)
         ON CONFLICT (dev_id, skill)
         DO UPDATE SET
-          xp = dev_skills.xp + $xp,
+          xp = $xp,
           level = $level,
           next_level = $nextLevel,
           next_level_xp = $nextLevelXp
