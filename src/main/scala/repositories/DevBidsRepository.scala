@@ -87,24 +87,23 @@ class DevBidRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Trans
     devBid: DevBid
   ): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     sql"""
-    INSERT INTO dev_bids (
-      quest_id,
-      dev_id,
-      dev_username,
-      bid
-    ) VALUES (
-      $questId,
-      $devId,
-      ${devUsername},
-      ${devBid.bid}
-    )
-    ON CONFLICT (dev_id)
-    DO UPDATE SET 
-      dev_id = EXCLUDED.dev_id,
-      dev_username = EXCLUDED.dev_username,
-      bid = EXCLUDED.bid,
-      updated_at = CURRENT_TIMESTAMP
-  """.update.run
+      INSERT INTO dev_bids (
+        quest_id,
+        dev_id,
+        dev_username,
+        bid
+      ) VALUES (
+        $questId,
+        $devId,
+        $devUsername,
+        ${devBid.bid}
+      )
+      ON CONFLICT (quest_id, dev_id)
+      DO UPDATE SET 
+        dev_username = EXCLUDED.dev_username,
+        bid = EXCLUDED.bid,
+        updated_at = CURRENT_TIMESTAMP
+    """.update.run
       .transact(transactor)
       .attempt
       .map {

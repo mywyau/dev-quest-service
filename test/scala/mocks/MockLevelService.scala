@@ -14,6 +14,8 @@ import services.LevelServiceAlgebra
 
 case object MockLevelService extends LevelServiceAlgebra[IO] {
 
+  override def calculateXpForLevel(level: Int): Option[Int] = ???
+
   override def countTotalUsers(): IO[Int] = ???
 
   override def getPaginatedTotalLevelHiscores(offset: Int, limit: Int): IO[List[TotalLevel]] = ???

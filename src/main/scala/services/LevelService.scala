@@ -1,9 +1,9 @@
 package services
 
 import cats.data.ValidatedNel
-import cats.effect.Sync
 import cats.effect.kernel.Async
 import cats.effect.kernel.Concurrent
+import cats.effect.Sync
 import cats.implicits.*
 import cats.syntax.all.*
 import models.auth.UserSession.decoder
@@ -14,8 +14,8 @@ import models.languages.LanguageData
 import models.skills.Skill
 import models.skills.SkillData
 import org.typelevel.log4cats.Logger
-import repositories.DevLanguageRepositoryAlgebra
 import repositories.DevLanguageRepository
+import repositories.DevLanguageRepositoryAlgebra
 import repositories.DevSkillRepository
 import repositories.DevSkillRepositoryAlgebra
 
@@ -24,6 +24,8 @@ trait LevelServiceAlgebra[F[_]] {
   def countTotalUsers(): F[Int]
 
   def calculateLevel(xp: BigDecimal): Int
+
+  def calculateXpForLevel(level: Int): Option[Int]
 
   def getTotalLevelHiscores(): F[List[TotalLevel]]
 
@@ -49,7 +51,7 @@ class LevelServiceImpl[F[_] : Concurrent : Logger](
   devLanguageRepository: DevLanguageRepositoryAlgebra[F]
 ) extends LevelServiceAlgebra[F] {
 
-  private def generateLevelThresholds(): Vector[Int] = {
+  private[services] def generateLevelThresholds(): Vector[Int] = {
     val maxLevel = 99
     val totalXP = 15000000
     val linearLevels = 90 // one less than before to leave room for 9 curved levels
@@ -86,6 +88,9 @@ class LevelServiceImpl[F[_] : Concurrent : Logger](
 
   override def calculateLevel(xp: BigDecimal): Int =
     levelThresholds.lastIndexWhere(threshold => xp >= threshold) + 1
+
+  override def calculateXpForLevel(level: Int): Option[Int] =
+    levelThresholds.lift(level - 1)
 
   override def getTotalLevelHiscores(): F[List[TotalLevel]] =
     for {
@@ -147,10 +152,17 @@ class LevelServiceImpl[F[_] : Concurrent : Logger](
       currentXp = maybeSkill.map(_.xp).getOrElse(BigDecimal(0))
       newTotalXp = currentXp + xpToAdd
       newLevel = calculateLevel(newTotalXp)
-      // 👇 Place the new level calculation logic here
       nextLevel = newLevel + 1
       nextLevelXp = levelThresholds.lift(newLevel).getOrElse(levelThresholds.last)
-      result <- skillDataRepository.awardSkillXP(devId, username, skill, newTotalXp, newLevel, nextLevel, nextLevelXp)
+      result <- skillDataRepository.awardSkillXP(
+        devId,
+        username,
+        skill,
+        newTotalXp,
+        newLevel,
+        nextLevel,
+        nextLevelXp
+      )
     } yield result
 
   override def awardLanguageXpWithLevel(
