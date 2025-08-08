@@ -178,3 +178,4 @@ object LevelServiceSpec extends SimpleIOSuite with ServiceSpecBase {
   }
 
 }
+ 
