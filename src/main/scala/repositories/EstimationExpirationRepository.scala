@@ -1,9 +1,9 @@
 package repositories
 
-import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
+import cats.Monad
 import configuration.AppConfig
 import doobie.*
 import doobie.implicits.*
@@ -12,13 +12,12 @@ import doobie.postgres.implicits.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
-import models.database.*
-import models.estimation_expirations.*
-import org.typelevel.log4cats.Logger
-
 import java.sql.Timestamp
 import java.time.Instant
 import java.time.LocalDateTime
+import models.database.*
+import models.estimation_expirations.*
+import org.typelevel.log4cats.Logger
 
 trait EstimationExpirationRepositoryAlgebra[F[_]] {
 
@@ -61,21 +60,28 @@ class EstimationExpirationRepositoryImpl[F[_] : Concurrent : Monad : Logger](tra
 
     findQuery
   }
-
   override def getExpiredQuestIds(now: Instant): F[List[ExpiredQuests]] = {
-
     val gracePeriod = java.time.Duration.ofMinutes(30)
     val upperBound = now.plus(gracePeriod)
 
-    val findQuery: F[List[ExpiredQuests]] =
+    // Build the plain query (ConnectionIO)
+    val findQuery =
       sql"""
-         SELECT 
-           quest_id
-         FROM estimation_expiration
-         WHERE estimation_close_at <= $upperBound
-       """.query[ExpiredQuests].to[List].transact(transactor)
+        SELECT quest_id
+        FROM estimation_expiration
+        WHERE estimation_close_at <= $upperBound
+      """.query[ExpiredQuests].to[List].transact(transactor)
 
-    findQuery
+    findQuery.handleErrorWith {
+      case ex: java.sql.SQLException if ex.getSQLState == "42P01" =>
+        Logger[F]
+          .info("estimation_expiration missing; returning empty list")
+          .as(List.empty)
+      case ex =>
+        // if you want to swallow everything here:
+        Logger[F].warn(ex)("getExpiredQuestIds failed; returning empty list").as(List.empty)
+      // or: IO.raiseError(ex) if you prefer to surface non-42P01 errors
+    }
   }
 
   override def getExpirations(questId: String, limit: Int, offset: Int): F[List[EstimationExpiration]] = {

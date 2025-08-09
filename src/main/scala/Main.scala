@@ -1,7 +1,7 @@
-import cats.NonEmptyParallel
 import cats.effect.*
 import cats.implicits.*
 import cats.syntax.all.*
+import cats.NonEmptyParallel
 import com.comcast.ip4s.*
 import configuration.AppConfig
 import configuration.ConfigReader
@@ -11,40 +11,42 @@ import fs2.Stream
 import infrastructure.Database
 import infrastructure.Redis
 import infrastructure.Server
+import java.time.*
+import java.time.temporal.ChronoUnit
+import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneId
 import middleware.Middleware.throttleMiddleware
-import org.http4s.HttpRoutes
-import org.http4s.Method
-import org.http4s.Uri
 import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.headers.Origin
 import org.http4s.implicits.*
-import org.http4s.server.Router
 import org.http4s.server.middleware.CORS
+import org.http4s.server.Router
+import org.http4s.HttpRoutes
+import org.http4s.Method
+import org.http4s.Uri
 import org.typelevel.ci.CIString
-import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.Logger
 import repositories.*
-import routes.Routes.*
-import routes.HiscoreRoutes.*
 import routes.AuthRoutes.*
+import routes.HiscoreRoutes.*
 import routes.RegistrationRoutes.*
+import routes.Routes.*
 import routes.UploadRoutes.*
-import services.*
-import tasks.EstimateServiceBuilder
-
-import java.time.*
-import java.time.Instant
-import java.time.LocalTime
-import java.time.ZoneId
-import java.time.temporal.ChronoUnit
 import scala.concurrent.duration.*
 import scala.concurrent.duration.DurationInt
+import services.*
+import tasks.EstimateServiceBuilder
 
 object Main extends IOApp {
 
   implicit def logger[F[_] : Sync]: Logger[F] = Slf4jLogger.getLogger[F]
+
+  def swallow(task: IO[Unit])(implicit L: Logger[IO]): IO[Unit] =
+    task.handleErrorWith(e => L.warn(e)("[Main][swallow] finalizeExpiredEstimations failed; skipping").void)
 
   def scheduleAt6HourBuckets[F[_] : Temporal](task: F[Unit]): Stream[F, Unit] = {
 
@@ -185,7 +187,20 @@ object Main extends IOApp {
 
         // Background stream: estimation finalizer every 5mins
         estimateService = EstimateServiceBuilder.build(transactor, appConfig)
-        estimationFinalizer = Stream.eval(estimateService.finalizeExpiredEstimations().void) ++ estimationSchedule(appConfig, estimateService.finalizeExpiredEstimations())
+
+        // estimationTaskSafe = swallow(estimateService.finalizeExpiredEstimations().void)
+        // estimationFinalizer = Stream.eval(estimateService.finalizeExpiredEstimations().void) ++ estimationSchedule(appConfig, estimateService.finalizeExpiredEstimations())
+
+        estimationTask = estimateService.finalizeExpiredEstimations().void
+
+        estimationTaskSafe = swallow(estimationTask)
+
+        estimationFinalizer =
+          (Stream.eval(estimationTaskSafe) ++ // initial run (swallows errors)
+            estimationSchedule(appConfig, estimationTaskSafe)) // scheduled runs (swallow errors)
+            .handleErrorWith(e => // if the *stream* itself crashes, stop quietly
+              Stream.eval(Logger[IO].warn(e)("finalizer stream crashed; stopping")) >> Stream.empty
+            )
 
         httpRoutes <- createHttpRoutes[IO](
           redisAddress._1,

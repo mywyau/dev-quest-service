@@ -14,6 +14,13 @@ case class DuplicateError(column: Option[String] = None) extends DatabaseErrors 
   val sqlColumn = column
 }
 
+case class MissingTable(column: Option[String] = None) extends DatabaseErrors {
+  val code = "MissingTable"
+  val message = "Mising table"
+  val sqlColumn = column
+}
+
+
 case object ForeignKeyViolationError extends DatabaseErrors {
   val code = "FOREIGN_KEY_VIOLATION"
   val message = "A referenced record does not exist."
