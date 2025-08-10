@@ -1,7 +1,7 @@
+import cats.NonEmptyParallel
 import cats.effect.*
 import cats.implicits.*
 import cats.syntax.all.*
-import cats.NonEmptyParallel
 import com.comcast.ip4s.*
 import configuration.AppConfig
 import configuration.ConfigReader
@@ -11,35 +11,38 @@ import fs2.Stream
 import infrastructure.Database
 import infrastructure.Redis
 import infrastructure.Server
-import java.time.*
-import java.time.temporal.ChronoUnit
-import java.time.Instant
-import java.time.LocalTime
-import java.time.ZoneId
 import middleware.Middleware.throttleMiddleware
+import org.http4s.HttpRoutes
+import org.http4s.Method
+import org.http4s.Uri
 import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.headers.Origin
 import org.http4s.implicits.*
-import org.http4s.server.middleware.CORS
 import org.http4s.server.Router
-import org.http4s.HttpRoutes
-import org.http4s.Method
-import org.http4s.Uri
+import org.http4s.server.middleware.CORS
 import org.typelevel.ci.CIString
-import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import repositories.*
 import routes.AuthRoutes.*
 import routes.HiscoreRoutes.*
+import routes.PricingPlanRoutes.pricingPlanRoutes
+import routes.PricingPlanRoutes.stripeBillingWebhookRoutes
 import routes.RegistrationRoutes.*
 import routes.Routes.*
 import routes.UploadRoutes.*
-import scala.concurrent.duration.*
-import scala.concurrent.duration.DurationInt
 import services.*
 import tasks.EstimateServiceBuilder
+
+import java.time.*
+import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
+import scala.concurrent.duration.*
+import scala.concurrent.duration.DurationInt
 
 object Main extends IOApp {
 
@@ -121,6 +124,8 @@ object Main extends IOApp {
       skillRoutes <- Resource.pure(skillRoutes(transactor, appConfig))
       languageRoutes <- Resource.pure(languageRoutes(transactor, appConfig))
       paymentRoutes <- Resource.pure(paymentRoutes(redisHost, redisPort, transactor, appConfig, client))
+      pricingPlanRoutes <- Resource.pure(pricingPlanRoutes(appConfig, redisHost, redisPort, transactor))
+      stripeBillingWebhookRoutes <- Resource.pure(stripeBillingWebhookRoutes(appConfig, redisHost, redisPort, transactor))
       profileRoutes <- Resource.pure(profileRoutes(transactor, appConfig, client))
       rewardRoutes <- Resource.pure(rewardRoutes(redisHost, redisPort, transactor, appConfig))
       registrationRoutes <- Resource.pure(registrationRoutes(redisHost, redisPort, transactor, appConfig))
@@ -132,18 +137,20 @@ object Main extends IOApp {
           baseRoutes <+>
             authRoutes <+>
             devBidRoutes <+>
-            questsRoutes <+>
             estimateRoutes <+>
             estimationExpirationRoutes <+>
             hiscoreRoutes <+>
-            skillRoutes <+>
             languageRoutes <+>
-            registrationRoutes <+>
-            userDataRoutes <+>
-            uploadRoutes <+>
             profileRoutes <+>
             paymentRoutes <+>
-            rewardRoutes
+            pricingPlanRoutes <+>
+            questsRoutes <+>
+            registrationRoutes <+>
+            rewardRoutes <+>
+            skillRoutes <+>
+            stripeBillingWebhookRoutes <+>
+            uploadRoutes <+>
+            userDataRoutes
         )
       )
       corsRoutes = corsPolicy(combinedRoutes)

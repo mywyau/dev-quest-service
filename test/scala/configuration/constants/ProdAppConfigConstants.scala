@@ -8,7 +8,7 @@ object ProdAppConfigConstants {
     DevIrlFrontendConfig(
       host = "0.0.0.0",
       port = 8080,
-      baseUrl = ""
+      baseUrl = "https://devirl.com"
     )
 
   val appServerConfig =

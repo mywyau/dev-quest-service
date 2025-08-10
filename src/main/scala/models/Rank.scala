@@ -11,9 +11,9 @@ case object Iron extends Rank
 case object Steel extends Rank
 case object Mithril extends Rank
 case object Adamantite extends Rank
-case object Runic extends Rank
-case object Demon extends Rank
-case object Ruinous extends Rank
+case object Rune extends Rank
+case object Demonic extends Rank
+case object Ruin extends Rank
 case object Aether extends Rank
 
 object Rank {
@@ -26,9 +26,9 @@ object Rank {
       case "Steel" => Steel
       case "Mithril" => Mithril
       case "Adamantite" => Adamantite
-      case "Runic" => Runic
-      case "Demon" => Demon
-      case "Ruinous" => Ruinous
+      case "Rune" => Rune
+      case "Demonic" => Demonic
+      case "Ruin" => Ruin
       case "Aether" => Aether
       case _ => throw new Exception(s"Unknown Rank type: $str")
     }
@@ -41,9 +41,9 @@ object Rank {
       case Steel => "Steel"
       case Mithril => "Mithril"
       case Adamantite => "Adamantite"
-      case Runic => "Runic"
-      case Demon => "Demon"
-      case Ruinous => "Ruinous"
+      case Rune => "Rune"
+      case Demonic => "Demonic"
+      case Ruin => "Ruin"
       case Aether => "Aether"
     }
 
@@ -55,9 +55,9 @@ object Rank {
       case "Steel" => Right(Steel)
       case "Mithril" => Right(Mithril)
       case "Adamantite" => Right(Adamantite)
-      case "Runic" => Right(Runic)
-      case "Demon" => Right(Demon)
-      case "Ruinous" => Right(Ruinous)
+      case "Rune" => Right(Rune)
+      case "Demonic" => Right(Demonic)
+      case "Ruin" => Right(Ruin)
       case "Aether" => Right(Aether)
       case other => Left(s"Invalid Rank: $other")
     }

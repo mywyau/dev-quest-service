@@ -1,20 +1,22 @@
 package routes
 
+import cache.PricingPlanCacheImpl
 import cache.RedisCacheImpl
 import cache.SessionCache
 import cache.SessionCacheImpl
-import cats.NonEmptyParallel
 import cats.effect.*
+import cats.NonEmptyParallel
 import configuration.AppConfig
 import controllers.*
 import doobie.hikari.HikariTransactor
-import org.http4s.HttpRoutes
+import java.net.URI
 import org.http4s.client.Client
+import org.http4s.HttpRoutes
 import org.typelevel.log4cats.Logger
 import repositories.*
 import services.*
-
-import java.net.URI
+import services.stripe.StripeBillingConfig
+import services.stripe.StripeBillingImpl
 
 object RegistrationRoutes {
 
@@ -27,7 +29,19 @@ object RegistrationRoutes {
 
     val userDataRepository = new UserDataRepositoryImpl(transactor)
     val sessionCache = new SessionCacheImpl(redisHost, redisPort, appConfig)
-    val registrationService = new RegistrationServiceImpl(userDataRepository)
+
+    val pricingPlanCache = new PricingPlanCacheImpl(redisHost, redisPort, appConfig)
+    val pricingPlanRepository = PricingPlanRepository(transactor)
+    val userPricingPlanRepository = UserPricingPlanRepository(transactor)
+    val stripeBillingService = new StripeBillingImpl(
+      StripeBillingConfig(
+        apiKey = "",
+        webhookSecret = ""
+      )
+    )
+    
+    val userPricingPlanService = UserPricingPlanService(appConfig, pricingPlanCache, pricingPlanRepository, userPricingPlanRepository, stripeBillingService)
+    val registrationService = new RegistrationServiceImpl(userDataRepository, userPricingPlanService)
     val registrationController = RegistrationController(registrationService, sessionCache)
 
     registrationController.routes

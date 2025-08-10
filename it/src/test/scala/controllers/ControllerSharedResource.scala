@@ -7,7 +7,7 @@ import com.comcast.ip4s.Port
 import cats.effect.*
 import configuration.models.*
 import configuration.BaseAppConfig
-import controllers.TestRoutes.*
+import controllers.test_routes.TestRoutes.*
 import dev.profunktor.redis4cats.Redis
 import doobie.*
 import doobie.hikari.HikariTransactor

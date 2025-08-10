@@ -30,24 +30,24 @@ object AppConfigSpec extends SimpleIOSuite {
   test("loads full app config correctly") {
     for {
       config <- configReader.loadAppConfig
-    } yield expect.eql(appConfig, config)
+    } yield expect.eql(appConfigConstant, config)
   }
 
   test("loads featureSwitches config correctly") {
     for {
       config <- configReader.loadAppConfig
-    } yield expect.eql(config.featureSwitches, appConfig.featureSwitches)
+    } yield expect.eql(config.featureSwitches, appConfigConstant.featureSwitches)
   }
 
   test("loads localConfig correctly") {
     for {
       config <- configReader.loadAppConfig
-    } yield expect.eql(config.localAppConfig, appConfig.localAppConfig)
+    } yield expect.eql(config.localAppConfig, appConfigConstant.localAppConfig)
   }
 
   test("loads integrationSpecConfig correctly") {
     for {
       config <- configReader.loadAppConfig
-    } yield expect.eql(config.integrationSpecConfig, appConfig.integrationSpecConfig)
+    } yield expect.eql(config.integrationSpecConfig, appConfigConstant.integrationSpecConfig)
   }
 }

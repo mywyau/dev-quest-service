@@ -1,5 +1,7 @@
 package services
 
+import cats.Monad
+import cats.NonEmptyParallel
 import cats.data.Validated
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
@@ -7,20 +9,22 @@ import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
-import cats.Monad
-import cats.NonEmptyParallel
 import fs2.Stream
-import java.util.UUID
+import models.NoUserType
+import models.UserType
 import models.database.*
 import models.database.DatabaseErrors
 import models.database.DatabaseSuccess
 import models.users.CreateUserData
+import models.users.Registration
 import models.users.UserData
-import models.UserType
 import org.typelevel.log4cats.Logger
+import repositories.PricingPlanRepositoryAlgebra
 import repositories.UserDataRepositoryAlgebra
 import repositories.UserDataRepositoryImpl
-import models.users.Registration
+import repositories.UserPricingPlanRepositoryAlgebra
+
+import java.util.UUID
 
 trait RegistrationServiceAlgebra[F[_]] {
 
@@ -32,7 +36,10 @@ trait RegistrationServiceAlgebra[F[_]] {
 }
 
 class RegistrationServiceImpl[F[_] : Concurrent : Monad : Logger](
-  userDataRepo: UserDataRepositoryAlgebra[F]
+  userDataRepo: UserDataRepositoryAlgebra[F],
+  // userPricingPlanRepo: UserPricingPlanRepositoryAlgebra[F],
+  // pricingPlanRepo: PricingPlanRepositoryAlgebra[F],
+  userPricingPlanService: UserPricingPlanServiceAlgebra[F]
 ) extends RegistrationServiceAlgebra[F] {
 
   override def getUser(userId: String): F[Option[UserData]] =
@@ -43,43 +50,76 @@ class RegistrationServiceImpl[F[_] : Concurrent : Monad : Logger](
         Logger[F].debug(s"[UserDataService] No user found with ID: $userId") *> Concurrent[F].pure(None)
     }
 
+  // override def createUser(userId: String, createUserData: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+
+  //   val createUserWithLogging =
+  //     userDataRepo.createUser(userId, createUserData).flatMap {
+  //       case Valid(value) =>
+  //         Logger[F].debug(s"[RegistrationService] User successfully created with ID: $userId") *>
+  //           Concurrent[F].pure(Valid(value))
+  //       case Invalid(errors) =>
+  //         Logger[F].error(s"[RegistrationService] Failed to create user. Errors: ${errors.toList.mkString(", ")}") *>
+  //           Concurrent[F].pure(Invalid(errors))
+  //     }
+
+  //   Logger[F].debug(s"[RegistrationService] Attempting to create a new user for userId: $userId") *>
+  //     userDataRepo.findUserNoUserName(userId).flatMap {
+  //       case None =>
+  //         createUserWithLogging
+  //       case Some(value) =>
+  //         Logger[F].debug(s"[RegistrationService] User already created with ID: ${value.userId}") *>
+  //           Concurrent[F].pure(Valid(ReadSuccess(value)))
+  //     }
+  // }
+
   override def createUser(userId: String, createUserData: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
 
     val createUserWithLogging =
       userDataRepo.createUser(userId, createUserData).flatMap {
-        case Valid(value) =>
-          Logger[F].debug(s"[RegistrationService] User successfully created with ID: $userId") *>
-            Concurrent[F].pure(Valid(value))
+        case Valid(createdUser) =>
+          Logger[F].debug(s"[RegistrationService][createUser] Successfully created initial user profile data for $userId") *>
+            Valid(createdUser).pure[F]
         case Invalid(errors) =>
-          Logger[F].error(s"[RegistrationService] Failed to create user. Errors: ${errors.toList.mkString(", ")}") *>
-            Concurrent[F].pure(Invalid(errors))
+          Logger[F].error(s"[RegistrationService][createUser] Failed to create user: ${errors.toList.mkString(", ")}") *>
+            Invalid(errors).pure[F]
       }
 
-    Logger[F].debug(s"[RegistrationService] Attempting to create a new user for userId: $userId") *>
+    Logger[F].debug(s"[RegistrationService][createUser] Creating user $userId") *>
       userDataRepo.findUserNoUserName(userId).flatMap {
-        case None =>
-          createUserWithLogging
+        case None => createUserWithLogging
         case Some(value) =>
-          Logger[F].debug(s"[RegistrationService] User already created with ID: ${value.userId}") *>
-            Concurrent[F].pure(Valid(ReadSuccess(value)))
+          Logger[F].debug(s"[RegistrationService][createUser] User already exists ${value.userId}") *>
+            Valid(ReadSuccess(value)).pure[F]
       }
   }
 
-  override def registerUser(userId: String, userType: Registration): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
-    userDataRepo.registerUser(userId, userType).flatMap {
-      case Valid(value) =>
-        Logger[F].debug(s"[UserDataService][update] Successfully updated user with ID: $userId") *>
-          Concurrent[F].pure(Valid(value))
+  override def registerUser(userId: String, registration: Registration): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
+    userDataRepo.registerUser(userId, registration).flatMap {
+      case Valid(databaseSuccess) =>
+        Logger[F].debug(s"[RegistrationService][registerUser] Successfully updated user with ID: $userId") *>
+          userPricingPlanService.ensureDefaultPlan(userId, userType = registration.userType)
+          .attempt
+          .flatMap {
+            case Right(_) => 
+              Valid(databaseSuccess).pure[F]
+            case Left(e) =>
+              // Don’t fail user creation because plan seeding failed; just log.
+              Logger[F].error(e)(s"[RegistrationService][registerUser] Failed default plan for $userId") *>
+                Valid(databaseSuccess).pure[F]
+          }
+        // Concurrent[F].pure(Valid(databaseSuccess))
       case Invalid(errors) =>
-        Logger[F].error(s"[UserDataService][update] Failed to update user with ID: $userId. Errors: ${errors.toList.mkString(", ")}") *>
+        Logger[F].error(s"[RegistrationService][registerUser] Failed to update user with ID: $userId. Errors: ${errors.toList.mkString(", ")}") *>
           Concurrent[F].pure(Invalid(errors))
     }
+
 }
 
 object RegistrationService {
 
   def apply[F[_] : Concurrent : NonEmptyParallel : Logger](
-    userDataRepo: UserDataRepositoryAlgebra[F]
+    userDataRepo: UserDataRepositoryAlgebra[F],
+    userPricingPlanService: UserPricingPlanServiceAlgebra[F]
   ): RegistrationServiceAlgebra[F] =
-    new RegistrationServiceImpl[F](userDataRepo)
+    new RegistrationServiceImpl[F](userDataRepo, userPricingPlanService)
 }
