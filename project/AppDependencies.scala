@@ -29,6 +29,7 @@ object AppDependencies {
     "org.tpolecat" %% "doobie-core" % doobieVersion,
     "org.tpolecat" %% "doobie-hikari" % doobieVersion,
     "org.tpolecat" %% "doobie-postgres" % doobieVersion,
+    "org.tpolecat" %% "doobie-postgres-circe" % doobieVersion, // this one is needed
     "org.passay" % "passay" % passayVersion,
     "com.github.jwt-scala" %% "jwt-circe" % jwtCirceVersion,
     "dev.profunktor" %% "redis4cats-effects" % redis4catsVersion,
