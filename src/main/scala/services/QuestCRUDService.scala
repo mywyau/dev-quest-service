@@ -65,9 +65,9 @@ class QuestCRUDServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger
       case Steel => appConfig.questConfig.steelXp
       case Mithril => appConfig.questConfig.mithrilXp
       case Adamantite => appConfig.questConfig.adamantiteXp
-      case Runic => appConfig.questConfig.runicXp
-      case Demon => appConfig.questConfig.demonXp
-      case Ruinous => appConfig.questConfig.ruinousXp
+      case Rune => appConfig.questConfig.runicXp
+      case Demonic => appConfig.questConfig.demonicXp
+      case Ruin => appConfig.questConfig.ruinXp
       case Aether => appConfig.questConfig.aetherXp
       case _ => 0
     }

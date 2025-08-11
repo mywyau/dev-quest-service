@@ -66,9 +66,9 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
       case Steel => appConfig.questConfig.steelXp
       case Mithril => appConfig.questConfig.mithrilXp
       case Adamantite => appConfig.questConfig.adamantiteXp
-      case Runic => appConfig.questConfig.runicXp
-      case Demon => appConfig.questConfig.demonXp
-      case Ruinous => appConfig.questConfig.ruinousXp
+      case Rune => appConfig.questConfig.runicXp
+      case Demonic => appConfig.questConfig.demonicXp
+      case Ruin => appConfig.questConfig.ruinXp
       case Aether => appConfig.questConfig.aetherXp
       case _ => 0
     }
@@ -124,9 +124,9 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
       case w if w < 0.3 => Steel
       case w if w < 0.4 => Mithril
       case w if w < 0.5 => Adamantite
-      case w if w < 0.7 => Runic
-      case w if w < 0.8 => Demon
-      case w if w < 0.9 => Ruinous
+      case w if w < 0.7 => Rune
+      case w if w < 0.8 => Demonic
+      case w if w < 0.9 => Ruin
       case _ => Aether
     }
 
