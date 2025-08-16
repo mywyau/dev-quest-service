@@ -1,22 +1,24 @@
 package repositories
 
+import cats.Monad
 import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.syntax.all.*
-import cats.Monad
 import doobie.*
 import doobie.implicits.*
-import doobie.implicits.javasql.*
-import doobie.postgres.circe.jsonb.implicits._ // now available
+// import doobie.implicits.javasql.*
+import doobie.implicits.javasql.TimestampMeta
+import doobie.postgres.circe.jsonb.implicits.*
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import fs2.Stream
-import java.sql.Timestamp
-import java.time.LocalDateTime
 import models.database.*
 import models.pricing.*
 import org.typelevel.log4cats.Logger
 import services.LevelServiceAlgebra
+
+import java.sql.Timestamp
+import java.time.LocalDateTime
 
 trait PricingPlanRepositoryAlgebra[F[_]] {
 
@@ -34,6 +36,10 @@ class PricingPlanRepositoryImpl[F[_] : Concurrent : Monad : Logger](
 
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)
+
+
+  implicit val userPricingPlanStatusMeta: Meta[UserPricingPlanStatus] = Meta[String].timap(UserPricingPlanStatus.fromString)(_.toString)
+
 
   override def listActive: F[List[PricingPlanRow]] = {
 

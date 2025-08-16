@@ -8,20 +8,24 @@ import io.circe.Json
 import java.time.Instant
 import java.time.LocalDateTime
 
-case class PricingPlanRow(
+case class UserPlanUpsert(
+  userId: String,
   planId: String,
   name: String,
   description: Option[String],
   price: BigDecimal,
   interval: String,
   isActive: Boolean,
+  status: UserPricingPlanStatus,
+  stripeCustomerId: Option[String],
   stripePriceId: Option[String],
+  stripeSubscriptionId: Option[String],
+  currentPeriodEnd: LocalDateTime,
   features: Json,
   sortOrder: Int,
-  createdAt: LocalDateTime
 )
 
-object PricingPlanRow {
-  implicit val encoder: Encoder[PricingPlanRow] = deriveEncoder[PricingPlanRow]
-  implicit val decoder: Decoder[PricingPlanRow] = deriveDecoder[PricingPlanRow]
+object UserPlanUpsert {
+  implicit val encoder: Encoder[UserPlanUpsert] = deriveEncoder[UserPlanUpsert]
+  implicit val decoder: Decoder[UserPlanUpsert] = deriveDecoder[UserPlanUpsert]
 }
