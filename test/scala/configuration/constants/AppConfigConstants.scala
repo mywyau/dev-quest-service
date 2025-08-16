@@ -32,8 +32,8 @@ object AppConfigConstants {
       mithrilXp = 4000.00,
       adamantiteXp = 5000.00,
       runicXp = 6000.00,
-      demonXp = 7000.00,
-      ruinousXp = 8000.00,
+      demonicXp = 7000.00,
+      ruinXp = 8000.00,
       aetherXp = 10000.00
     )
 

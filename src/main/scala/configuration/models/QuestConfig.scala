@@ -12,7 +12,7 @@ case class QuestConfig(
   mithrilXp: Double, 
   adamantiteXp: Double, 
   runicXp: Double, 
-  demonXp: Double, 
-  ruinousXp: Double, 
+  demonicXp: Double, 
+  ruinXp: Double, 
   aetherXp: Double, 
 ) derives ConfigReader

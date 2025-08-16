@@ -14,7 +14,7 @@ import io.circe.Json
 import io.circe.parser.decode
 import io.circe.syntax.*
 import models.Completed
-import models.Demon
+import models.Demonic
 import models.InProgress
 import models.NotStarted
 import models.auth.UserSession
@@ -85,7 +85,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         clientId = clientId,
         devId = devId,
         questId = questId,
-        rank = Demon,
+        rank = Demonic,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         acceptanceCriteria = Some("Some acceptance criteria"),
@@ -124,7 +124,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         questId = questId,
         clientId = clientId,
         devId = None,
-        rank = Demon,
+        rank = Demonic,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         acceptanceCriteria = Some("Some acceptance criteria"),
@@ -162,7 +162,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         clientId = clientId,
         questId = questId,
         devId = devId,
-        rank = Demon,
+        rank = Demonic,
         title = s"Some Quest Title $id",
         description = Some(s"Some Quest Description $id"),
         acceptanceCriteria = Some("Some acceptance criteria"),
@@ -213,7 +213,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         clientId = clientId,
         devId = devId,
         questId = questId,
-        rank = Demon,
+        rank = Demonic,
         title = s"Some Quest Title $id",
         description = Some(s"Some Quest Description $id"),
         acceptanceCriteria = Some("Some acceptance criteria"),
@@ -265,7 +265,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
 
     def testCreateQuest(): CreateQuestPartial =
       CreateQuestPartial(
-        rank = Demon,
+        rank = Demonic,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         acceptanceCriteria = "Some acceptance criteria",
@@ -303,7 +303,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
 
     val updateRequest: UpdateQuestPartial =
       UpdateQuestPartial(
-        rank = Demon,
+        rank = Demonic,
         title = "Updated title",
         description = Some("Some updated description"),
         acceptanceCriteria = Some("Some updated description")
