@@ -230,3 +230,13 @@ http --download GET  "http://localhost:4566/dev-submissions/uploads/b508ce06-258
 ```
 aws --endpoint-url=http://localhost:4566 s3 rm s3://dev-submissions --recursive
 ```
+
+### Stripe webhook local testing
+
+```
+stripe login
+```
+
+```
+stripe listen --forward-to localhost:8080/dev-quest-service/billing/webhook
+```

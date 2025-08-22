@@ -60,7 +60,7 @@ object PricingPlanRoutes {
     val userPricingPlanRepository = UserPricingPlanRepository(transactor)
     val stripeBillingService = new StripeBillingImpl(
       StripeBillingConfig(
-        apiKey = "sk_test_51RIzs009eXrPaQIgWsX2OVqqwFhHbimkRZi9uDKFmLRYFGaAsnwHX50uBjZOmy7dO5sUQsnaVkqZsPdIfILk9GNO00QORcn57s",
+        apiKey = "",
         webhookSecret = "whsec_b6869c242a15a958b1db2cad417d34f5a3e318193a86bab1fa3e120ffafcb3d8"
       )
     )
