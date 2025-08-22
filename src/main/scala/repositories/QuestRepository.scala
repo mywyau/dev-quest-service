@@ -402,33 +402,6 @@ class QuestRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transa
       case _ => new Exception(s"Failed to mark quest [$questId] as paid. Quest not found or update failed.").raiseError[F, Unit]
     }
 
-  // override def setEstimationCloseAt(questId: String, closeAt: Instant): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
-  //   sql"""
-  //       UPDATE quests
-  //       SET estimation_close_at = $closeAt
-  //       WHERE quest_id = $questId;
-  //     """.update.run
-  //     .transact(transactor)
-  //     .attempt
-  //     .map {
-  //       case Right(affectedRows) if affectedRows == 1 =>
-  //         UpdateSuccess.validNel
-  //       case Right(affectedRows) if affectedRows == 0 =>
-  //         NotFoundError.invalidNel
-  //       case Left(ex: java.sql.SQLException) if ex.getSQLState == "23503" =>
-  //         ForeignKeyViolationError.invalidNel // Foreign key constraint violation
-  //       case Left(ex: java.sql.SQLException) if ex.getSQLState == "08001" =>
-  //         DatabaseConnectionError.invalidNel // Database connection issue
-  //       case Left(ex: java.sql.SQLException) if ex.getSQLState == "22001" =>
-  //         DataTooLongError.invalidNel // Data length exceeds column limit
-  //       case Left(ex: java.sql.SQLException) =>
-  //         SqlExecutionError(ex.getMessage).invalidNel // General SQL execution error
-  //       case Left(ex) =>
-  //         UnknownError(s"Unexpected error: ${ex.getMessage}").invalidNel
-  //       case _ =>
-  //         UnexpectedResultError.invalidNel
-  //     }
-
   override def findNotEstimatedQuests(): F[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]] = {
 
     sql"""

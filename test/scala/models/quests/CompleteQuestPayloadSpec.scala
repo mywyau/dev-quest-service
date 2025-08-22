@@ -5,7 +5,7 @@ import io.circe.*
 import io.circe.parser.*
 import io.circe.syntax.EncoderOps
 import models.quests.CompleteQuestPayload
-import models.Demon
+import models.Demonic
 import models.InProgress
 import models.ModelsBaseSpec
 import weaver.SimpleIOSuite
@@ -14,7 +14,7 @@ object CompleteQuestPayloadSpec extends SimpleIOSuite with ModelsBaseSpec {
 
   val testAcceptPayload =
     CompleteQuestPayload(
-      rank = Demon,
+      rank = Demonic,
       questStatus = InProgress
     )
 
@@ -25,7 +25,7 @@ object CompleteQuestPayloadSpec extends SimpleIOSuite with ModelsBaseSpec {
     val expectedJson =
       """
         |{
-        |  "rank": "Demon",
+        |  "rank": "Demonic",
         |  "questStatus": "InProgress"
         |}
         |""".stripMargin

@@ -15,7 +15,7 @@ import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
 import models.Completed
-import models.Demon
+import models.Demonic
 import models.InProgress
 import repositories.QuestRepositoryImpl
 import repository.fragments.QuestRepoFragments.*
@@ -29,6 +29,7 @@ import weaver.IOSuite
 import weaver.ResourceTag
 
 class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryISpecBase {
+  
   type Res = QuestRepositoryImpl[IO]
 
   private def initializeSchema(transactor: TransactorResource): Resource[IO, Unit] =
@@ -40,7 +41,7 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
 
   def testQuestRequest(clientId: String, businessId: String): CreateQuestPartial =
     CreateQuestPartial(
-      rank = Demon,
+      rank = Demonic,
       title = "Implement User Authentication",
       description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
       acceptanceCriteria = "Set up Auth0 integration and secure routes using JWT tokens.",
@@ -64,7 +65,7 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         clientId = "USER001",
         questId = "QUEST001",
         devId = Some("DEV001"),
-        rank = Demon,
+        rank = Demonic,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         acceptanceCriteria = Some("Some acceptance criteria"),
@@ -85,7 +86,7 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         clientId = "USER001",
         questId = "QUEST001",
         devId = Some("DEV001"),
-        rank = Demon,
+        rank = Demonic,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         acceptanceCriteria = Some("Some acceptance criteria"),
@@ -103,7 +104,7 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
 
     val updateRequest =
       UpdateQuestPartial(
-        rank = Demon,
+        rank = Demonic,
         title = "Implement User Authentication",
         description = Some("Set up Auth0 integration and secure routes using JWT tokens."),
         acceptanceCriteria = Some("Set up Auth0 integration and secure routes using JWT tokens.")
@@ -123,7 +124,7 @@ class QuestRepositoryISpec(global: GlobalRead) extends IOSuite with RepositoryIS
         clientId = "USER003",
         questId = questId,
         devId = Some("DEV003"),
-        rank = Demon,
+        rank = Demonic,
         title = "Refactor API Layer",
         description = Some("Migrate from custom HTTP clients to use http4s and apply middleware."),
         acceptanceCriteria = Some("Some acceptance criteria"),

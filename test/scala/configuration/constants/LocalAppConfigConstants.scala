@@ -7,8 +7,8 @@ object LocalAppConfigConstants {
   val devIrlFrontendConfig =
     DevIrlFrontendConfig(
       host = "0.0.0.0",
-      port = 8080,
-      baseUrl = ""
+      port = 3000,
+      baseUrl = "http://localhost:3000"
     )
 
   val appServerConfig =
