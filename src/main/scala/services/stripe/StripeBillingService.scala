@@ -15,17 +15,14 @@ import com.stripe.net.RequestOptions
 import com.stripe.net.Webhook
 import com.stripe.param.SubscriptionUpdateParams
 import com.stripe.param.checkout.SessionCreateParams
+import configuration.AppConfig
+import io.github.cdimascio.dotenv.Dotenv
 import models.pricing.PlanSnapshot
 import models.pricing.UserPricingPlanView
 import org.typelevel.log4cats.Logger
 
 import java.time.Instant
 import scala.jdk.CollectionConverters.*
-
-final case class StripeBillingConfig(
-  apiKey: String,
-  webhookSecret: String
-)
 
 /** Minimal event payload your service needs */
 final case class StripeEvent(
@@ -64,7 +61,21 @@ trait StripeBillingServiceAlgebra[F[_]] {
   def setCancelAtPeriodEnd(subscriptionId: String, cancel: Boolean): F[StripeSubState]
 }
 
-final class StripeBillingImpl[F[_] : Async : Logger](cfg: StripeBillingConfig) extends StripeBillingServiceAlgebra[F] {
+final class StripeBillingServiceImpl[F[_] : Async : Logger](appConfig: AppConfig) extends StripeBillingServiceAlgebra[F] {
+
+  val secretKey: String =
+    if (appConfig.featureSwitches.localTesting) {
+      sys.env.getOrElse("STRIPE_TEST_PLAN_SECRET_KEY", Dotenv.load().get("STRIPE_TEST_PLAN_SECRET_KEY"))
+    } else {
+      sys.env.getOrElse("STRIPE_TEST_PLAN_SECRET_KEY", "")
+    }
+
+  val webhookSecret: String =
+    if (appConfig.featureSwitches.localTesting) {
+      sys.env.getOrElse("STRIPE_TEST_WEBHOOK_SECRET", Dotenv.load().get("STRIPE_TEST_WEBHOOK_SECRET"))
+    } else {
+      sys.env.getOrElse("STRIPE_TEST_WEBHOOK_SECRET", "")
+    }
 
   private def toSnapshot(view: UserPricingPlanView, userId: String): PlanSnapshot =
     PlanSnapshot(
@@ -78,7 +89,7 @@ final class StripeBillingImpl[F[_] : Async : Logger](cfg: StripeBillingConfig) e
 
   /** Ensure API key is set before each call (safe to set repeatedly) */
   private def init: F[Unit] =
-    Async[F].delay(Stripe.apiKey = cfg.apiKey)
+    Async[F].delay(Stripe.apiKey = secretKey)
 
   private def parseEvent(event: Event): F[StripeEvent] = {
 
@@ -187,7 +198,7 @@ final class StripeBillingImpl[F[_] : Async : Logger](cfg: StripeBillingConfig) e
   override def verifyAndParseEvent(rawPayload: String, signatureHeader: String): F[StripeEvent] =
     for {
       _ <- init
-      event <- Async[F].blocking(Webhook.constructEvent(rawPayload, signatureHeader, cfg.webhookSecret))
+      event <- Async[F].blocking(Webhook.constructEvent(rawPayload, signatureHeader, webhookSecret))
       _ <- Logger[F].debug(s"[Stripe] Webhook event type=${event.getType}")
       se <- parseEvent(event)
     } yield se
@@ -297,12 +308,11 @@ final class StripeBillingImpl[F[_] : Async : Logger](cfg: StripeBillingConfig) e
           .setCancelAtPeriodEnd(java.lang.Boolean.valueOf(cancel))
           .build()
 
-        val updated = {
+        val updatedSubscription = {
           val sub = Subscription.retrieve(subscriptionId)
           sub.update(params)
         }
-        updated
-        // Subscription.update(subscriptionId, params)
+        updatedSubscription
       }
       (_, status, currentEnd, cancelFlag) = extractFromSubscription(updated)
       state = StripeSubState(
@@ -313,4 +323,9 @@ final class StripeBillingImpl[F[_] : Async : Logger](cfg: StripeBillingConfig) e
       _ <- Logger[F].info(s"[Stripe] setCancelAtPeriodEnd sub=$subscriptionId cancel=$cancel -> status=${state.status} end=${state.currentPeriodEnd}")
     } yield state
 
+}
+
+object StripeBillingService {
+
+  def apply[F[_] : Async : Logger](appConfig: AppConfig): StripeBillingServiceAlgebra[F] = new StripeBillingServiceImpl[F](appConfig)
 }

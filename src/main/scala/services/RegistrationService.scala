@@ -37,8 +37,6 @@ trait RegistrationServiceAlgebra[F[_]] {
 
 class RegistrationServiceImpl[F[_] : Concurrent : Monad : Logger](
   userDataRepo: UserDataRepositoryAlgebra[F],
-  // userPricingPlanRepo: UserPricingPlanRepositoryAlgebra[F],
-  // pricingPlanRepo: PricingPlanRepositoryAlgebra[F],
   userPricingPlanService: UserPricingPlanServiceAlgebra[F]
 ) extends RegistrationServiceAlgebra[F] {
 
@@ -49,28 +47,6 @@ class RegistrationServiceImpl[F[_] : Concurrent : Monad : Logger](
       case None =>
         Logger[F].debug(s"[UserDataService] No user found with ID: $userId") *> Concurrent[F].pure(None)
     }
-
-  // override def createUser(userId: String, createUserData: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
-
-  //   val createUserWithLogging =
-  //     userDataRepo.createUser(userId, createUserData).flatMap {
-  //       case Valid(value) =>
-  //         Logger[F].debug(s"[RegistrationService] User successfully created with ID: $userId") *>
-  //           Concurrent[F].pure(Valid(value))
-  //       case Invalid(errors) =>
-  //         Logger[F].error(s"[RegistrationService] Failed to create user. Errors: ${errors.toList.mkString(", ")}") *>
-  //           Concurrent[F].pure(Invalid(errors))
-  //     }
-
-  //   Logger[F].debug(s"[RegistrationService] Attempting to create a new user for userId: $userId") *>
-  //     userDataRepo.findUserNoUserName(userId).flatMap {
-  //       case None =>
-  //         createUserWithLogging
-  //       case Some(value) =>
-  //         Logger[F].debug(s"[RegistrationService] User already created with ID: ${value.userId}") *>
-  //           Concurrent[F].pure(Valid(ReadSuccess(value)))
-  //     }
-  // }
 
   override def createUser(userId: String, createUserData: CreateUserData): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
 
@@ -107,7 +83,6 @@ class RegistrationServiceImpl[F[_] : Concurrent : Monad : Logger](
               Logger[F].error(e)(s"[RegistrationService][registerUser] Failed default plan for $userId") *>
                 Valid(databaseSuccess).pure[F]
           }
-        // Concurrent[F].pure(Valid(databaseSuccess))
       case Invalid(errors) =>
         Logger[F].error(s"[RegistrationService][registerUser] Failed to update user with ID: $userId. Errors: ${errors.toList.mkString(", ")}") *>
           Concurrent[F].pure(Invalid(errors))

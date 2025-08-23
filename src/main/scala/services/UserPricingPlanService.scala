@@ -153,7 +153,6 @@ class UserPricingPlanServiceImpl[F[_] : Sync : Logger](
         case Some(view) => pricingPlanCache.storePricingPlan(cacheKey(userId), Some(toSnapshot(view, userId))).void
         case None       => pricingPlanCache.deletePricingPlan(cacheKey(userId)).void // fallback
       }
-      // _ <- pricingPlanCache.deletePricingPlan(cacheKey(userId))
     } yield up
 
   override def createCheckout(userId: String, planId: String, idemKey: String): F[String] = {
