@@ -21,14 +21,16 @@ import models.*
 import models.database.*
 import models.estimate.*
 import models.estimation_expirations.*
-import models.quests.QuestPartial
-import models.skills.Estimating
-import models.users.*
+import models.kafka.*
 import org.typelevel.log4cats.Logger
 import repositories.EstimateRepositoryAlgebra
 import repositories.EstimationExpirationRepositoryAlgebra
 import repositories.QuestRepositoryAlgebra
 import repositories.UserDataRepositoryAlgebra
+import services.kafka.producers.QuestEstimationEventProducerAlgebra
+import _root_.models.quests.QuestPartial
+import _root_.models.users.UserData
+import _root_.models.skills.Estimating
 
 trait EstimateServiceAlgebra[F[_]] {
 
@@ -36,13 +38,15 @@ trait EstimateServiceAlgebra[F[_]] {
 
   def createEstimate(devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def evaluateEstimates(questId: String, estimates:List[Estimate]): F[List[EvaluatedEstimate]]
+  def evaluateEstimates(questId: String, estimates: List[Estimate]): F[List[EvaluatedEstimate]]
 
   def completeEstimationAwardEstimatingXp(questId: String, rank: Rank, estimates: List[Estimate]): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
   def finalizeQuestEstimation(questId: String): F[Validated[NonEmptyList[DatabaseErrors], DatabaseSuccess]]
 
-  // def finalizeExpiredEstimations(): F[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]]. // possibly need to keep this implementation
+  // def finalizeQuestEstimationV(questId: String): F[ValidatedNel[Failure, KafkaProducerResult]]
+
+  // def finalizeExpiredEstimations(): F[ValidatedNel[DatabaseErrors, ReadSuccess[List[QuestPartial]]]] // possibly need to keep this implementation
 
   def finalizeExpiredEstimations(): F[Unit]
 }
@@ -53,7 +57,8 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
   estimateRepo: EstimateRepositoryAlgebra[F],
   estimationExpirationRepo: EstimationExpirationRepositoryAlgebra[F],
   questRepo: QuestRepositoryAlgebra[F],
-  levelService: LevelServiceAlgebra[F]
+  levelService: LevelServiceAlgebra[F],
+  questEstimationEventProducer: QuestEstimationEventProducerAlgebra[F]
 ) extends EstimateServiceAlgebra[F] {
 
   def isEstimated(estimationExpiration: EstimationExpiration, now: Instant): Boolean =
@@ -80,7 +85,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
     alpha * normalizedScore + (1 - alpha) * normalizedHours
   }
 
-  private[services] def computeCommunityAverage(estimates: List[Estimate]): Option[BigDecimal] =
+  private[services] def computeCommunityAverageComplexityScore(estimates: List[Estimate]): Option[BigDecimal] =
     if estimates.nonEmpty then
       val total = estimates.map(e => computeWeightedEstimate(e.score, e.hours)).sum
       Some(total / estimates.size)
@@ -99,11 +104,10 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
       ) *> modifier.pure[F]
   }
 
-  override def evaluateEstimates(questId: String, estimates:List[Estimate]): F[List[EvaluatedEstimate]] =
+  override def evaluateEstimates(questId: String, estimates: List[Estimate]): F[List[EvaluatedEstimate]] =
     for {
-      // estimates <- estimateRepo.getEstimates(questId)
-      communityAvgOpt <- computeCommunityAverage(estimates).pure[F]
-      result <- communityAvgOpt match {
+      communityAvgScoreOpt <- computeCommunityAverageComplexityScore(estimates).pure[F]
+      result <- communityAvgScoreOpt match {
         case Some(avg) =>
           estimates.traverse { e =>
             computeAccuracyModifier(e, avg).map(mod => EvaluatedEstimate(e, mod))
@@ -136,7 +140,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
   def setFinalRankFromEstimates(questId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     for {
       estimates <- estimateRepo.getEstimates(questId)
-      maybeAvg = computeCommunityAverage(estimates)
+      maybeAvg = computeCommunityAverageComplexityScore(estimates)
       result <- maybeAvg match
         case Some(avg) =>
           val finalRank = rankFromWeightedScore(avg)
@@ -176,7 +180,6 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
     val countdownEndsAt = computeEstimationCloseAt(now, bucketSeconds, minWindowSeconds)
 
     for {
-      // result <- questRepo.setEstimationCloseAt(questId, countdownEndsAt)
       result <- estimationExpirationRepo.upsertEstimationCloseAt(questId, clientId, countdownEndsAt)
     } yield result
   }
@@ -205,10 +208,10 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
       else GetEstimateResponse(EstimateOpen, calculatedEstimates)
 
   override def finalizeQuestEstimation(questId: String): F[Validated[NonEmptyList[DatabaseErrors], DatabaseSuccess]] =
-    for {
+   for {
       estimates <- estimateRepo.getEstimates(questId)
       _ <- Logger[F].debug(s"Estimates found: $estimates")
-      maybeAvg = computeCommunityAverage(estimates)
+      maybeAvg = computeCommunityAverageComplexityScore(estimates)
       result: Validated[NonEmptyList[DatabaseErrors], DatabaseSuccess] <- maybeAvg match
         case Some(avg) =>
           val finalRank = rankFromWeightedScore(avg)
@@ -219,6 +222,53 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
         case None =>
           Logger[F].warn(s"Unable to finalize estimation for quest $questId — no average found") *>
             Concurrent[F].pure(Invalid(NonEmptyList.one(NotFoundError)))
+    } yield result
+
+// TODO we need to rebuild the service and make the changes on the side regarding kafka
+  private def finalizeQuestEstimationV2(questId: String): F[ValidatedNel[Failure, KafkaProducerResult]] =
+    for {
+      estimates <- estimateRepo.getEstimates(questId)
+      _         <- Logger[F].debug(s"Estimates found: $estimates")
+
+      maybeAvg   = computeCommunityAverageComplexityScore(estimates)
+      result    <- maybeAvg match {
+        case Some(avg) =>
+          val finalRank = rankFromWeightedScore(avg)
+
+          // ✅ Use the correct element type
+          val userEstimates: List[UserEstimate] =
+            estimates.map(e =>
+              UserEstimate(
+                devId    = e.devId,
+                username = e.username,
+                score    = e.score,
+                hours    = e.hours,
+                modifier = 1 // or your computed modifier (BigDecimal recommended)
+              )
+            )
+
+          // ✅ Keep the concrete event type
+          val event: QuestEstimationFinalized =
+            QuestEstimationFinalized(
+              questId       = questId,
+              finalRank     = finalRank,
+              baseXp        = xpAmount(finalRank),
+              finalizedAt   = Instant.now(),
+              userEstimates = userEstimates
+            )
+
+          // estimationFinalized must return F[ProducerResult]
+          questEstimationEventProducer
+            .estimationFinalized(event)
+            .map(Valid(_))
+            .recover { case e =>
+              Invalid(NonEmptyList.one(KafkaSendError(s"Failed to produce event for quest: $questId", Some(e))))
+            }
+
+        case None =>
+          Logger[F].warn(s"Unable to finalize estimation for quest $questId — no average found") *>
+            Concurrent[F].pure(Invalid(NonEmptyList.one(KafkaSendError("No average score"))))
+      }
     } yield result
 
   override def createEstimate(devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
@@ -312,7 +362,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
             for {
               _ <- Logger[F].info(s"Finalizing quest ${quest.questId} after countdown expiration")
               _ <- finalizeQuestEstimation(quest.questId)
-            } yield ()
+            } yield () // we can replace unit with a actual kafka producer success value enum to represent success write
           }
         case Invalid(errors) =>
           Logger[F]
@@ -322,6 +372,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
             .void
       }
     } yield ()
+
 
 }
 
@@ -333,7 +384,8 @@ object EstimateService {
     estimateRepo: EstimateRepositoryAlgebra[F],
     estimationExpirationRepo: EstimationExpirationRepositoryAlgebra[F],
     questRepo: QuestRepositoryAlgebra[F],
-    levelService: LevelServiceAlgebra[F]
+    levelService: LevelServiceAlgebra[F],
+    questEstimationEventProducer: QuestEstimationEventProducerAlgebra[F] // <-- NEW
   ): EstimateServiceAlgebra[F] =
-    new EstimateServiceImpl[F](appConfig, userDataRepo, estimateRepo, estimationExpirationRepo, questRepo, levelService)
+    new EstimateServiceImpl[F](appConfig, userDataRepo, estimateRepo, estimationExpirationRepo, questRepo, levelService, questEstimationEventProducer)
 }

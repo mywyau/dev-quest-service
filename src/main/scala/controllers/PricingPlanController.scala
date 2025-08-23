@@ -1,7 +1,7 @@
 // controllers/PricingPlanController.scala
 package controllers
 
-import cache.SessionCacheAlgebra
+import infrastructure.cache.SessionCacheAlgebra
 import cats.effect.*
 import cats.syntax.all.*
 import configuration.AppConfig
@@ -191,7 +191,7 @@ final class PricingPlanControllerImpl[F[_] : Async : Concurrent : Logger](
                 viewOpt.flatMap(_.userPlanRow.stripeCustomerId),
                 new IllegalArgumentException(s"No Stripe customerId for user=$userId")
               )
-              returnUrl = s"${appConfig.localAppConfig.devIrlFrontendConfig.baseUrl}/billing/select-plan/client"
+              returnUrl = s"${appConfig.devIrlFrontendConfig.baseUrl}/billing/select-plan/client"
               url <- stripeBillingService.createBillingPortalSession(customerId, returnUrl)
               res <- Ok(UrlResponse(url))
             } yield res
@@ -211,7 +211,7 @@ final class PricingPlanControllerImpl[F[_] : Async : Concurrent : Logger](
     //                           viewOpt.flatMap(_.userPlanRow.stripeCustomerId), // <-- correct field
     //                           new IllegalArgumentException("No Stripe customer id for user")
     //                         )
-    //           returnUrl   = s"${appConfig.prodAppConfig.stripeConfig.stripeUrl}/billing/select-plan"
+    //           returnUrl   = s"${appConfig.stripeConfig.stripeUrl}/billing/select-plan"
     //           url        <- stripeBilling.createBillingPortalSession(customerId, returnUrl)
     //           res        <- Ok(UrlResponse(url))
     //         } yield res

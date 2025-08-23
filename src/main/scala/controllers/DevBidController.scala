@@ -1,6 +1,6 @@
 package controllers
 
-import cache.SessionCacheAlgebra
+import infrastructure.cache.SessionCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
 import cats.effect.Concurrent

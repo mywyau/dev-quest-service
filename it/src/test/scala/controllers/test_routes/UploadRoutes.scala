@@ -1,11 +1,6 @@
 package controllers.test_routes
 
-import cache.PricingPlanCache
-import cache.PricingPlanCacheAlgebra
-import cache.RedisCacheAlgebra
-import cache.RedisCacheImpl
-import cache.SessionCacheAlgebra
-import cache.SessionCacheImpl
+import infrastructure.cache.*
 import cats.data.Validated
 import cats.data.ValidatedNel
 import cats.effect.*

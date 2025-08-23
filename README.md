@@ -240,3 +240,20 @@ stripe login
 ```
 stripe listen --forward-to localhost:8080/dev-quest-service/billing/webhook
 ```
+
+
+### Mermaid Wireframe Diagrams
+this is for mermaid diagrams 
+
+```
+command+shift+v 
+```
+
+## ✅ Option 3: Export to images (for READMEs, docs, or Confluence)
+
+This can be in a separate repo so we do not install the dependency here.
+
+
+```
+npm install -g @mermaid-js/mermaid-cli
+```

@@ -1,8 +1,8 @@
 package routes
 
-import cache.RedisCacheImpl
-import cache.SessionCache
-import cache.SessionCacheImpl
+import infrastructure.cache.RedisCacheImpl
+import infrastructure.cache.SessionCache
+import infrastructure.cache.SessionCacheImpl
 import cats.effect.*
 import cats.NonEmptyParallel
 import configuration.AppConfig

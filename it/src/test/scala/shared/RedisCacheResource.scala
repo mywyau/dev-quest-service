@@ -1,8 +1,7 @@
 package shared
 
-import cache.RedisCacheAlgebra
-import cache.SessionCacheAlgebra
 import cats.effect.IO
+import infrastructure.cache.*
 
 // Define a wrapper case class to help with runtime type issues
 

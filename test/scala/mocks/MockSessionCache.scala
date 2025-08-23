@@ -6,7 +6,7 @@ import cats.data.ValidatedNel
 import cats.implicits._
 import models.auth.UserSession
 import models.cache.{CacheErrors, CacheUpdateFailure, CacheUpdateSuccess, CacheSuccess}
-import cache.SessionCacheAlgebra
+import infrastructure.cache.SessionCacheAlgebra
 
 class MockSessionCache[F[_]: Sync] private (
   sessions: Ref[F, Map[String, UserSession]],

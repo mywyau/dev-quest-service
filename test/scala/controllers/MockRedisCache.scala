@@ -1,6 +1,6 @@
 package controllers
 
-import cache.RedisCacheAlgebra
+import infrastructure.cache.RedisCacheAlgebra
 import cats.data.Validated.Valid
 import cats.data.ValidatedNel
 import cats.effect.*
@@ -12,7 +12,7 @@ import models.database.*
 import models.quests.* 
 import cats.effect.IO
 import cats.effect.Ref
-import cache.RedisCacheAlgebra
+import infrastructure.cache.RedisCacheAlgebra
 import models.auth.UserSession
 import models.QuestStatus
 import models.Rank

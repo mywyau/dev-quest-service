@@ -1,14 +1,12 @@
 package controllers
 
-import cache.RedisCache
-import cache.RedisCacheAlgebra
-import cache.SessionCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
 import cats.effect.kernel.Async
 import cats.effect.Concurrent
 import cats.implicits.*
 import fs2.Stream
+import infrastructure.cache.*
 import io.circe.syntax.EncoderOps
 import io.circe.Json
 import models.*

@@ -1,15 +1,12 @@
 package controllers.test_routes
 
-import cache.PricingPlanCache
-import cache.PricingPlanCacheAlgebra
-import cache.RedisCacheAlgebra
-import cache.RedisCacheImpl
-import cache.SessionCacheAlgebra
-import cache.SessionCacheImpl
+
+import infrastructure.cache.*
 import cats.data.Validated
 import cats.data.ValidatedNel
 import cats.effect.*
 import cats.implicits.*
+import infrastructure.KafkaProducerProvider
 import configuration.AppConfig
 import configuration.BaseAppConfig
 import controllers.mocks.*
@@ -20,6 +17,7 @@ import controllers.BaseController
 import controllers.PricingPlanController
 import dev.profunktor.redis4cats.RedisCommands
 import doobie.util.transactor.Transactor
+import fs2.kafka.*
 import java.net.URI
 import java.time.Duration
 import java.time.Instant
@@ -37,6 +35,8 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import repositories.*
 import services.*
+import services.kafka.consumers.QuestCreatedConsumer
+import services.kafka.producers.QuestEventProducerImpl
 import services.s3.LiveS3Client
 import services.s3.S3ClientAlgebra
 import services.s3.S3PresignerAlgebra
@@ -87,7 +87,7 @@ object TestRoutes extends BaseAppConfig {
         cancelAtPeriodEnd = false
       )
 
-      // ⚠️ For integration tests, stub Stripe, don't use the real impl
+      // For integration tests, stub Stripe, don't use the real impl
     val stripeStub = new StripeBillingServiceAlgebra[IO] {
 
       override def setCancelAtPeriodEnd(subscriptionId: String, cancel: Boolean): IO[StripeSubState] = ???
@@ -141,13 +141,26 @@ object TestRoutes extends BaseAppConfig {
 
   def createTestRouter(transactor: Transactor[IO], appConfig: AppConfig): Resource[IO, HttpRoutes[IO]] = {
 
-    val redisHost = sys.env.getOrElse("REDIS_HOST", appConfig.integrationSpecConfig._3.host)
-    val redisPort = sys.env.get("REDIS_PORT").flatMap(p => scala.util.Try(p.toInt).toOption).getOrElse(appConfig.integrationSpecConfig._3.port)
+    val redisHost = sys.env.getOrElse("REDIS_HOST", appConfig.redisConfig.host)
+    val redisPort = sys.env.get("REDIS_PORT").flatMap(p => scala.util.Try(p.toInt).toOption).getOrElse(appConfig.redisConfig.port)
 
     for {
+      kafkaProducer: KafkaProducer[IO, String, String] <- KafkaProducerProvider.make[IO](
+        appConfig.kafka.bootstrapServers,
+        appConfig.kafka.clientId,
+        appConfig.kafka.acks,
+        appConfig.kafka.lingerMs,
+        appConfig.kafka.retries
+      )
+      consumerStream <- QuestCreatedConsumer.resource[IO](QuestCreatedConsumer.Settings(bootstrapServers = appConfig.kafka.bootstrapServers))
+      _ <- Resource
+        .make(Concurrent[IO].start(consumerStream.compile.drain))(_.cancel)
+        .void
+
+      questEventProducer = new QuestEventProducerImpl[IO](appConfig.kafka.topic.questCreated, kafkaProducer)
       registrationRoutes <- registrationRoutes(transactor, appConfig)
       userDataRoutes <- userDataRoutes(transactor, appConfig)
-      questRoute <- questRoutes(transactor, appConfig)
+      questRoute <- questRoutes(transactor, appConfig, questEventProducer)
       uploadRoutes <- uploadRoutes(transactor, appConfig)
       pricingPlanRoutes <- pricingPlanRoutes(transactor, appConfig, redisHost, redisPort)
     } yield Router(

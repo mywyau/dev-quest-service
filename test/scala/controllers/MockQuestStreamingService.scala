@@ -1,6 +1,6 @@
 package controllers
 
-import cache.RedisCacheAlgebra
+import infrastructure.cache.*
 import cats.data.Validated.Valid
 import cats.data.ValidatedNel
 import cats.effect.*

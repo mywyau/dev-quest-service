@@ -1,5 +1,7 @@
 package services
 
+import cats.Monad
+import cats.NonEmptyParallel
 import cats.data.EitherT
 import cats.data.Validated
 import cats.data.Validated.Invalid
@@ -8,16 +10,15 @@ import cats.data.ValidatedNel
 import cats.effect.Concurrent
 import cats.implicits.*
 import cats.syntax.all.*
-import cats.Monad
-import cats.NonEmptyParallel
 import configuration.AppConfig
 import fs2.Stream
-import java.util.UUID
 import models.*
 import models.database.*
 import models.estimation_expirations.*
 import org.typelevel.log4cats.Logger
 import repositories.*
+
+import java.util.UUID
 
 trait EstimationExpirationServiceAlgebra[F[_]] {
 

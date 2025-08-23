@@ -32,5 +32,8 @@ COPY --from=builder /app/target/scala-3.3.4/dev-quest-service-assembly-0.1.0-SNA
 # Expose the application port
 EXPOSE 8080
 
+# Set APP_ENV=prod to trigger prod config loading
+ENV APP_ENV=prod
+
 # Run the application
 CMD ["java", "-jar", "/app/app.jar"]

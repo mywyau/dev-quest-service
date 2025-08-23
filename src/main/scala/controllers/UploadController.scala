@@ -146,7 +146,7 @@ class UploadController[F[_] : Async : Logger](
                   fileType = contentType,
                   fileSize = content.length,
                   s3ObjectKey = objectKey,
-                  bucketName = appConfig.localAppConfig.awsS3Config.bucketName
+                  bucketName = appConfig.awsS3Config.bucketName
                 )
               )
               _ <- Logger[F].debug(s"Uploaded and saved metadata for $filename")

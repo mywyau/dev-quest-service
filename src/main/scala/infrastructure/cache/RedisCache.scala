@@ -1,4 +1,4 @@
-package cache
+package infrastructure.cache
 
 import cats.effect.*
 import cats.implicits.*

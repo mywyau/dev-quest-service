@@ -1,10 +1,10 @@
 package controllers
 
-import cache.RedisCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
 import cats.effect.kernel.Async
 import cats.implicits.*
+import infrastructure.cache.*
 import io.circe.syntax.*
 import io.circe.syntax.EncoderOps
 import models.responses.*

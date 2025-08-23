@@ -1,7 +1,6 @@
 package cache
 
-import cache.RedisCache
-import cache.RedisCacheAlgebra
+import infrastructure.cache.*
 import cats.data.Validated
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
@@ -79,7 +78,7 @@ object CacheSharedResource extends GlobalResource with BaseAppConfig {
       }
       ce <- executionContextResource
       client <- clientResource
-      sessionCache <- SessionCache.make[IO](redisHost, redisPort, appConfig)
+      sessionCache <- infrastructure.cache.SessionCache.make[IO](redisHost, redisPort, appConfig)
       _ <- global.putR(HttpClientResource(client))
       _ <- global.putR(SessionCacheResource(sessionCache))
     } yield ()

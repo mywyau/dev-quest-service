@@ -1,16 +1,17 @@
 package controllers
 
-import cache.RedisCache
-import cache.RedisCacheAlgebra
-import cache.SessionCacheAlgebra
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
-import cats.effect.Concurrent
 import cats.effect.kernel.Async
+import cats.effect.Concurrent
 import cats.implicits.*
 import fs2.Stream
-import io.circe.Json
+import infrastructure.cache.*
 import io.circe.syntax.EncoderOps
+import io.circe.Json
+import models.database.UpdateSuccess
+import models.estimate.*
+import models.responses.*
 import models.Client
 import models.Completed
 import models.Dev
@@ -21,20 +22,16 @@ import models.InProgress
 import models.NotStarted
 import models.Open
 import models.UserType
-import models.database.UpdateSuccess
-import models.estimate.*
-import models.responses.*
 import org.http4s.*
-import org.http4s.Challenge
 import org.http4s.circe.*
-import org.http4s.dsl.Http4sDsl
 import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
+import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.syntax.all.http4sHeaderSyntax
+import org.http4s.Challenge
 import org.typelevel.log4cats.Logger
-import services.EstimateServiceAlgebra
-
 import scala.concurrent.duration.*
+import services.EstimateServiceAlgebra
 
 trait EstimateControllerAlgebra[F[_]] {
   def routes: HttpRoutes[F]

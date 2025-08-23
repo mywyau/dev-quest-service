@@ -1,7 +1,7 @@
 // controllers/mocks/MockPricingPlanCache.scala
 package controllers.mocks
 
-import cache.PricingPlanCacheAlgebra
+import infrastructure.cache.PricingPlanCacheAlgebra
 import cats.data.Validated
 import cats.data.Validated.Valid
 import cats.data.ValidatedNel

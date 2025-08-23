@@ -1,14 +1,14 @@
 package services
 
-import cache.PricingPlanCacheAlgebra
+import infrastructure.cache.PricingPlanCacheAlgebra
 import cats.data.NonEmptyList
 import cats.data.Validated
 import cats.effect.IO
 import cats.effect.Ref
 import cats.syntax.all.*
 import cats.syntax.validated.*
-import configuration.constants.AppConfigConstants.appConfigConstant
 import configuration.AppConfig
+import configuration.constants.LocalAppConfigConstants.*
 import io.circe.Json
 import java.time.Instant
 import java.time.LocalDateTime
@@ -137,7 +137,7 @@ object UserPricingPlanServiceSpec extends SimpleIOSuite {
     planRow = p
   )
 
-  val appConfig = appConfigConstant
+  val appConfig = localAppConfigConstant
 
   test("getSnapshot cache miss → load from repo + store") {
     for {

@@ -1,7 +1,6 @@
 package controllers
 
-import cache.RedisCache
-import cache.RedisCacheAlgebra
+import infrastructure.cache.*
 import com.comcast.ip4s.Host
 import com.comcast.ip4s.Port
 import cats.effect.*
@@ -29,7 +28,7 @@ import shared.SessionCacheResource
 import shared.TransactorResource
 import weaver.GlobalResource
 import weaver.GlobalWrite
-import cache.SessionCache
+import infrastructure.cache.SessionCache
 
 object ControllerSharedResource extends GlobalResource with BaseAppConfig {
 
