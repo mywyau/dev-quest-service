@@ -26,6 +26,7 @@ import models.QuestStatus
 import org.typelevel.log4cats.Logger
 import repositories.*
 import services.LevelServiceAlgebra
+import services.kafka.producers.QuestEventProducerAlgebra
 
 trait QuestCRUDServiceAlgebra[F[_]] {
 
@@ -55,7 +56,8 @@ class QuestCRUDServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger
   questRepo: QuestRepositoryAlgebra[F],
   userRepo: UserDataRepositoryAlgebra[F],
   hoursWorkedRepo: HoursWorkedRepositoryAlgebra[F],
-  levelService: LevelServiceAlgebra[F]
+  levelService: LevelServiceAlgebra[F],
+  questEventProducer: QuestEventProducerAlgebra[F]  
 ) extends QuestCRUDServiceAlgebra[F] {
 
   def xpAmount(rank: Rank) =
@@ -111,7 +113,10 @@ class QuestCRUDServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger
     }
 
   override def create(request: CreateQuestPartial, clientId: String): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]] = {
+
     val newQuestId = s"quest-${UUID.randomUUID().toString}"
+    val now        = java.time.Instant.now()
+
     val createQuest =
       CreateQuest(
         clientId = clientId,
@@ -126,9 +131,28 @@ class QuestCRUDServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger
 
     Logger[F].debug(s"[QuestCRUDService][create] Creating a new quest for user $clientId with questId $newQuestId") *>
       questRepo.create(createQuest).flatMap {
-        case Valid(value) =>
-          Logger[F].debug(s"[QuestCRUDService][create] Quest created successfully with ID: $newQuestId") *>
-            Concurrent[F].pure(Valid(value))
+        case v @ Valid(value) =>
+          // Logger[F].debug(s"[QuestCRUDService][create] Quest created successfully with ID: $newQuestId") *>
+          //   Concurrent[F].pure(Valid(value))
+
+          //     questEventProducer.publishQuestCreated(ev)
+          //   .handleErrorWith(e => Logger[F].warn(e)(
+          //     s"[QuestCRUDService][create] Failed to publish quest.created for $newQuestId"
+          //   ))
+          //   .as(v)
+          val ev = models.events.QuestCreatedEvent(
+            questId   = newQuestId,
+            title     = request.title,
+            clientId  = clientId,
+            createdAt = now
+          )
+          // fire-and-forget in the same effect (no blocking the HTTP path)
+          questEventProducer.publishQuestCreated(ev)
+            .handleErrorWith(e => Logger[F].warn(e)(
+              s"[QuestCRUDService][create] Failed to publish quest.created for $newQuestId"
+            ))
+            .as(v)
+
         case Invalid(errors) =>
           Logger[F].error(s"[QuestCRUDService][create] Failed to create quest. Errors: ${errors.toList.mkString(", ")}") *>
             Concurrent[F].pure(Invalid(errors))
@@ -207,7 +231,8 @@ object QuestCRUDService {
     questRepo: QuestRepositoryAlgebra[F],
     userRepo: UserDataRepositoryAlgebra[F],
     hoursWorkedRepo: HoursWorkedRepositoryAlgebra[F],
-    levelService: LevelServiceAlgebra[F]
+    levelService: LevelServiceAlgebra[F],
+      questEventProducer: QuestEventProducerAlgebra[F]  
   ): QuestCRUDServiceAlgebra[F] =
-    new QuestCRUDServiceImpl[F](appConfig, questRepo, userRepo, hoursWorkedRepo, levelService)
+    new QuestCRUDServiceImpl[F](appConfig, questRepo, userRepo, hoursWorkedRepo, levelService, questEventProducer)
 }

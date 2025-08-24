@@ -14,9 +14,11 @@ object AppDependencies {
   val scalatestVersion = "3.2.15"
   val weaverVersion = "0.8.3"
   val flywayVersion = "8.5.0"
+  val Fs2KafkaV = "3.3.0"          // recent
 
   // Compile dependencies
   val compile: Seq[ModuleID] = Seq(
+    "com.github.fd4s" %% "fs2-kafka" % Fs2KafkaV,
     "org.typelevel" %% "log4cats-slf4j" % "2.6.0",
     "ch.qos.logback" % "logback-classic" % "1.5.6" exclude ("org.slf4j", "slf4j-jdk14"),
     "org.typelevel" %% "cats-core" % catsCoreVersion,

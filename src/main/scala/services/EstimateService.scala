@@ -21,6 +21,7 @@ import models.*
 import models.database.*
 import models.estimate.*
 import models.estimation_expirations.*
+import models.kafka.QuestEstimationFinalized
 import models.quests.QuestPartial
 import models.skills.Estimating
 import models.users.*
@@ -29,6 +30,7 @@ import repositories.EstimateRepositoryAlgebra
 import repositories.EstimationExpirationRepositoryAlgebra
 import repositories.QuestRepositoryAlgebra
 import repositories.UserDataRepositoryAlgebra
+import services.kafka.producers.services.kafka.QuestEstimationEventProducerAlgebra
 
 trait EstimateServiceAlgebra[F[_]] {
 
@@ -36,7 +38,7 @@ trait EstimateServiceAlgebra[F[_]] {
 
   def createEstimate(devId: String, estimate: CreateEstimate): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
-  def evaluateEstimates(questId: String, estimates:List[Estimate]): F[List[EvaluatedEstimate]]
+  def evaluateEstimates(questId: String, estimates: List[Estimate]): F[List[EvaluatedEstimate]]
 
   def completeEstimationAwardEstimatingXp(questId: String, rank: Rank, estimates: List[Estimate]): F[ValidatedNel[DatabaseErrors, DatabaseSuccess]]
 
@@ -53,7 +55,8 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
   estimateRepo: EstimateRepositoryAlgebra[F],
   estimationExpirationRepo: EstimationExpirationRepositoryAlgebra[F],
   questRepo: QuestRepositoryAlgebra[F],
-  levelService: LevelServiceAlgebra[F]
+  levelService: LevelServiceAlgebra[F],
+  questEstimationEventProducer: QuestEstimationEventProducerAlgebra[F]
 ) extends EstimateServiceAlgebra[F] {
 
   def isEstimated(estimationExpiration: EstimationExpiration, now: Instant): Boolean =
@@ -99,7 +102,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
       ) *> modifier.pure[F]
   }
 
-  override def evaluateEstimates(questId: String, estimates:List[Estimate]): F[List[EvaluatedEstimate]] =
+  override def evaluateEstimates(questId: String, estimates: List[Estimate]): F[List[EvaluatedEstimate]] =
     for {
       // estimates <- estimateRepo.getEstimates(questId)
       communityAvgOpt <- computeCommunityAverage(estimates).pure[F]
@@ -215,6 +218,13 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
           for {
             _ <- questRepo.setFinalRank(questId, finalRank)
             awardXpResult: Validated[NonEmptyList[DatabaseErrors], DatabaseSuccess] <- completeEstimationAwardEstimatingXp(questId, finalRank, estimates)
+            _ <- questEstimationEventProducer.estimationFinalized(
+              QuestEstimationFinalized(
+                questId = questId,
+                finalRank = finalRank,
+                finalizedAt = Instant.now()
+              )
+            )
           } yield awardXpResult
         case None =>
           Logger[F].warn(s"Unable to finalize estimation for quest $questId — no average found") *>
@@ -333,7 +343,8 @@ object EstimateService {
     estimateRepo: EstimateRepositoryAlgebra[F],
     estimationExpirationRepo: EstimationExpirationRepositoryAlgebra[F],
     questRepo: QuestRepositoryAlgebra[F],
-    levelService: LevelServiceAlgebra[F]
+    levelService: LevelServiceAlgebra[F],
+    questEstimationEventProducer: QuestEstimationEventProducerAlgebra[F] // <-- NEW
   ): EstimateServiceAlgebra[F] =
-    new EstimateServiceImpl[F](appConfig, userDataRepo, estimateRepo, estimationExpirationRepo, questRepo, levelService)
+    new EstimateServiceImpl[F](appConfig, userDataRepo, estimateRepo, estimationExpirationRepo, questRepo, levelService, questEstimationEventProducer)
 }

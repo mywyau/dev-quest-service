@@ -1,11 +1,11 @@
-// models/events/QuestCreatedEvent.scala
+
 package models.events
 
+import io.circe.{Encoder, Decoder}
 import io.circe.generic.semiauto.*
-import io.circe.{Decoder, Encoder}
 import java.time.Instant
 
-case class QuestCreatedEvent(
+final case class QuestCreatedEvent(
   questId: String,
   title: String,
   clientId: String,
