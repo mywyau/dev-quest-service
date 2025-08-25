@@ -22,15 +22,15 @@ import models.database.*
 import models.estimate.*
 import models.estimation_expirations.*
 import models.kafka.*
-import models.quests.QuestPartial
-import models.skills.Estimating
-import models.users.*
 import org.typelevel.log4cats.Logger
 import repositories.EstimateRepositoryAlgebra
 import repositories.EstimationExpirationRepositoryAlgebra
 import repositories.QuestRepositoryAlgebra
 import repositories.UserDataRepositoryAlgebra
 import services.kafka.producers.QuestEstimationEventProducerAlgebra
+import _root_.models.quests.QuestPartial
+import _root_.models.users.UserData
+import _root_.models.skills.Estimating
 
 trait EstimateServiceAlgebra[F[_]] {
 
@@ -383,7 +383,7 @@ class EstimateServiceImpl[F[_] : Concurrent : NonEmptyParallel : Monad : Logger 
       }
     } yield ()
 
-    
+
 }
 
 object EstimateService {
