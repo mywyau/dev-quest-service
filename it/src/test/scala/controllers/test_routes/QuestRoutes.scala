@@ -26,12 +26,13 @@ import services.*
 import java.net.URI
 import java.time.Duration
 import java.time.Instant
+import services.kafka.producers.QuestEventProducerAlgebra
 
 object QuestRoutes extends BaseAppConfig {
 
   implicit val testLogger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
 
-  def questRoutes(transactor: Transactor[IO], appConfig: AppConfig): Resource[IO, HttpRoutes[IO]] = {
+  def questRoutes(transactor: Transactor[IO], appConfig: AppConfig, questEventProducer: QuestEventProducerAlgebra[IO]): Resource[IO, HttpRoutes[IO]] = {
 
     val sessionToken = "test-session-token"
 
@@ -65,7 +66,7 @@ object QuestRoutes extends BaseAppConfig {
       languageRepository = DevLanguageRepository(transactor)
       hoursWorkedRepository = HoursWorkedRepository(transactor)
       levelService = LevelService(skillDataRepository, languageRepository)
-      questCRUDService = QuestCRUDService(appConfig, questRepository, userDataRepository, hoursWorkedRepository, levelService)
+      questCRUDService = QuestCRUDService(appConfig, questRepository, userDataRepository, hoursWorkedRepository, levelService, questEventProducer)
       questStreamingService = QuestStreamingService(appConfig, questRepository, rewardRepository)
       questController = QuestController(questCRUDService, questStreamingService, mockSessionCache)
     } yield questController.routes

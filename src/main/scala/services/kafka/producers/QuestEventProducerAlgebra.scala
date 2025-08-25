@@ -12,10 +12,7 @@ trait QuestEventProducerAlgebra[F[_]] {
   def publishQuestCreated(event: QuestCreatedEvent): F[KafkaProducerResult]
 }
 
-final class QuestEventProducerImpl[F[_] : Sync](
-  topic: String,
-  producer: KafkaProducer[F, String, String]
-) extends QuestEventProducerAlgebra[F] {
+final class QuestEventProducerImpl[F[_] : Sync](topic: String, producer: KafkaProducer[F, String, String]) extends QuestEventProducerAlgebra[F] {
 
   override def publishQuestCreated(event: QuestCreatedEvent): F[KafkaProducerResult] = {
     val record = ProducerRecord(topic, event.questId, event.asJson.noSpaces)

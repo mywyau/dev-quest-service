@@ -57,6 +57,7 @@ object AppDependencies {
 
   // Integration test dependencies
   val integrationTest: Seq[ModuleID] = Seq(
+    "com.github.fd4s" %% "fs2-kafka" % Fs2KafkaV % Test,
     "org.tpolecat" %% "doobie-h2" % doobieVersion % Test,
     "org.flywaydb" % "flyway-core" % flywayVersion,
     "com.disneystreaming" %% "weaver-cats" % weaverVersion % Test,

@@ -20,6 +20,7 @@ import models.NotStarted
 import models.auth.UserSession
 import models.database.*
 import models.languages.*
+import models.kafka.SuccessfulWrite
 import models.quests.CreateQuestPartial
 import models.quests.QuestPartial
 import models.quests.UpdateQuestPartial
@@ -279,7 +280,7 @@ class QuestControllerISpec(global: GlobalRead) extends IOSuite with ControllerIS
         .addCookie("auth_session", sessionToken)
         .withEntity(createRequest)
 
-    val expectedBody = CreatedResponse(CreateSuccess.toString, "quest details created successfully")
+    val expectedBody = CreatedResponse(SuccessfulWrite.toString, "quest details created successfully")
 
     client.run(request).use { response =>
       response.as[CreatedResponse].map { body =>
