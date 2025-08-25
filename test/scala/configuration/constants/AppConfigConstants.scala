@@ -1,11 +1,11 @@
 package configuration.constants
 
-import configuration.AppConfig
 import configuration.constants.*
 import configuration.constants.IntegrationConfigConstants.*
 import configuration.constants.LocalAppConfigConstants.*
 import configuration.constants.ProdAppConfigConstants.*
 import configuration.models.*
+import configuration.AppConfig
 
 object AppConfigConstants {
 
@@ -53,11 +53,22 @@ object AppConfigConstants {
       cacheTtlMinutes = 60
     )
 
+  val kafkaConfig =
+    KafkaConfig(
+      bootstrapServers = "localhost:9092",
+      clientId = "dev-quest-service",
+      acks = "all",
+      lingerMs = 5,
+      retries = 10,
+      topic = KafkaTopicConfig("quest.created.v1")
+    )
+
   val appConfigConstant =
     AppConfig(
       featureSwitches = featureSwitches,
       pricingPlanConfig = pricingPlanConfig,
       devSubmission = devSubmissionConfig,
+      kafka = kafkaConfig,
       questConfig = questConfig,
       estimationConfig = estimateConfig,
       localAppConfig = localAppConfig,

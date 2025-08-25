@@ -1,8 +1,9 @@
-import cats.NonEmptyParallel
 import cats.effect.*
 import cats.implicits.*
 import cats.syntax.all.*
+import cats.NonEmptyParallel
 import com.comcast.ip4s.*
+import configuration.kafka.*
 import configuration.AppConfig
 import configuration.ConfigReader
 import doobie.hikari.HikariTransactor
@@ -11,20 +12,25 @@ import fs2.Stream
 import infrastructure.Database
 import infrastructure.Redis
 import infrastructure.Server
+import java.time.*
+import java.time.temporal.ChronoUnit
+import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneId
 import middleware.Middleware.throttleMiddleware
-import org.http4s.HttpRoutes
-import org.http4s.Method
-import org.http4s.Uri
 import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.headers.Origin
 import org.http4s.implicits.*
-import org.http4s.server.Router
 import org.http4s.server.middleware.CORS
+import org.http4s.server.Router
+import org.http4s.HttpRoutes
+import org.http4s.Method
+import org.http4s.Uri
 import org.typelevel.ci.CIString
-import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.Logger
 import repositories.*
 import routes.AuthRoutes.*
 import routes.HiscoreRoutes.*
@@ -33,16 +39,12 @@ import routes.PricingPlanRoutes.stripeBillingWebhookRoutes
 import routes.RegistrationRoutes.*
 import routes.Routes.*
 import routes.UploadRoutes.*
-import services.*
-import tasks.EstimateServiceBuilder
-
-import java.time.*
-import java.time.Instant
-import java.time.LocalTime
-import java.time.ZoneId
-import java.time.temporal.ChronoUnit
 import scala.concurrent.duration.*
 import scala.concurrent.duration.DurationInt
+import services.*
+import services.kafka.consumers.QuestCreatedConsumer
+import services.kafka.producers.*
+import tasks.EstimateServiceBuilder
 
 object Main extends IOApp {
 
@@ -114,11 +116,32 @@ object Main extends IOApp {
         .apply(combinedRoutes)
 
     for {
+
+      kafkaProducer <- KafkaProducerProvider.make[F](
+        appConfig.kafka.bootstrapServers,
+        appConfig.kafka.clientId,
+        appConfig.kafka.acks,
+        appConfig.kafka.lingerMs,
+        appConfig.kafka.retries
+      )
+      consumerStream <- QuestCreatedConsumer
+        .resource[F](QuestCreatedConsumer.Settings(bootstrapServers = appConfig.kafka.bootstrapServers))
+      // start it in the background; the fiber will be auto-cancelled when Resource closes
+      // .evalTap(_.compile.drain.start)
+      _ <- Resource
+        .make(
+          Concurrent[F].start(consumerStream.compile.drain) // start fiber
+        )(_.cancel) // cancel on release
+        .void
+
+      // ── NEW: Quest event producer algebra
+      questEventProducer = new QuestEventProducerImpl[F](appConfig.kafka.topic.questCreated, kafkaProducer)
+      questEstimationEventProducer = new QuestEstimationEventProducerImpl[F](appConfig.kafka.topic.questCreated, kafkaProducer)
       baseRoutes <- Resource.pure(baseRoutes())
       authRoutes <- Resource.pure(authRoutes(redisHost, redisPort, transactor, appConfig))
       devBidRoutes <- Resource.pure(devBidRoutes(redisHost, redisPort, transactor, appConfig))
-      questsRoutes <- Resource.pure(questsRoutes(redisHost, redisPort, transactor, appConfig))
-      estimateRoutes <- Resource.pure(estimateRoutes(redisHost, redisPort, transactor, appConfig))
+      questsRoutes <- Resource.pure(questsRoutes(redisHost, redisPort, transactor, appConfig, questEventProducer))
+      estimateRoutes <- Resource.pure(estimateRoutes(redisHost, redisPort, transactor, appConfig, questEstimationEventProducer))
       estimationExpirationRoutes <- Resource.pure(estimationExpirationRoutes(redisHost, redisPort, transactor, appConfig))
       hiscoreRoutes <- Resource.pure(hiscoreRoutes(transactor, appConfig))
       skillRoutes <- Resource.pure(skillRoutes(transactor, appConfig))
@@ -192,8 +215,17 @@ object Main extends IOApp {
         transactor <- Database.transactor[IO](appConfig)
         redisAddress <- Redis.address[IO](appConfig)
 
+        kafkaProducer <- KafkaProducerProvider.make[IO](
+          appConfig.kafka.bootstrapServers,
+          appConfig.kafka.clientId,
+          appConfig.kafka.acks,
+          appConfig.kafka.lingerMs,
+          appConfig.kafka.retries
+        )
+
+        questEstimationEventProducer = new QuestEstimationEventProducerImpl[IO](appConfig.kafka.topic.questCreated, kafkaProducer)
         // Background stream: estimation finalizer every 5mins
-        estimateService = EstimateServiceBuilder.build(transactor, appConfig)
+        estimateService = EstimateServiceBuilder.build(transactor, appConfig, questEstimationEventProducer)
 
         // estimationTaskSafe = swallow(estimateService.finalizeExpiredEstimations().void)
         // estimationFinalizer = Stream.eval(estimateService.finalizeExpiredEstimations().void) ++ estimationSchedule(appConfig, estimateService.finalizeExpiredEstimations())
