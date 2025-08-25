@@ -43,9 +43,7 @@ import scala.concurrent.duration.*
 import scala.concurrent.duration.DurationInt
 import services.*
 import services.kafka.consumers.QuestCreatedConsumer
-import services.kafka.producers.services.kafka.QuestEstimationEventProducerImpl
-import services.kafka.producers.QuestEventProducerAlgebra
-import services.kafka.producers.QuestEventProducerImpl
+import services.kafka.producers.*
 import tasks.EstimateServiceBuilder
 
 object Main extends IOApp {

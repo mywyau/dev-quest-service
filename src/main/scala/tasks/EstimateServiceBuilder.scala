@@ -11,7 +11,7 @@ import org.typelevel.log4cats.Logger
 import repositories.*
 import services.*
 import services.LevelService
-import services.kafka.producers.services.kafka.QuestEstimationEventProducerAlgebra
+import services.kafka.producers.QuestEstimationEventProducerAlgebra
 
 object EstimateServiceBuilder {
 

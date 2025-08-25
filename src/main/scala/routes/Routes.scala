@@ -14,7 +14,7 @@ import org.http4s.HttpRoutes
 import org.typelevel.log4cats.Logger
 import repositories.*
 import services.*
-import services.kafka.producers.services.kafka.QuestEstimationEventProducerAlgebra
+import services.kafka.producers.QuestEstimationEventProducerAlgebra
 import services.kafka.producers.QuestEventProducerAlgebra // <-- add this import
 import services.s3.LiveS3Client
 import services.s3.LiveS3Presigner
