@@ -1,12 +1,10 @@
 package controllers.test_routes
 
-
-import infrastructure.cache.*
 import cats.data.Validated
 import cats.data.ValidatedNel
 import cats.effect.*
 import cats.implicits.*
-import infrastructure.KafkaProducerProvider
+import cats.Applicative
 import configuration.AppConfig
 import configuration.BaseAppConfig
 import controllers.mocks.*
@@ -18,6 +16,8 @@ import controllers.PricingPlanController
 import dev.profunktor.redis4cats.RedisCommands
 import doobie.util.transactor.Transactor
 import fs2.kafka.*
+import infrastructure.cache.*
+import infrastructure.KafkaProducerProvider
 import java.net.URI
 import java.time.Duration
 import java.time.Instant
@@ -25,6 +25,9 @@ import models.auth.UserSession
 import models.cache.CacheErrors
 import models.cache.CacheSuccess
 import models.cache.CacheUpdateSuccess
+import models.events.QuestCreatedEvent
+import models.kafka.KafkaProducerResult
+import models.kafka.SuccessfulWrite
 import models.pricing.Active
 import models.pricing.PlanFeatures
 import models.pricing.PlanSnapshot
@@ -36,6 +39,7 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import repositories.*
 import services.*
 import services.kafka.consumers.QuestCreatedConsumer
+import services.kafka.producers.QuestEventProducerAlgebra
 import services.kafka.producers.QuestEventProducerImpl
 import services.s3.LiveS3Client
 import services.s3.S3ClientAlgebra
@@ -46,6 +50,10 @@ import services.stripe.*
 object TestRoutes extends BaseAppConfig {
 
   implicit val testLogger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
+
+  // class NoopQuestEventProducer[F[_] : Applicative] extends QuestEventProducerAlgebra[F] {
+  //   def publishQuestCreated(event: QuestCreatedEvent): F[KafkaProducerResult] = SuccessfulWrite.pure[F]
+  // }
 
   def baseRoutes(): HttpRoutes[IO] = {
     val baseController = BaseController[IO]()
@@ -157,7 +165,8 @@ object TestRoutes extends BaseAppConfig {
         .make(Concurrent[IO].start(consumerStream.compile.drain))(_.cancel)
         .void
 
-      questEventProducer = new QuestEventProducerImpl[IO](appConfig.kafka.topic.questCreated, kafkaProducer)
+      // questEventProducer = new QuestEventProducerImpl[IO](appConfig.kafka.topic.questCreated, kafkaProducer)
+      questEventProducer = new MockQuestEventProducer[IO]()
       registrationRoutes <- registrationRoutes(transactor, appConfig)
       userDataRoutes <- userDataRoutes(transactor, appConfig)
       questRoute <- questRoutes(transactor, appConfig, questEventProducer)

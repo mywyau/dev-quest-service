@@ -14,7 +14,7 @@
     <logger name="org.apache.kafka.clients.consumer.internals.ConsumerCoordinator" level="INFO"/>
     <!-- High level logging -->
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>
