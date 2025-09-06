@@ -1,6 +1,6 @@
 package controllers
 
-import cache.RedisCacheAlgebra
+import infrastructure.cache.*
 import cats.data.Validated.Valid
 import cats.data.ValidatedNel
 import cats.effect.*
@@ -10,6 +10,9 @@ import cats.implicits.*
 import fs2.Stream
 import models.auth.UserSession
 import models.database.*
+import models.kafka.Failure
+import models.kafka.KafkaProducerResult
+import models.kafka.SuccessfulWrite
 import models.quests.*
 import models.work_time.HoursOfWork
 import models.QuestStatus
@@ -35,9 +38,8 @@ class MockQuestCRUDService(userQuestData: Map[String, QuestPartial]) extends Que
       case Some(address) => IO.pure(Some(address))
       case None => IO.pure(None)
     }
-
-  override def create(request: CreateQuestPartial, userId: String): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
-    IO.pure(Valid(CreateSuccess))
+  override def create(request: CreateQuestPartial, clientId: String): IO[ValidatedNel[Failure, KafkaProducerResult]] =
+    IO.pure(Valid(SuccessfulWrite))
 
   override def update(businessId: String, request: UpdateQuestPartial): IO[ValidatedNel[DatabaseErrors, DatabaseSuccess]] =
     IO.pure(Valid(UpdateSuccess))

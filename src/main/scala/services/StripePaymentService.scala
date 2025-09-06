@@ -46,14 +46,14 @@ class StripePaymentService[F[_] : Async : Logger](
     }  
     
   private val baseUri: Uri = 
-    Uri.fromString(appConfig.localAppConfig.stripeConfig.stripeUrl)
-      .getOrElse(sys.error(s"Invalid Stripe URL: ${appConfig.localAppConfig.stripeConfig.stripeUrl}"))
+    Uri.fromString(appConfig.stripeConfig.stripeUrl)
+      .getOrElse(sys.error(s"Invalid Stripe URL: ${appConfig.stripeConfig.stripeUrl}"))
 
   val platformFeePercent: BigDecimal =
     sys.env
       .get("STRIPE_PLATFORM_FEE_PERCENT")
       .flatMap(s => Either.catchOnly[NumberFormatException](BigDecimal(s)).toOption)
-      .getOrElse(appConfig.localAppConfig.stripeConfig.platformFeePercent)
+      .getOrElse(appConfig.stripeConfig.platformFeePercent)
 
   private def authHeader: Header.Raw =
     Header.Raw(ci"Authorization", s"Bearer ${secretKey}")
@@ -132,8 +132,8 @@ class StripePaymentService[F[_] : Async : Logger](
           "line_items[0][quantity]" -> "1",
           "payment_intent_data[application_fee_amount]" -> fee.toString,
           "payment_intent_data[transfer_data][destination]" -> developerStripeId,
-          "success_url" -> appConfig.prodAppConfig.stripeConfig.paymentSuccessUrl,
-          "cancel_url" -> appConfig.prodAppConfig.stripeConfig.paymentCancelUrl
+          "success_url" -> appConfig.stripeConfig.paymentSuccessUrl,
+          "cancel_url" -> appConfig.stripeConfig.paymentCancelUrl
         )
       }
 

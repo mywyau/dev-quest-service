@@ -1,6 +1,6 @@
 package controllers.mocks
 
-import cache.SessionCacheAlgebra
+import infrastructure.cache.SessionCacheAlgebra
 import cats.data.Validated
 import cats.data.ValidatedNel
 import cats.effect.*

@@ -1,8 +1,8 @@
 package routes
 
-import cache.RedisCacheImpl
-import cache.SessionCache
-import cache.SessionCacheImpl
+import infrastructure.cache.RedisCacheImpl
+import infrastructure.cache.SessionCache
+import infrastructure.cache.SessionCacheImpl
 import cats.effect.*
 import cats.NonEmptyParallel
 import configuration.AppConfig
@@ -14,6 +14,8 @@ import org.http4s.HttpRoutes
 import org.typelevel.log4cats.Logger
 import repositories.*
 import services.*
+import services.kafka.producers.QuestEstimationEventProducerAlgebra
+import services.kafka.producers.QuestEventProducerAlgebra // <-- add this import
 import services.s3.LiveS3Client
 import services.s3.LiveS3Presigner
 import services.s3.UploadServiceImpl
@@ -55,7 +57,8 @@ object Routes {
     redisHost: String,
     redisPort: Int,
     transactor: HikariTransactor[F],
-    appConfig: AppConfig
+    appConfig: AppConfig,
+    questEventProducer: QuestEventProducerAlgebra[F] // <-- NEW PARAM
   ): HttpRoutes[F] = {
 
     val sessionCache = new SessionCacheImpl(redisHost, redisPort, appConfig)
@@ -74,7 +77,8 @@ object Routes {
         questRepository,
         userDataRepository,
         hoursWorkedRepository,
-        levelService
+        levelService,
+        questEventProducer
       )
 
     val questStreamingService =
@@ -93,7 +97,8 @@ object Routes {
     redisHost: String,
     redisPort: Int,
     transactor: HikariTransactor[F],
-    appConfig: AppConfig
+    appConfig: AppConfig,
+    questEstimationEventProducer: QuestEstimationEventProducerAlgebra[F] // <-- NEW PARAM
   ): HttpRoutes[F] = {
 
     val sessionCache = new SessionCacheImpl(redisHost, redisPort, appConfig)
@@ -106,7 +111,7 @@ object Routes {
     val languageRepository = DevLanguageRepository(transactor)
 
     val levelService = LevelService(skillDataRepository, languageRepository)
-    val estimateService = EstimateService(appConfig, userDataRepository, estimateRepository, estimationExpirationRepository, questRepository, levelService)
+    val estimateService = EstimateService(appConfig, userDataRepository, estimateRepository, estimationExpirationRepository, questRepository, levelService, questEstimationEventProducer)
     val estimateController = EstimateController(estimateService, sessionCache)
 
     estimateController.routes

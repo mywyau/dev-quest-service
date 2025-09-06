@@ -7,6 +7,7 @@ import cats.effect.IO
 import configuration.ConfigReader
 import configuration.ConfigReaderAlgebra
 import mocks.*
+import mocks.producers.*
 import models.Completed
 import models.Steel
 import models.database.*
@@ -17,6 +18,7 @@ import services.QuestCRUDServiceImpl
 import services.constants.QuestServiceConstants.*
 import testData.TestConstants.*
 import weaver.SimpleIOSuite
+import models.kafka.SuccessfulWrite
 
 object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
@@ -24,6 +26,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
   val mockUserDataRepository = MockUserDataRepository
   val mockLevelService = MockLevelService
   val mockHoursWorkedRepository = MockHoursWorkedRepository
+  val mockQuestEventProducer = MockQuestEventProducer()
 
   test(".acceptQuest() - when the number of quests a dev has accepted is <= 5, return success") {
 
@@ -33,7 +36,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService)
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService, mockQuestEventProducer)
       result <- service.acceptQuest(questId1, devId1)
     } yield expect(result == Valid(UpdateSuccess))
   }
@@ -46,7 +49,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService)
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService, mockQuestEventProducer)
       result <- service.acceptQuest(questId1, devId1)
     } yield expect(result == Invalid(NonEmptyList.one(TooManyActiveQuestsError)))
   }
@@ -59,12 +62,12 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService)
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService, mockQuestEventProducer)
       result <- service.getByQuestId(questId1)
     } yield expect(result == Some(existingQuestForUser))
   }
 
-  test(".create() - should create a quest, ") {
+  test(".create() - should create a quest, and producer successfully writes an event") {
 
     val existingQuestForUser = testQuest(clientId1, Some(devId1), questId1)
 
@@ -81,9 +84,9 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService)
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService, mockQuestEventProducer)
       result <- service.create(createQuestPartial, clientId1)
-    } yield expect(result == Valid(CreateSuccess))
+    } yield expect(result == Valid(SuccessfulWrite))
   }
 
   test(".update() - should update the details of a given quest") {
@@ -102,7 +105,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService)
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService, mockQuestEventProducer)
       result <- service.update(questId1, updateQuestPartial)
     } yield expect(result == Valid(UpdateSuccess))
   }
@@ -123,7 +126,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService)
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService, mockQuestEventProducer)
       result <- service.update(questId1, updateQuestPartial)
     } yield expect(result == Valid(UpdateSuccess))
   }
@@ -136,7 +139,7 @@ object QuestCRUDServiceSpec extends SimpleIOSuite with ServiceSpecBase {
 
     for {
       appConfig <- configReader.loadAppConfig
-      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService)
+      service = QuestCRUDService(appConfig, mockQuestRepository, mockUserDataRepository, mockHoursWorkedRepository, mockLevelService, mockQuestEventProducer)
       result <- service.updateStatus(questId1, Completed)
     } yield expect(result == Valid(UpdateSuccess))
   }

@@ -1,4 +1,4 @@
-package tasks
+package jobs
 
 import cats.effect.*
 import cats.NonEmptyParallel
@@ -11,12 +11,14 @@ import org.typelevel.log4cats.Logger
 import repositories.*
 import services.*
 import services.LevelService
+import services.kafka.producers.QuestEstimationEventProducerAlgebra
 
 object EstimateServiceBuilder {
 
   def build[F[_] : Concurrent : Temporal : NonEmptyParallel : Async : Logger : Clock](
     transactor: HikariTransactor[F],
-    appConfig: AppConfig
+    appConfig: AppConfig,
+    questEstimationEventProducer: QuestEstimationEventProducerAlgebra[F]
   ): EstimateServiceAlgebra[F] = {
 
     val userDataRepository = new UserDataRepositoryImpl(transactor)
@@ -27,7 +29,7 @@ object EstimateServiceBuilder {
     val languageRepository = DevLanguageRepository(transactor)
 
     val levelService = LevelService(skillDataRepository, languageRepository)
-    val estimateService = EstimateService(appConfig, userDataRepository, estimateRepository, estimationExpirationRepository, questRepository, levelService)
+    val estimateService = EstimateService(appConfig, userDataRepository, estimateRepository, estimationExpirationRepository, questRepository, levelService, questEstimationEventProducer)
 
     estimateService
   }

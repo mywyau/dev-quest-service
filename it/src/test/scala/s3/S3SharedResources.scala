@@ -1,8 +1,5 @@
 package controllers
 
-import cache.RedisCache
-import cache.RedisCacheAlgebra
-import cache.SessionCache
 import cats.effect.*
 import com.comcast.ip4s.Host
 import com.comcast.ip4s.Port
@@ -13,6 +10,7 @@ import dev.profunktor.redis4cats.Redis
 import doobie.*
 import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts
+import infrastructure.cache.*
 import org.http4s.*
 import org.http4s.circe.*
 import org.http4s.client.Client

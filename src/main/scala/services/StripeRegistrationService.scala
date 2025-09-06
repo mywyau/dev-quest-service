@@ -46,8 +46,8 @@ class StripeRegistrationService[F[_] : Async : Logger](
 
   private val baseUri: Uri =
     Uri
-      .fromString(appConfig.localAppConfig.stripeConfig.stripeUrl)
-      .getOrElse(sys.error(s"Invalid Stripe URL: ${appConfig.localAppConfig.stripeConfig.stripeUrl}"))
+      .fromString(appConfig.stripeConfig.stripeUrl)
+      .getOrElse(sys.error(s"Invalid Stripe URL: ${appConfig.stripeConfig.stripeUrl}"))
 
   private def authHeader: Header.Raw =
     Header.Raw(ci"Authorization", s"Bearer ${secretKey}")

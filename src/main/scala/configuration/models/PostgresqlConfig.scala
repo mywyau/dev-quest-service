@@ -11,5 +11,6 @@ case class PostgresqlConfig(
   host: String,
   port: Int,
   username: String,
-  password: String
+  password: String,
+  maxPoolSize: Int
 ) derives ConfigReader

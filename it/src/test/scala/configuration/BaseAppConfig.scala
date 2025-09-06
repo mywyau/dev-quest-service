@@ -22,7 +22,7 @@ trait BaseAppConfig {
     Resource.eval(
       IO.fromEither(
         Host
-          .fromString(appConfig.integrationSpecConfig.serverConfig.host)
+          .fromString(appConfig.serverConfig.host)
           .toRight(new RuntimeException("[ControllerSharedResource] Invalid host configuration"))
       )
     )
@@ -31,18 +31,18 @@ trait BaseAppConfig {
     Resource.eval(
       IO.fromEither(
         Port
-          .fromInt(appConfig.integrationSpecConfig.serverConfig.port)
+          .fromInt(appConfig.serverConfig.port)
           .toRight(new RuntimeException("[ControllerSharedResource] Invalid port configuration"))
       )
     )
 
   def postgresqlConfigResource(appConfig: AppConfig): Resource[IO, PostgresqlConfig] =
     Resource.eval(
-      IO(appConfig.integrationSpecConfig.postgresqlConfig)
+      IO(appConfig.postgresqlConfig)
     )
 
   def redisConfigResource(appConfig: AppConfig): Resource[IO, RedisConfig] =
     Resource.eval(
-      IO(appConfig.integrationSpecConfig.redisConfig)
+      IO(appConfig.redisConfig)
     )
 }

@@ -1,9 +1,6 @@
 package controllers.test_routes
 
-import cache.RedisCacheAlgebra
-import cache.RedisCacheImpl
-import cache.SessionCacheAlgebra
-import cache.SessionCacheImpl
+import infrastructure.cache.*
 import cats.data.Validated
 import cats.data.ValidatedNel
 import cats.effect.*
@@ -16,6 +13,7 @@ import controllers.RegistrationController
 import controllers.UserDataController
 import dev.profunktor.redis4cats.RedisCommands
 import doobie.util.transactor.Transactor
+import infrastructure.cache.*
 import java.net.URI
 import java.time.Duration
 import java.time.Instant

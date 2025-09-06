@@ -24,6 +24,7 @@ lazy val it = (project in file("it"))
     libraryDependencies ++= AppDependencies.integrationTest,
     fork := true,
     parallelExecution := true,
+    Test / envVars ++= Map("APP_ENV" -> "integration"),
     // scalaSource := baseDirectory.value / "src" / "test" / "scala",
     Test / unmanagedSourceDirectories += baseDirectory.value / "src" / "test" / "scala"
   )

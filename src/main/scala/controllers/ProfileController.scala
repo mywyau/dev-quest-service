@@ -1,8 +1,6 @@
 package controllers
 
-import cache.RedisCache
-import cache.RedisCacheAlgebra
-import cache.SessionCacheAlgebra
+import infrastructure.cache.*
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
 import cats.effect.kernel.Async

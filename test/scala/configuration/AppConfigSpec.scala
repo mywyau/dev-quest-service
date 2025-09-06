@@ -3,16 +3,14 @@ package configuration
 import cats.Eq
 import cats.effect.IO
 import cats.syntax.eq.*
+import configuration.AppConfig
+import configuration.constants.IntegrationConfigConstants.*
 import configuration.constants.LocalAppConfigConstants.*
 import configuration.constants.ProdAppConfigConstants.*
-import configuration.constants.IntegrationConfigConstants.*
-import configuration.constants.AppConfigConstants.*
 import configuration.models.*
 import io.circe.generic.auto.*
 import io.circe.syntax.*
 import weaver.SimpleIOSuite
-
-import configuration.AppConfig
 
 object AppConfigSpec extends SimpleIOSuite {
 
@@ -27,27 +25,45 @@ object AppConfigSpec extends SimpleIOSuite {
 
   val configReader: ConfigReaderAlgebra[IO] = ConfigReader[IO]
 
-  test("loads full app config correctly") {
+  def readerFor(env: String): ConfigReaderAlgebra[IO] =
+    new ConfigReaderImpl[IO](new EnvProvider { def current = env })
+
+  test("local - loads full local app config correctly") {
     for {
-      config <- configReader.loadAppConfig
-    } yield expect.eql(appConfigConstant, config)
+      config <- readerFor("local").loadAppConfig
+    } yield expect.eql(localAppConfigConstant, config)
   }
 
-  test("loads featureSwitches config correctly") {
+  test("local - loads featureSwitches config correctly") {
     for {
-      config <- configReader.loadAppConfig
-    } yield expect.eql(config.featureSwitches, appConfigConstant.featureSwitches)
+      config <- readerFor("local").loadAppConfig
+    } yield expect.eql(config.featureSwitches, localAppConfigConstant.featureSwitches)
   }
 
-  test("loads localConfig correctly") {
+  test("prod - loads full prod app config correctly") {
     for {
-      config <- configReader.loadAppConfig
-    } yield expect.eql(config.localAppConfig, appConfigConstant.localAppConfig)
+      config <- readerFor("prod").loadAppConfig
+    } yield expect.eql(prodAppConfigConstant, config)
   }
 
-  test("loads integrationSpecConfig correctly") {
+  test("prod - loads featureSwitches config correctly") {
     for {
-      config <- configReader.loadAppConfig
-    } yield expect.eql(config.integrationSpecConfig, appConfigConstant.integrationSpecConfig)
+      config <- readerFor("prod").loadAppConfig
+
+    } yield expect.eql(config.featureSwitches, prodAppConfigConstant.featureSwitches)
+  }
+
+  test("integration - loads full integration app config correctly") {
+    for {
+      config <- readerFor("integration").loadAppConfig
+
+    } yield expect.eql(integrationAppConfigConstant, config)
+  }
+
+  test("integration - loads featureSwitches config correctly") {
+    for {
+      config <- readerFor("integration").loadAppConfig
+
+    } yield expect.eql(config.featureSwitches, integrationAppConfigConstant.featureSwitches)
   }
 }

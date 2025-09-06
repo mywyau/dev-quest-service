@@ -1,6 +1,6 @@
 package controllers
 
-import cache.SessionCacheAlgebra
+import infrastructure.cache.SessionCacheAlgebra
 import cats.effect.IO
 import cats.effect.Ref
 import controllers.ControllerSpecBase

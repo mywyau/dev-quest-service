@@ -1,8 +1,8 @@
 package routes
 
-import cache.RedisCacheImpl
-import cache.SessionCache
-import cache.SessionCacheImpl
+import infrastructure.cache.RedisCacheImpl
+import infrastructure.cache.SessionCache
+import infrastructure.cache.SessionCacheImpl
 import cats.effect.*
 import cats.NonEmptyParallel
 import configuration.AppConfig
@@ -45,7 +45,7 @@ object UploadRoutes {
 
         S3AsyncClient
           .builder()
-          .region(Region.of(appConfig.localAppConfig.awsS3Config.awsRegion))
+          .region(Region.of(appConfig.awsS3Config.awsRegion))
           .endpointOverride(URI.create("http://localhost:4566"))
           .serviceConfiguration(s3Config)
           .credentialsProvider(DefaultCredentialsProvider.create())
@@ -53,7 +53,7 @@ object UploadRoutes {
       } else {
         S3AsyncClient
           .builder()
-          .region(Region.of(appConfig.localAppConfig.awsS3Config.awsRegion))
+          .region(Region.of(appConfig.awsS3Config.awsRegion))
           .credentialsProvider(DefaultCredentialsProvider.create())
           .build()
       }
@@ -68,7 +68,7 @@ object UploadRoutes {
 
         S3Presigner
           .builder()
-          .region(Region.of(appConfig.localAppConfig.awsS3Config.awsRegion))
+          .region(Region.of(appConfig.awsS3Config.awsRegion))
           .endpointOverride(URI.create("http://localhost:4566"))
           .serviceConfiguration(s3Config)
           .credentialsProvider(DefaultCredentialsProvider.create())
@@ -76,7 +76,7 @@ object UploadRoutes {
       } else {
         S3Presigner
           .builder()
-          .region(Region.of(appConfig.localAppConfig.awsS3Config.awsRegion))
+          .region(Region.of(appConfig.awsS3Config.awsRegion))
           .credentialsProvider(DefaultCredentialsProvider.create())
           .build()
       }
@@ -86,7 +86,7 @@ object UploadRoutes {
     val liveS3Presigner = new LiveS3Presigner[F](presigner)
 
     // Make sure the real bucket name is passed from config
-    val uploadService = new UploadServiceImpl[F](appConfig.localAppConfig.awsS3Config.bucketName, liveS3Client, liveS3Presigner)
+    val uploadService = new UploadServiceImpl[F](appConfig.awsS3Config.bucketName, liveS3Client, liveS3Presigner)
 
     val devSubmissionRepo = DevSubmissionRepository[F](transactor, appConfig)
     val devSubmissionService = DevSubmissionService[F](devSubmissionRepo)

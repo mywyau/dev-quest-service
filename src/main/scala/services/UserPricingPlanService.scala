@@ -1,7 +1,7 @@
 // services/UserPricingPlanServiceImpl.scala
 package services
 
-import cache.PricingPlanCacheAlgebra
+import infrastructure.cache.PricingPlanCacheAlgebra
 import cats.Monad
 import cats.NonEmptyParallel
 import cats.data.Validated
@@ -153,7 +153,6 @@ class UserPricingPlanServiceImpl[F[_] : Sync : Logger](
         case Some(view) => pricingPlanCache.storePricingPlan(cacheKey(userId), Some(toSnapshot(view, userId))).void
         case None       => pricingPlanCache.deletePricingPlan(cacheKey(userId)).void // fallback
       }
-      // _ <- pricingPlanCache.deletePricingPlan(cacheKey(userId))
     } yield up
 
   override def createCheckout(userId: String, planId: String, idemKey: String): F[String] = {
@@ -177,8 +176,8 @@ class UserPricingPlanServiceImpl[F[_] : Sync : Logger](
                        Logger[F].warn(s"[UserPricingPlanServiceImpl][createCheckout] - $prefix plan not a paid Stripe plan (price=${plan.price}, stripePriceId=${plan.stripePriceId})") *>
                        Sync[F].raiseError[String](new IllegalArgumentException("Plan is not a paid Stripe plan"))
                    }
-        success  = s"${appConfig.localAppConfig.devIrlFrontendConfig.baseUrl}/billing/payment/successful?plan=${plan.planId}"
-        cancel   = s"${appConfig.localAppConfig.devIrlFrontendConfig.baseUrl}/billing/select-plan/client"
+        success  = s"${appConfig.devIrlFrontendConfig.baseUrl}/billing/payment/successful?plan=${plan.planId}"
+        cancel   = s"${appConfig.devIrlFrontendConfig.baseUrl}/billing/select-plan/client"
         _       <- Logger[F].debug(s"$prefix successUrl= $success cancelUrl= $cancel")
         url     <- stripeBillingService
                      .createCheckoutSession(userId, priceId, success, cancel, idemKey)
