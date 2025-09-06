@@ -37,7 +37,8 @@ trait UserDataRepositoryAlgebra[F[_]] {
 
 class UserDataRepositoryImpl[F[_] : Concurrent : Monad : Logger](transactor: Transactor[F]) extends UserDataRepositoryAlgebra[F] {
 
-  implicit val userMeta: Meta[UserType] = Meta[String].timap(UserType.fromString)(_.toString)
+  implicit val userMeta: Meta[UserType] = 
+    Meta[String].timap(UserType.fromString)(_.toString)
 
   implicit val localDateTimeMeta: Meta[LocalDateTime] =
     Meta[Timestamp].imap(_.toLocalDateTime)(Timestamp.valueOf)

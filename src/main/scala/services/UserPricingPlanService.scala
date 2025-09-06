@@ -1,7 +1,6 @@
 // services/UserPricingPlanServiceImpl.scala
 package services
 
-import infrastructure.cache.PricingPlanCacheAlgebra
 import cats.Monad
 import cats.NonEmptyParallel
 import cats.data.Validated
@@ -16,6 +15,7 @@ import cats.syntax.all.*
 import cats.syntax.all.*
 import configuration.AppConfig
 import fs2.Stream
+import infrastructure.cache.PricingPlanCacheAlgebra
 import io.circe.parser.decode
 import io.circe.syntax.*
 import models.UserType
@@ -84,9 +84,11 @@ class UserPricingPlanServiceImpl[F[_] : Sync : Logger](
             currentPeriodEnd = value.userPlanRow.currentPeriodEnd,
             cancelAtPeriodEnd = value.userPlanRow.cancelAtPeriodEnd
           )
-        pricingPlanCache.storePricingPlan(cacheKey(userId), Some(snapshot)) *> snapshot.pure[F]
+        Logger[F].debug(s"[loadAndCache] Successfully retrieved user plan and attempting to store pricing plan: $snapshot - ${cacheKey(userId)}") *>
+          pricingPlanCache.storePricingPlan(cacheKey(userId), Some(snapshot)) *> snapshot.pure[F]
       case None =>
-        Sync[F].raiseError(new RuntimeException(s"No plan for user $userId"))
+        Logger[F].debug(s"[loadAndCache] Failed to retrieved user plan throw error - ${cacheKey(userId)}") *>
+          Sync[F].raiseError(new RuntimeException(s"No plan for user $userId"))
     }
 
   override def getPlan(userId: String): F[Option[UserPricingPlanView]] =
@@ -99,7 +101,7 @@ class UserPricingPlanServiceImpl[F[_] : Sync : Logger](
         Logger[F].debug(s"[getSnapshot] ${cacheKey(userId)} success $planSnapshot") *>
         planSnapshot.pure[F] 
       case None =>
-        Logger[F].debug("[getSnapshot] failed loading from db") *>
+        Logger[F].debug("[getSnapshot] failed to load from cache, attempt loading from db instead") *>
         loadAndCache(userId)
     }
 

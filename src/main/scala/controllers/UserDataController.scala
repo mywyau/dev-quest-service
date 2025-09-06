@@ -82,7 +82,7 @@ class UserDataControllerImpl[F[_] : Async : Concurrent : Logger](
                   Logger[F].debug(s"[UserDataController] GET - Found user ${userId.toString()}") *>
                     Ok(user.asJson)
                 case None =>
-                  BadRequest(ErrorResponse("NO_QUEST", "No user found").asJson)
+                  BadRequest(ErrorResponse("No_User_Data", "No user found").asJson)
               }
           }
         case None =>
